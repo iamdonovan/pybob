@@ -1,9 +1,9 @@
 import os, numpy as np, matplotlib.pylab as plt, scipy.optimize as optimize
-from matplotlib.backends.backend_pdf import PdfPages
 import gdal, osr, copy, subprocess, ogr
+from matplotlib.backends.backend_pdf import PdfPages
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pybob.GeoImg import GeoImg
-import pybob.bob_tools as bt
+from pybob.image_tools import create_mask_from_shapefile
 
 def false_hillshade(dH, title, pp):
 	niceext = np.array([dH.xmin, dH.xmax, dH.ymin, dH.ymax])/1000.
@@ -31,14 +31,14 @@ def create_stable_mask(img, mask1, mask2):
 	if mask1 is None and mask2 is None:
 		return np.ones(img.img.shape) == 0 # all false, so nothing will get masked.
 	elif mask1 is not None and mask2 is None: # we have a glacier mask, not land
-		mask = bt.create_mask_from_shapefile(img, mask1)
+		mask = create_mask_from_shapefile(img, mask1)
 		return mask # returns true where there's glacier, false everywhere else
 	elif mask1 is None and mask2 is not None:
-		mask = bt.create_mask_from_shapefile(img, mask2)
+		mask = create_mask_from_shapefile(img, mask2)
 		return np.logical_not(mask) #false where there's land, true where there isn't
 	else: # if none of the above, we have two masks.
-		gmask = bt.create_mask_from_shapefile(img, mask1)
-		lmask = bt.create_mask_from_shapefile(img, mask2)
+		gmask = create_mask_from_shapefile(img, mask1)
+		lmask = create_mask_from_shapefile(img, mask2)
 		return np.logical_or(gmask, np.logical_not(lmask)) # true where there's glacier or water
 
 def preprocess(stable_mask, slope, aspect, master, slave):	

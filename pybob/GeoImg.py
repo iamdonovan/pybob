@@ -1,15 +1,6 @@
-import gdal, sys, os, matplotlib, fiona, copy, random, shapely, ogr, osr, scipy, cv2
-import numpy as np, pandas as pd, geopandas as gpd, matplotlib.pyplot as plt
-import scipy.ndimage as ndimage, scipy.ndimage.filters as filters, datetime as dt
-from scipy.interpolate import RectBivariateSpline as RBS
-from scipy.interpolate import griddata
-from matplotlib.pyplot import savefig
+import gdal, os, copy, random, numpy as np, matplotlib.pyplot as plt, datetime as dt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from fiona.crs import from_epsg
-from shapely.geometry import mapping, Point, Polygon
-from matplotlib.backends.backend_pdf import PdfPages
 from pybob.bob_tools import standard_landsat
-from skimage.feature import greycomatrix, greycoprops
 
 class GeoImg:
 	
