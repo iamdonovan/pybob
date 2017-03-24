@@ -123,10 +123,17 @@ def write_rgb(scenename, outfilename, out_dir='.', in_dir='.', driver='GTiff'):
 
     write_composite_raster(band1name, band2name, band3name, outfilename, out_dir, in_dir, driver)
 
-def bin_data(bins, data2bin, bindata):
+def bin_data(bins, data2bin, bindata, mode='mean'):
     digitized = np.digitize(bindata, bins)
-    binned = [data2bin[np.logical_and(np.isfinite(bindata), digitized==i)].mean() for i in range(len(bins))]
-    return binned
+    if mode == 'mean':
+        binned = [np.nanmean(data2bin[np.logical_and(np.isfinite(bindata), digitized==i)]) for i in range(len(bins))]
+    elif mode == 'median':
+        binned = [np.nanmedian(data2bin[np.logical_and(np.isfinite(bindata), digitized==i)]) for i in range(len(bins))]
+    elif mode == 'std':
+        binned = [np.nanstd(data2bin[np.logical_and(np.isfinite(bindata), digitized==i)]) for i in range(len(bins))]
+    else:
+        raise Exception('mode must be mean, median, or std')
+    return np.array(binned)
 
 #def write_shapefile(filename, geometry, features, data, fields, EPSG):
 #    schema = {'properties': [fields], 'geometry': geometry}
