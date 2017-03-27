@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import gdal, sys, os, argparse, numpy as np
 from pybob.GeoImg import GeoImg
 from pybob.image_tools import generate_panchrome
