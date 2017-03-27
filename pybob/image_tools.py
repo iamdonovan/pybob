@@ -1,4 +1,4 @@
-import gdal, sys, os, copy, ogr, osr, numpy as np, multprocessing as mp
+import gdal, sys, os, copy, ogr, osr, numpy as np, multiprocessing as mp
 import scipy.ndimage as ndimage, scipy.ndimage.filters as filters, datetime as dt
 from functools import partial
 from skimage.feature import greycomatrix, greycoprops
