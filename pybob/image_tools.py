@@ -98,25 +98,28 @@ def create_mask_from_shapefile(geoimg, shapefile):
     return mask == 1
 
 
-def rasterize_polygons(geoimg, shapefile):
+def rasterize_polygons(geoimg, shapefile, burn_handle=None, dtype=gdal.GDT_Int16):
     polysource = ogr.Open(shapefile, 0)  # read-only
     polylayer = polysource.GetLayer()
 
-    if polylayer.GetFIDColumn() == '':
-        polylayer = add_fid_column(polylayer)
-        fid_handle = 'TmpFID'
-    else:
-        fid_handle = polylayer.GetFIDColumn()
+    if burn_handle is None:
+        if polylayer.GetFIDColumn() == '':
+            polylayer = add_fid_column(polylayer)
+            burn_handle = 'TmpFID'
+        else:
+            burn_handle = polylayer.GetFIDColumn()
 
-    target = gdal.GetDriverByName('MEM').Create('', geoimg.npix_x, geoimg.npix_y, 1, gdal.GDT_Int16)
+    target = gdal.GetDriverByName('MEM').Create('', geoimg.npix_x, geoimg.npix_y, 1, dtype)
     target.SetGeoTransform((geoimg.xmin, geoimg.dx, 0, geoimg.ymax, 0, geoimg.dy))
     target.SetProjection(geoimg.proj)
-    # target.GetRasterBand(1).Fill(-1)
+    target.GetRasterBand(1).Fill(-1)
 
-    gdal.RasterizeLayer(target, [1], polylayer, options=["Attribute={}".format(fid_handle)])
+    gdal.RasterizeLayer(target, [1], polylayer, options=["Attribute={}".format(burn_handle)])
     thisrast = target.GetRasterBand(1).ReadAsArray()
 
-    return thisrast
+    thesevals = [feat.GetField(burn_handle) for feat in polylayer]
+
+    return thisrast, np.array(thesevals)
 
 
 def add_fid_column(layer):
