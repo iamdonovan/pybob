@@ -33,11 +33,17 @@ def linear(DEM, **kwargs):
         raise TypeError('DEM must be a GeoImg')
     X, Y = DEM.xy()
 
-    interp_points = DEM.img[np.isfinite(DEM.img)]
-    interpX = X[np.isfinite(DEM.img)]
-    interpY = Y[np.isfinite(DEM.img)]
+    if 'valid_area' in kwargs:
+        interp_mask = np.logical_and(kwargs['valid_area'], np.isfinite(DEM.img))
+    else:
+        interp_mask = np.isfinite(DEM.img)
+    interp_points = DEM.img[interp_mask]
+    interpX = X[interp_mask]
+    interpY = Y[interp_mask]
 
     filled_DEM = griddata((interpX, interpY), interp_points, (X, Y))
+    if 'valid_area' in kwargs:
+        filled_DEM[np.logical_not(kwargs['valid_area'])] = np.nan
     return DEM.copy(new_raster=filled_DEM)
 
 
@@ -63,11 +69,13 @@ def parse_elev_func_args(func_name, dDEM, **kwargs):
             raise ValueError('dDEM and DEM must have the same shape')
 
     if 'glacier_mask' in kwargs:
-        ddem_data = dDEM.img[np.logical_and(np.isfinite(dDEM.img), kwargs['glacier_mask'])]
-        dem_data = DEM.img[np.logical_and(np.isfinite(dDEM.img), kwargs['glacier_mask'])]
+        ddem_data = dDEM.img[np.logical_and(np.logical_and(np.isfinite(dDEM.img),
+                                            np.isfinite(DEM.img)), kwargs['glacier_mask'])]
+        dem_data = DEM.img[np.logical_and(np.logical_and(np.isfinite(dDEM.img),
+                                          np.isfinite(DEM.img)), kwargs['glacier_mask'])]
     else:
-        ddem_data = dDEM.img[np.isfinite(dDEM.img)]
-        dem_data = DEM.img[np.isfinite(dDEM.img)]
+        ddem_data = dDEM.img[np.logical_and(np.isfinite(dDEM.img), np.isfinite(DEM.img))]
+        dem_data = DEM.img[np.logical_and(np.isfinite(dDEM.img), np.isfinite(DEM.img))]
 
     # now, figure out which of mean, median, polyfit we're using, and do it.
     if func_name == 'poly':
@@ -81,7 +89,7 @@ def parse_elev_func_args(func_name, dDEM, **kwargs):
         dem_holes = DEM.img[hole_inds]
         interp_points = polyval(dem_holes, pfit)
 
-        dDEM.img[dem_holes] = interp_points
+        dDEM.img[hole_inds] = interp_points
         return dDEM
     elif func_name == 'mean' or func_name == 'median':
         if 'bins' not in kwargs:
@@ -90,8 +98,8 @@ def parse_elev_func_args(func_name, dDEM, **kwargs):
                 bin_width = 50  # if we haven't been told what bin width to use, default to 50.
             else:
                 bin_width = kwargs['bin_width']
-            min_el = DEM.img.min() - (DEM.img.min() % bin_width)
-            max_el = DEM.img.max() + (bin_width - (DEM.img.max() % bin_width))
+            min_el = np.nanmin(dem_data) - (np.nanmin(dem_data) % bin_width)
+            max_el = np.nanmax(dem_data) + (bin_width - (np.nanmax(dem_data) % bin_width))
             bins = np.arange(min_el, max_el, bin_width)
         else:
             bins = kwargs['bins']
@@ -99,13 +107,17 @@ def parse_elev_func_args(func_name, dDEM, **kwargs):
         # now, we interpolate the missing DH values to the binned values.
         f_elev = interp1d(bins, binned_dH)
         # pull out missing values from dDEM
-        hole_inds = np.where(np.isnan(dDEM.img))
+        if 'glacier_mask' in kwargs:
+            hole_inds = np.where(np.logical_and(np.isnan(dDEM.img), kwargs['glacier_mask']))
+        else:
+            hole_inds = np.where(np.isnan(dDEM.img))
         hole_elevs = DEM.img[hole_inds]
 
         filled = f_elev(hole_elevs)
-        dDEM.img[hole_inds] = filled
+        tmp_dDEM = dDEM.copy()
+        tmp_dDEM.img[hole_inds] = filled
 
-        return dDEM
+        return tmp_dDEM
     else:
         raise ValueError('Somehow we made it this far without naming a correct fitting function. Oops.')
 
@@ -121,10 +133,20 @@ def neighborhood_average(dDEM, **kwargs):
     tmp_ddem = dDEM.copy().img
     out_ddem = dDEM.copy()
 
-    missing = np.where(np.isnan(tmp_ddem))
+    if 'valid_area' in kwargs:
+        if 'glacier_mask' in kwargs:
+            valid_mask = np.logical_and(kwargs['valid_area'], kwargs['glacier_mask'])
+        else:
+            valid_mask = kwargs['valid_area']
+        missing_mask = np.logical_and(valid_mask, np.isnan(tmp_ddem))
+    else:
+        missing_mask = np.isnan(tmp_ddem)
+
+    missing = np.where(missing_mask)
     missing_inds = zip(missing[0], missing[1])
 
-    tmp_ddem[np.logical_not(kwargs['glacier_mask'])] = np.nan
+    if 'glacier_mask' in kwargs:
+        tmp_ddem[np.logical_not(kwargs['glacier_mask'])] = np.nan
 
     for ind in missing_inds:
         nmask = neighborhood_mask(ind, nradius, tmp_ddem)
@@ -221,12 +243,19 @@ def normalize_glacier_elevations(DEM, glacshapes, burn_handle=None):
 
 # now we actually sum up the ddem values that fall within each glacier
 # input from a shapefile
-def calculate_volume_changes(dDEM, glacier_shapes, burn_handle=None):
-    ind_glac_mask, ind_glac_vals = it.rasterize_polygons(dDEM, glacier_shapes, burn_handle=burn_handle)
-    ind_vol_chgs = np.zeros(ind_glac_vals.shape)
+def calculate_volume_changes(dDEM, glacier_shapes, burn_handle=None, ind_glac_vals=None):
+    if type(glacier_shapes) is str:
+        ind_glac_mask, ind_glac_vals = it.rasterize_polygons(dDEM, glacier_shapes, burn_handle=burn_handle)
 
-    for i, ind in ind_glac_vals:
+    elif type(glacier_shapes) is np.array:
+        if ind_glac_vals is None:
+            ind_glac_vals = np.unique(glacier_shapes)
+    ind_vol_chgs = np.nan * np.zeros(ind_glac_vals.shape)
+
+    for i, ind in enumerate(ind_glac_vals):
         glac_inds = np.where(ind_glac_mask == ind)
+        if glac_inds[0].size == 0:
+            continue
         glac_chgs = dDEM.img[glac_inds]
         # get the volume change by summing dh/dt, multiplying by cell
         ind_vol_chgs[i] = np.nansum(glac_chgs) * np.abs(dDEM.dx) * np.abs(dDEM.dy)
@@ -241,8 +270,8 @@ def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=50):
     if glacier_inds is None:
         dem_data = DEM.img[glacier_shapes]
 
-        min_el = DEM.img.min() - (DEM.img.min() % bin_width)
-        max_el = DEM.img.max() + (bin_width - (DEM.img.max() % bin_width))
+        min_el = np.nanmin(dem_data) - (np.nanmin(dem_data) % bin_width)
+        max_el = np.nanmax(dem_data) + (bin_width - (np.nanmax(dem_data) % bin_width))
         bins = np.arange(min_el, max_el, bin_width)
         aads, _ = np.histogram(dem_data, bins=bins)
         aads = aads * np.abs(DEM.dx) * np.abs(DEM.dy)
@@ -252,8 +281,8 @@ def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=50):
 
         for i in glacier_inds:
             dem_data = DEM.img[glacier_shapes == i]
-            min_el = dem_data.min() - (dem_data.min() % bin_width)
-            max_el = dem_data.max() + (bin_width - (dem_data.max() % bin_width))
+            min_el = np.nanmin(dem_data) - (np.nanmin(dem_data) % bin_width)
+            max_el = np.nanmax(dem_data) + (bin_width - (np.nanmax(dem_data) % bin_width))
             thisbin = np.arange(min_el, max_el, bin_width)
             thisaad, _ = np.histogram(dem_data, bins=thisbin)
 

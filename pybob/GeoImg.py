@@ -99,9 +99,9 @@ class GeoImg(object):
     def display(self, fig=None, cmap='gray', extent=None, sfact=None, showfig=True, band=[0, 1, 2]):
         if fig is None:
             fig = plt.figure(facecolor='w')
-            fig.hold(True)
-        else:
-            fig.hold(True)
+            # fig.hold(True)
+        # else:
+            # fig.hold(True)
 
         if extent is None:
             extent = [self.xmin, self.xmax, self.ymin, self.ymax]
@@ -250,7 +250,7 @@ class GeoImg(object):
         if dst_raster.NDV is not None:
             dest.GetRasterBand(1).SetNoDataValue(dst_raster.NDV)
         out = GeoImg(dest)
-        out.img[np.isnan(dst_raster.img)] = np.nan
+        # out.img[out.img == self.NDV] = np.nan
 
         return out
 
@@ -278,6 +278,50 @@ class GeoImg(object):
         i = int((y-self.UTMtfm[1])/self.UTMtfm[3]) - 0.5  # if python started at 1, + 0.5
 
         return i, j
+
+    def find_corners(self, nodata=np.nan, mode='ij'):
+        if np.isnan(nodata):
+            goodinds = np.where(np.isfinite(self.img))
+        else:
+            goodinds = np.where(np.logical_not(self.img == nodata))
+
+        # get the corners:
+        # upper left is the minimum row (and min. column in min. row)
+        uli = goodinds[0][np.argmin(goodinds[0])]  # goodinds[0] is row, [1] is column
+        ulj = np.min(goodinds[1][goodinds[0] == uli])
+
+        # upper right is the maximum column (and max. row in max. column)
+        urj = goodinds[1][np.argmax(goodinds[1])]
+        uri = np.max(goodinds[0][goodinds[1] == urj])
+
+        # lower right is the maximum row (and max. column in max. row)
+        lri = goodinds[0][np.argmax(goodinds[0])]
+        lrj = np.max(goodinds[1][goodinds[0] == lri])
+
+        # lower left is the minimum column (and max. row in min. column)
+        llj = goodinds[1][np.argmin(goodinds[1])]
+        lli = np.max(goodinds[0][goodinds[1] == llj])
+
+        corners = zip([uli, uri, lri, lli], [ulj, urj, lrj, llj])
+
+        if mode == 'xy':
+            xycorners = [self.ij2xy(corner) for corner in corners]
+            return xycorners
+        elif mode != 'ij':
+            print "Unknown mode encountered (expected 'xy' or 'ij'); defaulting to ij"
+        return corners
+
+    def find_valid_bbox(self, nodata=np.nan):
+        if np.isnan(nodata):
+            goodinds = np.where(np.isfinite(self.img))
+        else:
+            goodinds = np.where(np.logical_not(self.img == nodata))
+
+        # get the max, min of x,y that are valid.
+        xmin, ymin = self.ij2xy((goodinds[0].min(), goodinds[1].min()))
+        xmax, ymax = self.ij2xy((goodinds[0].max(), goodinds[1].max()))
+
+        return [xmin, min(ymin, ymax), xmax, max(ymin, ymax)]
 
     def set_NDV(self, NDV):
         self.NDV = NDV

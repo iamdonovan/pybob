@@ -135,8 +135,15 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     # create the output pdf
     pp = PdfPages(outdir + os.path.sep + 'CoRegistration_Results.pdf')
 
-    mfilename = masterDEM.filename
-    sfilename = slaveDEM.filename
+    if type(masterDEM) is str:
+        mfilename = os.path.basename(masterDEM)
+    else:
+        mfilename = masterDEM.filename
+
+    if type(slaveDEM) is str:
+        sfilename = os.path.basename(slaveDEM)
+    else:
+        sfilename = slaveDEM.filename
 
     masterDEM = get_geoimg(masterDEM)
     slaveDEM = get_geoimg(slaveDEM)

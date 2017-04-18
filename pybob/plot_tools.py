@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.pyplot import savefig
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from numpy.polynomial.polynomial import polyval, polyfit
+from pybob.bob_tools import bin_data
 
 
 def save_results_quicklook(img, raster, com_ext, outfilename, vmin=0, vmax=10, sfact=2, output_directory='.'):
@@ -90,8 +92,11 @@ def plot_chips_corr_matrix(srcimg, destimg, corrmat):
     return fig
 
 
-def plot_ddem_results(img, colormap='seismic', caxsize="2.5%", clim=None):
-    fig = img.display(cmap=colormap)
+def plot_ddem_results(img, colormap='seismic', caxsize="2.5%", clim=None, sfact=None):
+    if sfact is not None:
+        fig = img.display(cmap=colormap, sfact=sfact)
+    else:
+        fig = img.display(cmap=colormap)
 
     if clim is not None:
         plt.clim(clim[0], clim[1])
@@ -103,3 +108,34 @@ def plot_ddem_results(img, colormap='seismic', caxsize="2.5%", clim=None):
     plt.colorbar(cax=cax)
 
     return fig, ax, cax
+
+
+def plot_dh_elevation(dDEM, DEM, glacier_mask=None, binning=None, bin_width=50, polyorder=None):
+    fig = plt.figure()
+    plt.ion()
+
+    if glacier_mask is not None:
+        ddem_data = dDEM.img[np.logical_and(np.logical_and(np.isfinite(dDEM.img), np.isfinite(DEM.img)), glacier_mask)]
+        dem_data = DEM.img[np.logical_and(np.logical_and(np.isfinite(dDEM.img), np.isfinite(DEM.img)), glacier_mask)]
+    else:
+        ddem_data = dDEM.img[np.logical_and(np.isfinite(dDEM.img), np.isfinite(DEM.img))]
+        dem_data = DEM.img[np.logical_and(np.isfinite(dDEM.img), np.isfinite(DEM.img))]
+
+    plt.plot(dem_data, ddem_data, '+')
+
+    if binning is not None:
+        if binning not in ['mean', 'median', 'poly']:
+            raise ValueError('binning must be one of mean, median, polyfit')
+        min_el = np.nanmin(dem_data) - (np.nanmin(dem_data) % bin_width)
+        max_el = np.nanmax(dem_data) - (bin_width - (np.nanmax(dem_data) % bin_width))
+        bins = np.arange(min_el, max_el, bin_width)
+        if binning in ['mean', 'median']:
+            binned_data = bin_data(bins, ddem_data, dem_data, mode=binning)
+            plt.plot(bins, binned_data, 'r', linewidth=3)
+        else:
+            if polyorder is None:
+                raise ValueError('polyorder must be defined to use polynomial fitting.')
+            pfit = polyfit(dem_data, ddem_data, polyorder)
+            interp_points = polyval(bins, pfit)
+            plt.plot(bins, interp_points, 'r', linewidth=3)
+    return fig
