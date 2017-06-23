@@ -35,7 +35,7 @@ def main():
 
     for img in footprints:
         s = STRtree(footprints)
-        this_date, this_name = parse_aster_date(img, footprint_data)
+        this_date, this_name = parse_aster_date(img, footprint_data, args)
         candidates = s.query(img)
         candidates.remove(img)  # query returns itself
         overlaps = [img.intersection(c).area / img.area for c in candidates]
