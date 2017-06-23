@@ -6,8 +6,8 @@ import geopandas as gpd
 from shapely.strtree import STRtree
 
 
-def parse_aster_date(img, imgdata):
-    name = imgdata['dem_name'][imgdata['geometry'] == img].values[0]
+def parse_aster_date(img, imgdata, args):
+    name = imgdata[args.imagename][imgdata['geometry'] == img].values[0]
     datestr = name[11:19]
     yy = int(datestr[4:])
     mm = int(datestr[0:2])
@@ -26,6 +26,8 @@ def main():
                         help="Minimum amount of time (in years) to separate images [default: 2 years]")
     parser.add_argument('--tmax_sep', action='store', type=float, default=1000,
                         help="Maximum amount of time (in years) to separate images [default: 1000 years]")
+    parser.add_argument('--imagename', action='store', type=str, default='filename',
+                        help="Name of the shapefile field that contains the DEM filenames")
     args = parser.parse_args()
 
     footprint_data = gpd.read_file(args.footprints)
