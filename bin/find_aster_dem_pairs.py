@@ -42,7 +42,7 @@ def main():
 
         cull1 = [c for i, c in enumerate(candidates) if overlaps[i] > args.overlap]
         for c in cull1:
-            cdate, cname = parse_aster_date(c, footprint_data)
+            cdate, cname = parse_aster_date(c, footprint_data, args)
             tsep = np.abs((cdate - this_date).days / 365.2425)  # this is seriously close enough.
             if tsep >= args.tmin_sep and tsep <= args.tmax_sep:
                 print cname, this_name
