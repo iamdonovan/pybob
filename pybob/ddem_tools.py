@@ -85,11 +85,20 @@ def parse_elev_func_args(func_name, dDEM, **kwargs):
         pfit = polyfit(dem_data, ddem_data, kwargs['poly_order'])
 
         # need a way to put hole values in the right place
-        hole_inds = np.where(np.isnan(dDEM.img))
-        dem_holes = DEM.img[hole_inds]
-        interp_points = polyval(dem_holes, pfit)
+        if 'glacier_mask' in kwargs:
+            hole_inds = np.where(np.logical_and(np.logical_and(np.isnan(dDEM.img),
+                                 np.isfinite(DEM.img)), kwargs['glacier_mask']))
+        else:
+            hole_inds = np.where(np.logical_and(np.isfinite(dDEM.img), np.isfinite(DEM.img)))
+
+        hole_elevs = DEM.img[hole_inds]
+        interp_points = polyval(hole_elevs, pfit)
 
         dDEM.img[hole_inds] = interp_points
+
+        if 'valid_area' in kwargs:
+            dDEM.img[np.logical_not(kwargs['valid_area'])] = np.nan
+
         return dDEM
     elif func_name == 'mean' or func_name == 'median':
         if 'bins' not in kwargs:
@@ -100,7 +109,7 @@ def parse_elev_func_args(func_name, dDEM, **kwargs):
                 bin_width = kwargs['bin_width']
             min_el = np.nanmin(dem_data) - (np.nanmin(dem_data) % bin_width)
             max_el = np.nanmax(dem_data) + (bin_width - (np.nanmax(dem_data) % bin_width))
-            bins = np.arange(min_el, max_el, bin_width)
+            bins = np.arange(min_el, max_el+1, bin_width)
         else:
             bins = kwargs['bins']
         binned_dH = bin_data(bins, ddem_data, dem_data, mode=func_name)
@@ -108,15 +117,18 @@ def parse_elev_func_args(func_name, dDEM, **kwargs):
         f_elev = interp1d(bins, binned_dH)
         # pull out missing values from dDEM
         if 'glacier_mask' in kwargs:
-            hole_inds = np.where(np.logical_and(np.isnan(dDEM.img), kwargs['glacier_mask']))
+            hole_inds = np.where(np.logical_and(np.logical_and(np.isnan(dDEM.img),
+                                 np.isfinite(DEM.img)), kwargs['glacier_mask']))
         else:
-            hole_inds = np.where(np.isnan(dDEM.img))
+            hole_inds = np.where(np.logical_and(np.isfinite(dDEM.img), np.isfinite(DEM.img)))
         hole_elevs = DEM.img[hole_inds]
 
         filled = f_elev(hole_elevs)
         tmp_dDEM = dDEM.copy()
         tmp_dDEM.img[hole_inds] = filled
 
+        if 'valid_area' in kwargs:
+            tmp_dDEM.img[np.logical_not(kwargs['valid_area'])] = np.nan
         return tmp_dDEM
     else:
         raise ValueError('Somehow we made it this far without naming a correct fitting function. Oops.')
@@ -204,6 +216,14 @@ def neighborhood_mask(centerind, radius, array):
     return mask
 
 
+def circular_kernel(radius):
+    kernel = np.zeros((2*radius+1, 2*radius+1))
+    centerind = (radius, radius)
+    mask = neighborhood_mask(centerind, radius, kernel)
+    kernel[mask] = 1
+    return kernel
+
+
 # interpolate on a glacier-by-glacier basis, rather than on the DEM as a whole.
 def fill_holes_individually(dDEM, glacshapes, functype, burn_handle=None, **kwargs):
     # first, get the individual glacier mask.
@@ -217,16 +237,20 @@ def fill_holes_individually(dDEM, glacshapes, functype, burn_handle=None, **kwar
 
     for glac in ind_glac_vals:
         tmp_mask = ind_glac_mask == glac
-        tmp_dem = fill_holes(dDEM, elevation_function, glacier_mask=tmp_mask, functype=functype, **kwargs)
-
-        filled_ddem.img[tmp_mask] = tmp_dem.img[tmp_mask]
+        try:
+            tmp_dem = fill_holes(dDEM, elevation_function, glacier_mask=tmp_mask, functype=functype, **kwargs)
+            filled_ddem.img[tmp_mask] = tmp_dem.img[tmp_mask]
+        except:
+            continue
     return filled_ddem
 
 
 # normalize glacier elevations given a shapefile of glacier elevations
 def normalize_glacier_elevations(DEM, glacshapes, burn_handle=None):
-    ind_glac_mask, ind_glac_vals = it.rasterize_polygons(DEM, glacshapes, burn_handle)
+    ind_glac_mask, raw_inds = it.rasterize_polygons(DEM, glacshapes, burn_handle)
     normed_els = DEM.copy().img
+
+    ind_glac_vals = clean_glacier_indices(raw_inds, DEM)
 
     for i in ind_glac_vals:
         glac_inds = np.where(ind_glac_mask == i)
@@ -241,15 +265,29 @@ def normalize_glacier_elevations(DEM, glacshapes, burn_handle=None):
     return normDEM, ind_glac_mask, ind_glac_vals
 
 
+def clean_glacier_indices(geoimg, glacier_mask, raw_inds):
+    clean_glaciers = []
+    for glac in raw_inds:
+        imask = glacier_mask == glac
+        is_here = len(np.where(imask)[0]) > 0
+        is_finite = len(np.where(np.isfinite(geoimg.img[imask]))[0]) > 0
+        if is_here and is_finite:
+            clean_glaciers.append(glac)
+    return clean_glaciers
+
+
 # now we actually sum up the ddem values that fall within each glacier
 # input from a shapefile
 def calculate_volume_changes(dDEM, glacier_shapes, burn_handle=None, ind_glac_vals=None):
     if type(glacier_shapes) is str:
         ind_glac_mask, ind_glac_vals = it.rasterize_polygons(dDEM, glacier_shapes, burn_handle=burn_handle)
-
     elif type(glacier_shapes) is np.array:
         if ind_glac_vals is None:
             ind_glac_vals = np.unique(glacier_shapes)
+        elif type(ind_glac_vals) is list:
+            ind_glac_vals = np.array(ind_glac_vals)
+        ind_glac_mask = glacier_shapes
+
     ind_vol_chgs = np.nan * np.zeros(ind_glac_vals.shape)
 
     for i, ind in enumerate(ind_glac_vals):
@@ -290,3 +328,5 @@ def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=50):
             aads.append(thisaad * np.abs(DEM.dx) * np.abs(DEM.dy))  # make it an area!
 
     return bins, aads
+
+

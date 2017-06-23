@@ -66,13 +66,18 @@ def parse_lsat_scene(scenename, string_out=True):
 
 def bin_data(bins, data2bin, bindata, mode='mean'):
     digitized = np.digitize(bindata, bins)
+    digits = np.unique(digitized)
     if mode == 'mean':
-        binned = [np.nanmean(data2bin[np.logical_and(np.isfinite(bindata), digitized == i)]) for i in range(len(bins))]
+        binned = [np.nanmean(data2bin[np.logical_and(np.isfinite(bindata), digitized == i)]) for i in digits]
     elif mode == 'median':
         binned = [np.nanmedian(data2bin[np.logical_and(np.isfinite(bindata),
-                  digitized == i)]) for i in range(len(bins))]
+                  digitized == i)]) for i in digits]
     elif mode == 'std':
-        binned = [np.nanstd(data2bin[np.logical_and(np.isfinite(bindata), digitized == i)]) for i in range(len(bins))]
+        binned = [np.nanstd(data2bin[np.logical_and(np.isfinite(bindata), digitized == i)]) for i in digits]
+    elif mode == 'max':
+        binned = [np.nanmax(data2bin[np.logical_and(np.isfinite(bindata), digitized == i)]) for i in digits]
+    elif mode == 'min':
+        binned = [np.nanmin(data2bin[np.logical_and(np.isfinite(bindata), digitized == i)]) for i in digits]
     else:
         raise ValueError('mode must be mean, median, or std')
     return np.array(binned)

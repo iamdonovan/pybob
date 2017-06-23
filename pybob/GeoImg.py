@@ -166,17 +166,23 @@ class GeoImg(object):
 
         setgeo = out.SetGeoTransform(self.gt)
         setproj = out.SetProjection(self.proj)
+        nanmask = np.isnan(self.img)
+
         if self.NDV is not None:
-            self.img[np.isnan(self.img)] = self.NDV
+            self.img[nanmask] = self.NDV
 
         write = out.GetRasterBand(1).WriteArray(self.img)
         if self.NDV is not None:
             out.GetRasterBand(1).SetNoDataValue(self.NDV)
 
         out.GetRasterBand(1).FlushCache()
+
+        if self.NDV is not None:
+            self.img[nanmask] = np.nan
+
         del setgeo, setproj, write
 
-    def copy(self, new_raster=None, new_extent=None, driver='MEM', filename='', newproj=None):
+    def copy(self, new_raster=None, new_extent=None, driver='MEM', filename='', newproj=None, datatype=gdal.GDT_Float32):
         drv = gdal.GetDriverByName(driver)
         if driver == 'MEM':
             filename = ''
@@ -203,7 +209,7 @@ class GeoImg(object):
             newgt = (new_extent[0], dx, 0, new_extent[3], 0, dy)
         else:
             raise Exception('If new extent is specified, you must also specify the new raster to be used!')
-        newGdal = drv.Create(filename, npix_x, npix_y, 1, gdal.GDT_Float32)
+        newGdal = drv.Create(filename, npix_x, npix_y, 1, datatype)
         wa = newGdal.GetRasterBand(1).WriteArray(new_raster)
         sg = newGdal.SetGeoTransform(newgt)
 
@@ -245,10 +251,11 @@ class GeoImg(object):
         dest = drv.Create('', dst_raster.npix_x, dst_raster.npix_y, 1, gdal.GDT_Float32)
         dest.SetProjection(dst_raster.proj)
         dest.SetGeoTransform(dst_raster.gt)
-        gdal.ReprojectImage(self.gd, dest, self.proj, dst_raster.proj, gdal.GRA_Bilinear)
-
         if dst_raster.NDV is not None:
             dest.GetRasterBand(1).SetNoDataValue(dst_raster.NDV)
+
+        gdal.ReprojectImage(self.gd, dest, self.proj, dst_raster.proj, gdal.GRA_Bilinear)
+
         out = GeoImg(dest)
         # out.img[out.img == self.NDV] = np.nan
 

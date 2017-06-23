@@ -117,7 +117,7 @@ def rasterize_polygons(geoimg, shapefile, burn_handle=None, dtype=gdal.GDT_Int16
     gdal.RasterizeLayer(target, [1], polylayer, options=["Attribute={}".format(burn_handle)])
     thisrast = target.GetRasterBand(1).ReadAsArray()
 
-    thesevals = [feat.GetField(burn_handle) for feat in polylayer]
+    thesevals = [feat.GetField(burn_handle) for feat in polylayer if feat.GetField(burn_handle) in np.unique(thisrast)]
 
     return thisrast, np.array(thesevals)
 
