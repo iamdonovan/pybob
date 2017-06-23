@@ -287,10 +287,23 @@ class GeoImg(object):
         return i, j
 
     def find_corners(self, nodata=np.nan, mode='ij'):
-        if np.isnan(nodata):
-            goodinds = np.where(np.isfinite(self.img))
+        # if we have more than one band, have to pick one or merge them.
+        if len(self.img) == 3:
+            # if we have multiple bands, find the smallest index
+            # and sum along that (i.e., collapse the bands into one)
+            bnum = self.img.shape.index(min(self.img.shape))
+            tmpimg = self.img
+            # but, we want to make sure we don't mess up non-nan nodata
+            if not np.isnan(nodata):
+                tmpimg[tmpimg == nodata] = np.nan
+            testband = np.sum(tmpimg, bnum)
         else:
-            goodinds = np.where(np.logical_not(self.img == nodata))
+            testband = self.img
+        # now we actually get the good indices
+        if np.isnan(nodata):
+            goodinds = np.where(np.isfinite(testband))
+        else:
+            goodinds = np.where(np.logical_not(testband == nodata))
 
         # get the corners:
         # upper left is the minimum row (and min. column in min. row)

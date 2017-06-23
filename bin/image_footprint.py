@@ -43,6 +43,8 @@ def main():
         dirpath = os.path.dirname(imgpath)
 
         geo = GeoImg(img)
+        if os.path.sep in img:
+            img = img.split(os.path.sep)[-1]
         xycorners = geo.find_corners(mode='xy')
         footprint = Polygon(xycorners)
         if args.chop is not None:
