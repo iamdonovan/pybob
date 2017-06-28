@@ -182,7 +182,8 @@ class GeoImg(object):
 
         del setgeo, setproj, write
 
-    def copy(self, new_raster=None, new_extent=None, driver='MEM', filename='', newproj=None, datatype=gdal.GDT_Float32):
+    def copy(self, new_raster=None, new_extent=None, driver='MEM', filename='',
+             newproj=None, datatype=gdal.GDT_Float32):
         drv = gdal.GetDriverByName(driver)
         if driver == 'MEM':
             filename = ''
@@ -286,6 +287,14 @@ class GeoImg(object):
 
         return i, j
 
+    def is_rotated(self):
+        _, ncols = self.img.shape
+        goodinds = np.where(np.isfinite(self.img))
+        uli = goodinds[0][np.argmin(goodinds[0])]
+        ulj = np.min(goodinds[1][goodinds[0] == uli])
+        llj = goodinds[1][np.argmin(goodinds[1])]
+        return ~(np.abs(llj-ulj)/ncols < 0.02)
+
     def find_corners(self, nodata=np.nan, mode='ij'):
         # if we have more than one band, have to pick one or merge them.
         if len(self.img) == 3:
@@ -312,7 +321,10 @@ class GeoImg(object):
 
         # upper right is the maximum column (and max. row in max. column)
         urj = goodinds[1][np.argmax(goodinds[1])]
-        uri = np.max(goodinds[0][goodinds[1] == urj])
+        if self.is_rotated():
+            uri = np.max(goodinds[0][goodinds[1] == urj])
+        else:
+            uri = uli
 
         # lower right is the maximum row (and max. column in max. row)
         lri = goodinds[0][np.argmax(goodinds[0])]
