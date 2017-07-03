@@ -288,8 +288,19 @@ class GeoImg(object):
         return i, j
 
     def is_rotated(self):
-        _, ncols = self.img.shape
-        goodinds = np.where(np.isfinite(self.img))
+        if len(self.img) == 3:
+            # if we have multiple bands, find the smallest index
+            # and sum along that (i.e., collapse the bands into one)
+            bnum = self.img.shape.index(min(self.img.shape))
+            tmpimg = self.img
+            # but, we want to make sure we don't mess up non-nan nodata
+            if not np.isnan(self.NDV):
+                tmpimg[tmpimg == self.NDV] = np.nan
+            testband = np.sum(tmpimg, bnum)
+        else:
+            testband = self.img
+        _, ncols = testband.shape
+        goodinds = np.where(np.isfinite(testband))
         uli = goodinds[0][np.argmin(goodinds[0])]
         ulj = np.min(goodinds[1][goodinds[0] == uli])
         llj = goodinds[1][np.argmin(goodinds[1])]
