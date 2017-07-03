@@ -1,5 +1,4 @@
-f
-om setuptools import setup
+from setuptools import setup
 
 setup(name='pybob',
       version='0.12-7',
