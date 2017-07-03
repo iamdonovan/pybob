@@ -299,12 +299,13 @@ class GeoImg(object):
             testband = np.sum(tmpimg, bnum)
         else:
             testband = self.img
+
         _, ncols = testband.shape
         goodinds = np.where(np.isfinite(testband))
         uli = goodinds[0][np.argmin(goodinds[0])]
         ulj = np.min(goodinds[1][goodinds[0] == uli])
         llj = goodinds[1][np.argmin(goodinds[1])]
-        return ~(np.abs(llj-ulj)/ncols < 0.02)
+        return ~(np.abs(llj-ulj)/float(ncols) < 0.02)
 
     def find_corners(self, nodata=np.nan, mode='ij'):
         # if we have more than one band, have to pick one or merge them.
