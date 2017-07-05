@@ -254,6 +254,10 @@ class GeoImg(object):
         dest.SetGeoTransform(dst_raster.gt)
         if dst_raster.NDV is not None:
             dest.GetRasterBand(1).SetNoDataValue(dst_raster.NDV)
+            dest.GetRasterBand(1).Fill(dst_raster.NDV)
+        elif self.NDV is not None:
+            dest.GetRasterBand(1).SetNoDataValue(self.NDV)
+            dest.GetRasterBand(1).Fill(dst_raster.NDV)
 
         gdal.ReprojectImage(self.gd, dest, self.proj, dst_raster.proj, gdal.GRA_Bilinear)
 
