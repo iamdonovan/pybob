@@ -6,6 +6,14 @@ import geopandas as gpd
 from shapely.strtree import STRtree
 
 
+def mmdd2dec(year, month, day):
+    yearstart = dt.datetime(year, 1, 1).toordinal()
+    nextyearstart = dt.datetime(year+1, 1, 1).toordinal()
+    datestruct = dt.datetime(year, month, day)
+    datefrac = float(datestruct.toordinal() + 0.5 - yearstart) / (nextyearstart - yearstart)
+    return year + datefrac
+
+
 def parse_aster_date(img, imgdata, args):
     name = imgdata[args.imagename][imgdata['geometry'] == img].values[0]
     datestr = name[11:19]
@@ -28,6 +36,8 @@ def main():
                         help="Maximum amount of time (in years) to separate images [default: 1000 years]")
     parser.add_argument('--imagename', action='store', type=str, default='filename',
                         help="Name of the shapefile field that contains the DEM filenames")
+    parser.add_argument('--datefield', action='store', type='int', default=None,
+                        help="Name of the shapefield field that contains the date information [None]")
     args = parser.parse_args()
 
     footprint_data = gpd.read_file(args.footprints)
@@ -35,7 +45,14 @@ def main():
 
     for img in footprints:
         s = STRtree(footprints)
-        this_date, this_name = parse_aster_date(img, footprint_data, args)
+        if args.datefield is None:
+            this_date, this_name = parse_aster_date(img, footprint_data, args)
+        else:
+            this_row = footprint_data[footprint_data['geometry'] == img]
+            this_name = this_row[args.imagename].values[0]
+            date_data = this_row[args.datefield].values[0]
+            yy, mm, dd = [int(i) for i in date_data.split('-')]
+            this_date = mmdd2dec(yy, mm, dd)
         candidates = s.query(img)
         candidates.remove(img)  # query returns itself
         overlaps = [img.intersection(c).area / img.area for c in candidates]

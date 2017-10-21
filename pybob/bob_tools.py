@@ -51,6 +51,26 @@ def mmdd2doy(year, month, day, string_out=True):
         return doy
 
 
+def mmdd2dec(year, month, day):
+    yearstart = dt.datetime(year, 1, 1).toordinal()
+    nextyearstart = dt.datetime(year+1, 1, 1).toordinal()
+    datestruct = dt.datetime(year, month, day)
+    datefrac = float(datestruct.toordinal() + 0.5 - yearstart) / (nextyearstart - yearstart)
+    return year + datefrac
+
+
+def doy2dec(year, doy):
+    pass
+
+
+def dec2mmdd(decdate):
+    pass
+
+
+def dec2doy(decdate):
+    pass
+
+
 def parse_lsat_scene(scenename, string_out=True):
     sensor = scenename[0:3]
     path = int(scenename[3:6])

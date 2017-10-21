@@ -216,7 +216,8 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         slaves[-1].shift(dx, dy)  # shift in x,y
         # print tot_dx, tot_dy
         # no idea why slaves[-1].img += dz doesn't work, but the below seems to.
-        slaves[-1] = slaves[-1].copy(new_raster=slaves[-1].img+dz)  # shift in z
+        zupdate = np.ma.array(slaves[-1].img.data + dz, mask=slaves[-1].img.mask)  # shift in z
+        slaves[-1] = slaves[-1].copy(new_raster=zupdate)
 
         # print np.nanmean(slaves[-1].img)
 

@@ -8,6 +8,7 @@ import osr
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pybob.bob_tools import standard_landsat
 from scipy.interpolate import griddata
+from scipy.spatial import ConvexHull
 
 
 def get_file_info(in_filestring):
@@ -330,27 +331,33 @@ class GeoImg(object):
         else:
             goodinds = np.where(np.logical_not(testband == nodata))
 
-        # get the corners:
-        # upper left is the minimum row (and min. column in min. row)
-        uli = goodinds[0][np.argmin(goodinds[0])]  # goodinds[0] is row, [1] is column
-        ulj = np.min(goodinds[1][goodinds[0] == uli])
+        goodpoints = np.vstack((goodinds[0], goodinds[1])).transpose()
+        hull = ConvexHull(goodpoints)
 
-        # upper right is the maximum column (and max. row in max. column)
-        urj = goodinds[1][np.argmax(goodinds[1])]
-        if self.is_rotated():
-            uri = np.max(goodinds[0][goodinds[1] == urj])
-        else:
-            uri = uli
+        iverts = goodpoints[hull.vertices, 0]
+        jverts = goodpoints[hull.vertices, 1]
+        corners = zip(iverts, jverts)
+#        # get the corners:
+#        # upper left is the minimum row (and min. column in min. row)
+#        uli = goodinds[0][np.argmin(goodinds[0])]  # goodinds[0] is row, [1] is column
+#        ulj = np.min(goodinds[1][goodinds[0] == uli])
 
-        # lower right is the maximum row (and max. column in max. row)
-        lri = goodinds[0][np.argmax(goodinds[0])]
-        lrj = np.max(goodinds[1][goodinds[0] == lri])
+#        # upper right is the maximum column (and max. row in max. column)
+#        urj = goodinds[1][np.argmax(goodinds[1])]
+#        if self.is_rotated():
+#            uri = np.max(goodinds[0][goodinds[1] == urj])
+#        else:
+#            uri = uli
 
-        # lower left is the minimum column (and max. row in min. column)
-        llj = goodinds[1][np.argmin(goodinds[1])]
-        lli = np.max(goodinds[0][goodinds[1] == llj])
+#        # lower right is the maximum row (and max. column in max. row)
+#        lri = goodinds[0][np.argmax(goodinds[0])]
+#        lrj = np.max(goodinds[1][goodinds[0] == lri])
 
-        corners = zip([uli, uri, lri, lli], [ulj, urj, lrj, llj])
+#        # lower left is the minimum column (and max. row in min. column)
+#        llj = goodinds[1][np.argmin(goodinds[1])]
+#        lli = np.max(goodinds[0][goodinds[1] == llj])
+
+#        corners = zip([uli, uri, lri, lli], [ulj, urj, lrj, llj])
 
         if mode == 'xy':
             xycorners = [self.ij2xy(corner) for corner in corners]
@@ -489,3 +496,11 @@ class GeoImg(object):
 
         interpData = griddata((X, Y), tmpImg, xy)
         return interpData
+
+    def raster_points(self, pts, neighbors=0):
+        rpts = []
+        for pt in pts:
+            ij = self.xy2ij(pt)
+            ij = (int(ij[0]+0.5), int(ij[1]+0.5))
+            rpts.append(np.nanmean(self.img[ij[0]-neighbors:ij[0]+neighbors+1, ij[1]-neighbors:ij[1]+neighbors+1]))
+        return rpts

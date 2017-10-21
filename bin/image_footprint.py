@@ -2,6 +2,7 @@
 import argparse
 import os
 import fiona
+from fiona import crs
 from shapely.geometry import mapping, LineString
 from shapely.geometry.polygon import Polygon
 from pybob.GeoImg import GeoImg
@@ -35,7 +36,7 @@ def main():
     img1 = GeoImg(args.image[0])
     schema = {'properties': [('filename', 'str'), ('path', 'str')], 'geometry': 'Polygon'}
 
-    outshape = fiona.open(args.outshape, 'w', crs=fiona.crs.from_epsg(img1.epsg),
+    outshape = fiona.open(args.outshape, 'w', crs=crs.from_epsg(img1.epsg),
                           driver='ESRI Shapefile', schema=schema)
 
     for img in args.image:
