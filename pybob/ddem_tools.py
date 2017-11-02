@@ -250,7 +250,7 @@ def normalize_glacier_elevations(DEM, glacshapes, burn_handle=None):
     ind_glac_mask, raw_inds = it.rasterize_polygons(DEM, glacshapes, burn_handle)
     normed_els = DEM.copy().img
 
-    ind_glac_vals = clean_glacier_indices(raw_inds, DEM)
+    ind_glac_vals = clean_glacier_indices(DEM, ind_glac_mask, raw_inds)
 
     for i in ind_glac_vals:
         glac_inds = np.where(ind_glac_mask == i)
@@ -310,8 +310,8 @@ def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=50):
 
         min_el = np.nanmin(dem_data) - (np.nanmin(dem_data) % bin_width)
         max_el = np.nanmax(dem_data) + (bin_width - (np.nanmax(dem_data) % bin_width))
-        bins = np.arange(min_el, max_el, bin_width)
-        aads, _ = np.histogram(dem_data, bins=bins)
+        bins = np.arange(min_el, max_el+1, bin_width)
+        aads, _ = np.histogram(dem_data, bins=bins, range=(min_el, max_el))
         aads = aads * np.abs(DEM.dx) * np.abs(DEM.dy)
     else:
         bins = []
@@ -322,7 +322,7 @@ def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=50):
             min_el = np.nanmin(dem_data) - (np.nanmin(dem_data) % bin_width)
             max_el = np.nanmax(dem_data) + (bin_width - (np.nanmax(dem_data) % bin_width))
             thisbin = np.arange(min_el, max_el, bin_width)
-            thisaad, _ = np.histogram(dem_data, bins=thisbin)
+            thisaad, _ = np.histogram(dem_data, bins=thisbin, range=(min_el, max_el))
 
             bins.append(thisbin)
             aads.append(thisaad * np.abs(DEM.dx) * np.abs(DEM.dy))  # make it an area!

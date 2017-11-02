@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='pybob',
-      version='0.13',
+      version='0.13-1',
       description='Collection of geospatial and other tools I find useful.',
       url='http://github.com/iamdonovan/pybob',
       author='Bob McNabb',
