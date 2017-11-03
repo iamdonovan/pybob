@@ -249,6 +249,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         slaveoutfile = 'slave_adj.tif'
     outslave = slaveDEM.reproject(masterDEM)
     outslave.shift(tot_dx, tot_dy)
+    outslave.img = outslave.img + tot_dz
     outslave.write(slaveoutfile, out_folder=outdir)
 
     if mfilename is not None:
