@@ -1,6 +1,6 @@
 from __future__ import print_function
 import os
-import subprocess
+import errno
 import gdal
 import numpy as np
 import matplotlib.pylab as plt
@@ -130,8 +130,14 @@ def get_geoimg(indata):
 
 def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.'):
     # if the output directory does not exist, create it.
-    subprocess.call(["mkdir", "-p", outdir])
     outdir = os.path.abspath(outdir)
+    try:
+        os.makedirs(outdir)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(outdir):
+            pass
+        else:
+            raise
     # make a file to save the coregistration parameters to.
     paramf = open(outdir + os.path.sep + 'coreg_params.txt', 'w')
     # create the output pdf
