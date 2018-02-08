@@ -302,7 +302,7 @@ def calculate_volume_changes(dDEM, glacier_shapes, burn_handle=None, ind_glac_va
 
 
 # create an area-altitude distribution for a DEM and a glacier shapefile
-def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=50):
+def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=None):
     if type(DEM) is not GeoImg:
         raise TypeError('DEM must be a GeoImg')
     if glacier_inds is None:
@@ -319,9 +319,14 @@ def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=50):
 
         for i in glacier_inds:
             dem_data = DEM.img[glacier_shapes == i]
-            min_el = np.nanmin(dem_data) - (np.nanmin(dem_data) % bin_width)
-            max_el = np.nanmax(dem_data) + (bin_width - (np.nanmax(dem_data) % bin_width))
-            thisbin = np.arange(min_el, max_el, bin_width)
+            if bin_width is None:
+                z_range = np.nanmax(dem_data) - np.nanmin(dem_data)
+                this_bin_width = min(50, int(z_range / 10))
+            else:
+                this_bin_width = bin_width
+            min_el = np.nanmin(dem_data) - (np.nanmin(dem_data) % this_bin_width)
+            max_el = np.nanmax(dem_data) + (this_bin_width - (np.nanmax(dem_data) % this_bin_width))
+            thisbin = np.arange(min_el, max_el+1, this_bin_width)
             thisaad, _ = np.histogram(dem_data, bins=thisbin, range=(min_el, max_el))
 
             bins.append(thisbin)

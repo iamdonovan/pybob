@@ -65,13 +65,16 @@ class GeoImg(object):
             if (datestr is not None):
                 self.imagedatetime = dt.datetime.strptime(datestr, datefmt)
             elif (self.filename[0] == 'L'):  # if it looks like a Landsat file
-                self.filename = standard_landsat(self.filename)
-                self.sensor = self.filename[0:3]
-                self.path = int(self.filename[3:6])
-                self.row = int(self.filename[6:9])
-                self.year = int(self.filename[9:13])
-                self.doy = int(self.filename[13:16])
-                self.imagedatetime = dt.date.fromordinal(dt.date(self.year-1, 12, 31).toordinal()+self.doy)
+                try:
+                    self.filename = standard_landsat(self.filename)
+                    self.sensor = self.filename[0:3]
+                    self.path = int(self.filename[3:6])
+                    self.row = int(self.filename[6:9])
+                    self.year = int(self.filename[9:13])
+                    self.doy = int(self.filename[13:16])
+                    self.imagedatetime = dt.date.fromordinal(dt.date(self.year-1, 12, 31).toordinal()+self.doy)
+                except:
+                    print "This doesn't actually look like a Landsat file."
             else:
                 self.datetime = None
         else:
@@ -242,7 +245,7 @@ class GeoImg(object):
 
         return np.meshgrid(xx[:-1], yy[:-1])  # drop the last element
 
-    def reproject(self, dst_raster, driver='MEM', filename=''):
+    def reproject(self, dst_raster, driver='MEM', filename='', method=gdal.GRA_Bilinear):
 
         drv = gdal.GetDriverByName(driver)
         if driver == 'MEM':
@@ -260,7 +263,7 @@ class GeoImg(object):
             dest.GetRasterBand(1).SetNoDataValue(self.NDV)
             dest.GetRasterBand(1).Fill(dst_raster.NDV)
 
-        gdal.ReprojectImage(self.gd, dest, self.proj, dst_raster.proj, gdal.GRA_Bilinear)
+        gdal.ReprojectImage(self.gd, dest, self.proj, dst_raster.proj, method)
 
         out = GeoImg(dest)
         # out.img[out.img == self.NDV] = np.nan
@@ -497,10 +500,15 @@ class GeoImg(object):
         interpData = griddata((X, Y), tmpImg, xy)
         return interpData
 
-    def raster_points(self, pts, neighbors=0):
+    def raster_points(self, pts, neighbors=0, mode='mean'):
         rpts = []
         for pt in pts:
             ij = self.xy2ij(pt)
             ij = (int(ij[0]+0.5), int(ij[1]+0.5))
-            rpts.append(np.nanmean(self.img[ij[0]-neighbors:ij[0]+neighbors+1, ij[1]-neighbors:ij[1]+neighbors+1]))
-        return rpts
+            if mode == 'mean':
+                rpts.append(np.nanmean(self.img[ij[0]-neighbors:ij[0]+neighbors+1,
+                                                ij[1]-neighbors:ij[1]+neighbors+1]))
+            elif mode == 'median':
+                rpts.append(np.nanmedian(self.img[ij[0]-neighbors:ij[0]+neighbors+1,
+                                                  ij[1]-neighbors:ij[1]+neighbors+1]))
+        return np.array(rpts)

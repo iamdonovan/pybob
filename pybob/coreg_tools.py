@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import subprocess
 import gdal
@@ -18,14 +19,14 @@ def false_hillshade(dH, title, pp):
     im1.set_clim(-20, 20)
     im1.set_cmap('Greys')
     fig.suptitle(title, fontsize=14)
-    numwid = max([len('%.1f m' % np.nanmean(dH.img)),
-                 len('%.1f m' % np.nanmedian(dH.img)), len('%.1f m' % np.nanstd(dH.img))])
-    plt.annotate('MEAN:'.ljust(8) + ('%.1f m' % np.nanmean(dH.img)).rjust(numwid), xy=(0.65, 0.89),
+    numwid = max([len('{:.1f} m'.format(np.nanmean(dH.img))),
+                  len('{:.1f} m'.format(np.nanmedian(dH.img))), len('{:.1f} m'.format(np.nanstd(dH.img)))])
+    plt.annotate('MEAN:'.ljust(8) + ('{:.1f} m'.format(np.nanmean(dH.img))).rjust(numwid), xy=(0.65, 0.89),
                  xycoords='axes fraction', fontsize=12, fontweight='bold', color='red', family='monospace')
-    plt.annotate('MEDIAN:'.ljust(8) + ('%.1f m' % np.nanmedian(dH.img)).rjust(numwid),
+    plt.annotate('MEDIAN:'.ljust(8) + ('{:.1f} m'.format(np.nanmedian(dH.img))).rjust(numwid),
                  xy=(0.65, 0.80), xycoords='axes fraction', fontsize=12, fontweight='bold',
                  color='red', family='monospace')
-    plt.annotate('STD:'.ljust(8) + ('%.1f m' % np.nanstd(dH.img)).rjust(numwid), xy=(0.65, 0.71),
+    plt.annotate('STD:'.ljust(8) + ('{:.1f} m'.format(np.nanstd(dH.img))).rjust(numwid), xy=(0.65, 0.71),
                  xycoords='axes fraction', fontsize=12, fontweight='bold', color='red', family='monospace')
 
     divider = make_axes_locatable(ax)
@@ -82,8 +83,8 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
 
     p0 = [-1, 1, -1]
     p1, success = optimize.leastsq(errfun, p0[:], args=(xdata, ydata))
-#    print success
-#    print p1
+    # print success
+    # print p1
     # convert to shift parameters in cartesian coordinates
     xadj = p1[0] * np.sin(np.radians(p1[1]))
     yadj = p1[0] * np.cos(np.radians(p1[1]))
@@ -106,12 +107,12 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     plt.axis([0, 360, -200, 200])
     plt.xlabel('Aspect [degrees]')
     plt.ylabel('dH / tan(slope)')
-    numwidth = max([len(' %.1f m' % xadj), len(' %.1f m' % yadj), len(' %.1f m' % zadj)])
-    plt.text(20, -125, '$\Delta$x: ' + ('%.1f m' % xadj).rjust(numwidth),
+    numwidth = max([len('{:.1f} m'.format(xadj)), len('{:.1f} m'.format(yadj)), len('{:.1f} m'.format(zadj))])
+    plt.text(20, -125, '$\Delta$x: ' + ('{:.1f} m'.format(xadj)).rjust(numwidth),
              fontsize=12, fontweight='bold', color='red', family='monospace')
-    plt.text(20, -150, '$\Delta$y: ' + ('%.1f m' % yadj).rjust(numwidth),
+    plt.text(20, -150, '$\Delta$y: ' + ('{:.1f} m'.format(yadj)).rjust(numwidth),
              fontsize=12, fontweight='bold', color='red', family='monospace')
-    plt.text(20, -175, '$\Delta$z: ' + ('%.1f m' % zadj).rjust(numwidth),
+    plt.text(20, -175, '$\Delta$z: ' + ('{:.1f} m'.format(zadj)).rjust(numwidth),
              fontsize=12, fontweight='bold', color='red', family='monospace')
     pp.savefig(fig, rasterized=True)
 
@@ -131,7 +132,8 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     # if the output directory does not exist, create it.
     subprocess.call(["mkdir", "-p", outdir])
     outdir = os.path.abspath(outdir)
-
+    # make a file to save the coregistration parameters to.
+    paramf = open(outdir + os.path.sep + 'coreg_params.txt', 'w')
     # create the output pdf
     pp = PdfPages(outdir + os.path.sep + 'CoRegistration_Results.pdf')
 
@@ -153,26 +155,24 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     # get the mask set up
     stable_mask = create_stable_mask(masterDEM, glaciermask, landmask)
 
-    masterDEM.write('tmp_master.tif', out_folder=outdir)
-    masterDEM.mask(stable_mask)
+    # masterDEM.write('tmp_master.tif', out_folder=outdir)
+    # masterDEM.mask(stable_mask)
 
     # create slope, aspect rasters
-    # slope, aspect = calcSlopeAspect(masterDEM.img, masterDEM.dx)
-    callstr = ["gdaldem", "slope", outdir + os.path.sep + 'tmp_master.tif', outdir + os.path.sep + "tmp_slope.tif"]
-    slopecall = subprocess.Popen(' '.join(callstr), shell=True,
-                                 stdout=open(os.devnull, 'wb'), stderr=subprocess.PIPE).stderr.read()
-    print slopecall
-    slpin = GeoImg('tmp_slope.tif', in_dir=outdir)
-    slpin = slpin.reproject(slaveDEM)  # re-calculate and re-project on each step?
-    slope = slpin.img
+    # print('calling gdal within python!')
+    slope_ = gdal.DEMProcessing('', masterDEM.gd, 'slope', format='MEM')
+    slope_geo = GeoImg(slope_)
+    slope_geo.write('tmp_slope.tif', out_folder=outdir)
+    slope_geo = slope_geo.reproject(slaveDEM)
+    slope = slope_geo.img
 
-    callstr = ["gdaldem", "aspect", outdir + os.path.sep + 'tmp_master.tif', outdir + os.path.sep + "tmp_aspect.tif"]
-    aspectcall = subprocess.Popen(' '.join(callstr), shell=True,
-                                  stdout=open(os.devnull, 'wb'), stderr=subprocess.PIPE).stderr.read()
-    print aspectcall
-    aspin = GeoImg('tmp_aspect.tif', in_dir=outdir)
-    aspin = aspin.reproject(slaveDEM)
-    aspect = aspin.img
+    aspect_ = gdal.DEMProcessing('', masterDEM.gd, 'aspect', format='MEM')
+    aspect_geo = GeoImg(aspect_)
+    aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
+    aspect_geo = aspect_geo.reproject(slaveDEM)
+    aspect = aspect_geo.img
+
+    masterDEM.mask(stable_mask)
 
     # while loop!
     mythresh = np.float64(100)  # float64 really necessary?
@@ -191,23 +191,24 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         if mycount != 0:
             slaves.append(slaves[-1].reproject(masterDEM))
             slaves[-1].mask(stable_mask)
-            mytitle = "DEM difference: After Iteration %s" % mycount
+            mytitle = "DEM difference: After Iteration {}".format(mycount)
         mycount += 1
-        print "Running iteration #%s" % mycount
-
+        print("Running iteration #{}".format(mycount))
+        print("Running iteration #{}".format(mycount), file=paramf)
         dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, slaves[-1])
         false_hillshade(dH, mytitle, pp)
 
         mythresh = 100 * (mystd-np.nanstd(dH.img))/mystd
         mystd = np.nanstd(dH.img)
 
-        mytitle2 = "Co-registration: Iteration %s" % mycount
+        mytitle2 = "Co-registration: Iteration {}".format(mycount)
         dx, dy, dz = coreg_fitting(xdata, ydata, sdata, mytitle2, pp)
         tot_dx += dx
         tot_dy += dy
         tot_dz += dz
         magnthresh = np.sqrt(np.square(dx)+np.square(dy)+np.square(dz))
-        print tot_dx, tot_dy, tot_dz
+        print(tot_dx, tot_dy, tot_dz)
+        print(tot_dx, tot_dy, tot_dz, file=paramf)
         # print np.nanmean(slaves[-1].img)
 
         # print slaves[-1].xmin, slaves[-1].ymin
@@ -233,7 +234,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             sdata = None
         else:
             dHfinal = dH
-            mytitle = "DEM difference: After Iteration %s" % mycount
+            mytitle = "DEM difference: After Iteration {}".format(mycount)
             false_hillshade(dH, mytitle, pp)
             # slaves.pop(-1)
 
@@ -259,6 +260,8 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     masterDEM.write(mastoutfile, out_folder=outdir)
 
     pp.close()
-    print "Fin."
+    print("Fin.")
+    print("Fin.", file=paramf)
+    paramf.close()
 
     return masterDEM, slaves[-1]
