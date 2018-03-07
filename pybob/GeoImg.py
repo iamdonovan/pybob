@@ -512,3 +512,12 @@ class GeoImg(object):
                 rpts.append(np.nanmedian(self.img[ij[0]-neighbors:ij[0]+neighbors+1,
                                                   ij[1]-neighbors:ij[1]+neighbors+1]))
         return np.array(rpts)
+
+    def std(self):
+        return np.nanstd(self.img)
+
+    def mean(self):
+        return np.nanmean(self.img)
+
+    def median(self):
+        return np.nanmedian(self.img)

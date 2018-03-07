@@ -8,7 +8,18 @@ import scipy.optimize as optimize
 from matplotlib.backends.backend_pdf import PdfPages
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pybob.GeoImg import GeoImg
+from pybob.ICESat import ICESat
 from pybob.image_tools import create_mask_from_shapefile
+
+
+def get_slope(geoimg):
+    slope_ = gdal.DEMProcessing('', geoimg.gd, 'slope', format='MEM')
+    return GeoImg(slope_)
+
+
+def get_aspect(geoimg):
+    aspect_ = gdal.DEMProcessing('', geoimg.gd, 'aspect', format='MEM')
+    return GeoImg(aspect_)
 
 
 def false_hillshade(dH, title, pp):
@@ -21,12 +32,12 @@ def false_hillshade(dH, title, pp):
     fig.suptitle(title, fontsize=14)
     numwid = max([len('{:.1f} m'.format(np.nanmean(dH.img))),
                   len('{:.1f} m'.format(np.nanmedian(dH.img))), len('{:.1f} m'.format(np.nanstd(dH.img)))])
-    plt.annotate('MEAN:'.ljust(8) + ('{:.1f} m'.format(np.nanmean(dH.img))).rjust(numwid), xy=(0.65, 0.89),
+    plt.annotate('MEAN:'.ljust(8) + ('{:.1f} m'.format(np.nanmean(dH.img))).rjust(numwid), xy=(0.65, 0.95),
                  xycoords='axes fraction', fontsize=12, fontweight='bold', color='red', family='monospace')
     plt.annotate('MEDIAN:'.ljust(8) + ('{:.1f} m'.format(np.nanmedian(dH.img))).rjust(numwid),
-                 xy=(0.65, 0.80), xycoords='axes fraction', fontsize=12, fontweight='bold',
+                 xy=(0.65, 0.90), xycoords='axes fraction', fontsize=12, fontweight='bold',
                  color='red', family='monospace')
-    plt.annotate('STD:'.ljust(8) + ('{:.1f} m'.format(np.nanstd(dH.img))).rjust(numwid), xy=(0.65, 0.71),
+    plt.annotate('STD:'.ljust(8) + ('{:.1f} m'.format(np.nanstd(dH.img))).rjust(numwid), xy=(0.65, 0.85),
                  xycoords='axes fraction', fontsize=12, fontweight='bold', color='red', family='monospace')
 
     divider = make_axes_locatable(ax)
@@ -34,7 +45,7 @@ def false_hillshade(dH, title, pp):
     plt.colorbar(im1, cax=cax)
 
     plt.tight_layout()
-    pp.savefig(fig)
+    pp.savefig(fig, bbox_inches='tight', dpi=200)
     return
 
 
@@ -55,18 +66,43 @@ def create_stable_mask(img, mask1, mask2):
 
 
 def preprocess(stable_mask, slope, aspect, master, slave):
-    stan = np.tan(np.radians(slope)).astype(np.float32)
-    # create a new raster with all the same properties as the masterDEM
-    # but replace the raster data with the dH data.
-    dH = master.copy(new_raster=(master.img-slave.img).astype(np.float32))
-    dH.img[stable_mask] = np.nan
 
-    dHtan = dH.img / stan
-    mykeep = ((np.absolute(dH.img) < 60.0) & np.isfinite(dH.img) & (slope > 7.0) & (dH.img != 0.0) & (aspect >= 0))
-    dH.img[np.invert(mykeep)] = np.nan
-    xdata = aspect[mykeep]
-    ydata = dHtan[mykeep]
-    sdata = stan[mykeep]
+    if isinstance(master, GeoImg):
+        stan = np.tan(np.radians(slope)).astype(np.float32)
+
+        dH = master.copy(new_raster=(master.img-slave.img))
+        dH.img[stable_mask] = np.nan
+
+        dHtan = dH.img / stan
+        mykeep = ((np.absolute(dH.img) < 60.0) & np.isfinite(dH.img) &
+                  (slope > 7.0) & (dH.img != 0.0) & (aspect >= 0))
+        dH.img[np.invert(mykeep)] = np.nan
+        xdata = aspect[mykeep]
+        ydata = dHtan[mykeep]
+        sdata = stan[mykeep]
+
+    elif isinstance(master, ICESat):
+        slave_pts = slave.raster_points(master.xy)
+        dH = master.elev - slave_pts
+        
+        slope_pts = slope.raster_points(master.xy)
+        stan = np.tan(np.radians(slope_pts))
+        
+        aspect_pts = aspect.raster_points(master.xy)
+        smask = stable_mask.raster_points(master.xy) > 0
+        
+        dH[smask] = np.nan
+
+        dHtan = dH / stan
+
+        mykeep = ((np.absolute(dH) < 60.0) & np.isfinite(dH) &
+                  (slope_pts > 7.0) & (dH != 0.0) & (aspect_pts >= 0))
+        
+        dH[np.invert(mykeep)] = np.nan
+        xdata = aspect_pts[mykeep]
+        ydata = dHtan[mykeep]
+        sdata = stan[mykeep]
+
 
     return dH, xdata, ydata, sdata
 
@@ -100,21 +136,24 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
 
     fig = plt.figure(figsize=(7, 5), dpi=600)
     fig.suptitle(title, fontsize=14)
-    plt.plot(xdata[mysamp], ydata[mysamp], '.', ms=0.5, color='0.5', rasterized=True)
+    plt.plot(xdata[mysamp], ydata[mysamp], '^', ms=0.5, color='0.5', rasterized=True, fillstyle='full')
     plt.plot(xp, np.zeros(xp.size), 'k', ms=3)
     plt.plot(xp, yp, 'r-', ms=2)
 
-    plt.axis([0, 360, -200, 200])
+    plt.xlim(0, 360)
+    ymin, ymax = plt.ylim(np.nanmean(ydata[mysamp])-2*np.nanstd(ydata[mysamp]),
+                          np.nanmean(ydata[mysamp])+2*np.nanstd(ydata[mysamp]))
+    # plt.axis([0, 360, -200, 200])
     plt.xlabel('Aspect [degrees]')
     plt.ylabel('dH / tan(slope)')
     numwidth = max([len('{:.1f} m'.format(xadj)), len('{:.1f} m'.format(yadj)), len('{:.1f} m'.format(zadj))])
-    plt.text(20, -125, '$\Delta$x: ' + ('{:.1f} m'.format(xadj)).rjust(numwidth),
-             fontsize=12, fontweight='bold', color='red', family='monospace')
-    plt.text(20, -150, '$\Delta$y: ' + ('{:.1f} m'.format(yadj)).rjust(numwidth),
-             fontsize=12, fontweight='bold', color='red', family='monospace')
-    plt.text(20, -175, '$\Delta$z: ' + ('{:.1f} m'.format(zadj)).rjust(numwidth),
-             fontsize=12, fontweight='bold', color='red', family='monospace')
-    pp.savefig(fig, rasterized=True)
+    plt.text(0.05, 0.05, '$\Delta$x: ' + ('{:.1f} m'.format(xadj)).rjust(numwidth),
+             fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
+    plt.text(0.05, 0.1, '$\Delta$y: ' + ('{:.1f} m'.format(yadj)).rjust(numwidth),
+             fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
+    plt.text(0.05, 0.15, '$\Delta$z: ' + ('{:.1f} m'.format(zadj)).rjust(numwidth),
+             fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
+    pp.savefig(fig, bbox_inches='tight', dpi=200)
 
     return xadj, yadj, zadj
 
@@ -128,7 +167,29 @@ def get_geoimg(indata):
         raise TypeError('input data must be a string pointing to a gdal dataset, or a GeoImg object.')
 
 
-def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.'):
+def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.', pts=False):
+    """
+    Iteratively co-register elevation data, based on routines described in Nuth and Kaeaeb, 2011.
+
+    Parameters
+    ----------
+    masterDEM : string or GeoImg
+        Path to filename or GeoImg dataset representing "master" DEM.
+    slaveDEM : string or GeoImg
+        Path to filename or GeoImg dataset representing "slave" DEM.
+    glaciermask : string, optional
+        Path to shapefile representing points to exclude from co-registration
+        consideration (i.e., glaciers).
+    landmask : string, optional
+        Path to shapefile representing points to include in co-registration
+        consideration (i.e., stable ground/land).
+    outdir : string, optional
+        Location to save co-registration outputs.
+    pts : bool, optional
+        If True, program assumes that masterDEM represents point data (i.e., ICESat),
+        as opposed to raster data. Slope/aspect are then calculated from slaveDEM.
+        masterDEM should be a string representing an HDF5 file continaing ICESat data.
+    """
     # if the output directory does not exist, create it.
     outdir = os.path.abspath(outdir)
     try:
@@ -153,34 +214,35 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     else:
         sfilename = slaveDEM.filename
 
-    masterDEM = get_geoimg(masterDEM)
     slaveDEM = get_geoimg(slaveDEM)
+    # if we're dealing with ICESat/pt data, change how we load masterDEM data
+    if pts:
+        masterDEM = ICESat(masterDEM)
+        masterDEM.project('epsg:{}'.format(slaveDEM.epsg))
+        slope_geo = get_slope(slaveDEM)
+        aspect_geo = get_aspect(slaveDEM)
 
-    masterDEM = masterDEM.reproject(slaveDEM)  # need to resample masterDEM to cell size of slave.
+        slope_geo.write('tmp_slope.tif', out_folder=outdir)
+        aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
 
-    # get the mask set up
-    stable_mask = create_stable_mask(masterDEM, glaciermask, landmask)
+        smask = create_stable_mask(slaveDEM, glaciermask, landmask)
+        slaveDEM.mask(smask)
+        stable_mask = slaveDEM.copy(new_raster=smask)  # make the mask a geoimg
+    else:
+        masterDEM = get_geoimg(masterDEM)
+        masterDEM = masterDEM.reproject(slaveDEM)  # need to resample masterDEM to cell size of slave.
 
-    # masterDEM.write('tmp_master.tif', out_folder=outdir)
-    # masterDEM.mask(stable_mask)
+        stable_mask = create_stable_mask(masterDEM, glaciermask, landmask)
 
-    # create slope, aspect rasters
-    # print('calling gdal within python!')
-    slope_ = gdal.DEMProcessing('', masterDEM.gd, 'slope', format='MEM')
-    slope_geo = GeoImg(slope_)
-    slope_geo.write('tmp_slope.tif', out_folder=outdir)
-    slope_geo = slope_geo.reproject(slaveDEM)
+        slope_geo = get_slope(masterDEM)
+        aspect_geo = get_slope(masterDEM)
+        slope_geo.write('tmp_slope.tif', out_folder=outdir)
+        aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
+        masterDEM.mask(stable_mask)
+
     slope = slope_geo.img
-
-    aspect_ = gdal.DEMProcessing('', masterDEM.gd, 'aspect', format='MEM')
-    aspect_geo = GeoImg(aspect_)
-    aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
-    aspect_geo = aspect_geo.reproject(slaveDEM)
     aspect = aspect_geo.img
 
-    masterDEM.mask(stable_mask)
-
-    # while loop!
     mythresh = np.float64(100)  # float64 really necessary?
     mystd = np.float64(100)
     mycount = 0
@@ -189,23 +251,34 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     tot_dz = np.float64(0)
     magnthresh = 100
     mytitle = 'DEM difference: pre-coregistration'
-    slaves = []
-    slaves.append(slaveDEM.reproject(masterDEM))
-    slaves[-1].mask(stable_mask)
+    if pts:
+        this_slave = slaveDEM
+        this_slave.mask(stable_mask.img)
+    else:
+        this_slave = slaveDEM.reproject(masterDEM)
+        this_slave.mask(stable_mask)
 
     while mythresh > 2 and magnthresh > 1:
         if mycount != 0:
-            slaves.append(slaves[-1].reproject(masterDEM))
-            slaves[-1].mask(stable_mask)
+            # slaves.append(slaves[-1].reproject(masterDEM))
+            # slaves[-1].mask(stable_mask)
             mytitle = "DEM difference: After Iteration {}".format(mycount)
         mycount += 1
         print("Running iteration #{}".format(mycount))
         print("Running iteration #{}".format(mycount), file=paramf)
-        dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, slaves[-1])
-        false_hillshade(dH, mytitle, pp)
+        
+        # if we don't have two DEMs, showing the false hillshade doesn't work.
+        if not pts:
+            dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, this_slave)
+            false_hillshade(dH, mytitle, pp)
+            dH_img = dH.img
+        else:
+            dH, xdata, ydata, sdata = preprocess(stable_mask, slope_geo, aspect_geo, masterDEM, this_slave)
+            dH_img = dH
 
-        mythresh = 100 * (mystd-np.nanstd(dH.img))/mystd
-        mystd = np.nanstd(dH.img)
+        # calculate threshold, standard deviation of dH
+        mythresh = 100 * (mystd-np.nanstd(dH_img))/mystd
+        mystd = np.nanstd(dH_img)
 
         mytitle2 = "Co-registration: Iteration {}".format(mycount)
         dx, dy, dz = coreg_fitting(xdata, ydata, sdata, mytitle2, pp)
@@ -220,15 +293,21 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         # print slaves[-1].xmin, slaves[-1].ymin
 
         # shift most recent slave DEM
-        slaves[-1].shift(dx, dy)  # shift in x,y
+        this_slave.shift(dx, dy)  # shift in x,y
         # print tot_dx, tot_dy
         # no idea why slaves[-1].img += dz doesn't work, but the below seems to.
-        zupdate = np.ma.array(slaves[-1].img.data + dz, mask=slaves[-1].img.mask)  # shift in z
-        slaves[-1] = slaves[-1].copy(new_raster=zupdate)
+        zupdate = np.ma.array(this_slave.img.data + dz, mask=this_slave.img.mask)  # shift in z
+        this_slave = this_slave.copy(new_raster=zupdate)
+        if pts:
+            this_slave.mask(stable_mask.img)
+            slope_geo.shift(dx, dy)
+            aspect_geo.shift(dx, dy)
+            stable_mask.shift(dx, dy)
+        else:
+            this_slave.mask(stable_mask)
+            this_slave = this_slave.reproject(masterDEM)
 
-        # print np.nanmean(slaves[-1].img)
 
-        slaves[-1] = slaves[-1].reproject(masterDEM)
         # slaves[-1].display()
         if mythresh > 2 and magnthresh > 1:
             dH = None
@@ -239,35 +318,45 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             ydata = None
             sdata = None
         else:
-            dHfinal = dH
-            mytitle = "DEM difference: After Iteration {}".format(mycount)
-            false_hillshade(dH, mytitle, pp)
+            if not pts:
+                # dHfinal = dH
+                mytitle = "DEM difference: After Iteration {}".format(mycount)
+                false_hillshade(dH, mytitle, pp)
             # slaves.pop(-1)
 
     # create new raster with dH sample used for co-registration as the band
     # dHSample = dH.copy(new_raster=dHpost_sample)
     # dHSample.write(outdir + os.path.sep + 'dHpost_sample.tif') # have to fill these in!
     # save full dH output
-    dHfinal.write('dHpost.tif', out_folder=outdir)
+    # dHfinal.write('dHpost.tif', out_folder=outdir)
     # save adjusted slave dem
     if sfilename is not None:
         slaveoutfile = '.'.join(sfilename.split('.')[0:-1]) + '_adj.tif'
     else:
         slaveoutfile = 'slave_adj.tif'
-    outslave = slaveDEM.reproject(masterDEM)
+    
+    if pts:
+        outslave = slaveDEM.copy()
+    else:        
+        outslave = slaveDEM.reproject(masterDEM)
     outslave.shift(tot_dx, tot_dy)
     outslave.img = outslave.img + tot_dz
     outslave.write(slaveoutfile, out_folder=outdir)
 
-    if mfilename is not None:
-        mastoutfile = '.'.join(mfilename.split('.')[0:-1]) + '_adj.tif'
-    else:
-        mastoutfile = 'master_adj.tif'
-    masterDEM.write(mastoutfile, out_folder=outdir)
+    if not pts:
+        if mfilename is not None:
+            mastoutfile = '.'.join(mfilename.split('.')[0:-1]) + '_adj.tif'
+        else:
+            mastoutfile = 'master_adj.tif'
+        masterDEM.write(mastoutfile, out_folder=outdir)
+
+    if pts:
+        slope_geo.write('tmp_slope.tif', out_folder=outdir)
+        aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
 
     pp.close()
     print("Fin.")
     print("Fin.", file=paramf)
     paramf.close()
 
-    return masterDEM, slaves[-1]
+    return masterDEM, this_slave

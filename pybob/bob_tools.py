@@ -7,6 +7,9 @@ from shapely.geometry import Point
 
 
 def standard_landsat(instring):
+    """Given a string of a landsat scenename, make a standard (pre-Collection) filename,
+        of the form LSSPPPRRRYYYYDDDXXX01.
+    """
     strsplit = instring.split('_')
     if len(strsplit) < 3:  # if we only have 1 (or fewer) underscores, it's already fine
         return strsplit[0]
@@ -36,6 +39,28 @@ def standard_landsat(instring):
 
 
 def doy2mmdd(year, doy, string_out=True, outform='%Y/%m/%d'):
+    """Return a string or a datetime object given a year and a day of year.
+
+    Parameters
+    ----------
+    year : int
+        Year of the input date, e.g., ``2018``.
+    doy : int
+        Day of the year of the input date, e.g., ``1`` for 1 Jan.
+    string_out : bool
+        Return a string (True) or a datetime object (False). Default is True.
+    outform : str
+        Format for string to return. Default is `%Y/%m/%d`, or 2018/01/01 for
+        1 January 2018.
+
+    Examples
+    --------
+    >>> bt.doy2mmdd(2018, 1, string_out=True)
+    `2018/01/01`
+
+    >>> bt.doy2mmdd(2018, 1, string_out=False)
+    datetime.datetime(2018, 1, 1, 0, 0)
+    """
     datestruct = dt.datetime(year, 1, 1) + dt.timedelta(doy-1)
     if string_out:
         return datestruct.strftime(outform)
