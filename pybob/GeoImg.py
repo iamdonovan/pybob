@@ -533,15 +533,20 @@ class GeoImg(object):
         for pt in pts:
             ij = self.xy2ij(pt)
             ij = (int(ij[0]+0.5), int(ij[1]+0.5))
-            if self.outside_image(ij):
+            if self.outside_image(ij, index=True):
                 rpts.append(np.nan)
-            x = xx[ij[1]-1:ij[1]+2]
-            y = yy[ij[0]-1:ij[0]+2]
-            z = self.img[ij[0]-1:ij[0]+2, ij[1]-1:ij[1]+2]
-            X, Y = np.meshgrid(x, y)
-            f = interp2d(X, Y, z, kind=mode)
-            rpts.append(f(pt[0], pt[1]))
-
+                continue
+            else:
+                # print("not outside!")
+                x = xx[ij[1]-1:ij[1]+2]
+                y = yy[ij[0]-1:ij[0]+2]
+                z = self.img[ij[0]-1:ij[0]+2, ij[1]-1:ij[1]+2]
+                X, Y = np.meshgrid(x, y)
+                try:
+                    zint = griddata((X.flatten(), Y.flatten()), z.flatten(), pt)
+                except:
+                    zint = np.nan
+                rpts.append(zint)
         return np.array(rpts)
 
     def outside_image(self, ij, index=True):
