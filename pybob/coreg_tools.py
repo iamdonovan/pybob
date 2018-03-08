@@ -96,7 +96,7 @@ def preprocess(stable_mask, slope, aspect, master, slave):
         dHtan = dH / stan
 
         mykeep = ((np.absolute(dH) < 60.0) & np.isfinite(dH) &
-                  (slope_pts > 7.0) & (dH != 0.0) & (aspect_pts >= 0))
+                  (slope_pts > 3.0) & (dH != 0.0) & (aspect_pts >= 0))
         
         dH[np.invert(mykeep)] = np.nan
         xdata = aspect_pts[mykeep]

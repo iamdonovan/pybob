@@ -7,7 +7,7 @@ import gdal
 import osr
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pybob.bob_tools import standard_landsat
-from scipy.interpolate import griddata
+from scipy.interpolate import griddata, interp2d
 from scipy.spatial import ConvexHull
 
 
@@ -231,7 +231,7 @@ class GeoImg(object):
         return GeoImg(newGdal)
 
     # return X,Y grids of coordinates for each pixel
-    def xy(self, ctype='corner'):
+    def xy(self, ctype='corner', grid=True):
         xx = np.linspace(self.xmin, self.xmax, self.npix_x+1)
 
         if self.dy < 0:
@@ -242,8 +242,10 @@ class GeoImg(object):
         if ctype == 'center':
             xx += self.dx / 2  # shift by half a pixel
             yy += self.dy / 2
-
-        return np.meshgrid(xx[:-1], yy[:-1])  # drop the last element
+        if grid:
+            return np.meshgrid(xx[:-1], yy[:-1])  # drop the last element
+        else:
+            return xx[:-1], yy[:-1]
 
     def reproject(self, dst_raster, driver='MEM', filename='', method=gdal.GRA_Bilinear):
 
@@ -460,7 +462,8 @@ class GeoImg(object):
 
     def mask(self, mask, mask_value=True):
         if mask_value is bool:
-            self.img = np.ma.masked_where(mask, self.img)
+            if mask_value:
+                self.img = np.ma.masked_where(mask, self.img)
         else:
             self.img = np.ma.masked_where(mask == mask_value, self.img)
 
@@ -500,20 +503,69 @@ class GeoImg(object):
         interpData = griddata((X, Y), tmpImg, xy)
         return interpData
 
-    def raster_points(self, pts, neighbors=0, mode='mean'):
+    def raster_points(self, pts, mode='linear'):
+        """Interpolate raster values at a given point, or sets of points.
+        
+        Parameters
+        ----------
+        
+        pts : array-like
+            Point(s) at which to interpolate raster value. If points fall outside
+            of image, value returned is nan.
+        mode : str, optional
+            One of 'linear', 'cubic', or 'quintic'. Determines what type of spline is
+            used to interpolate the raster value at each point. For more information, see 
+            scipy.interpolate.interp2d.
+            
+        Returns
+        -------
+        
+        rpts : array-like
+            Array of raster value(s) for the given points.
+        """
         rpts = []
+        # if we're given only one point, corresponding array
+        # should have a size of two. in which case, we wrap it in a list.
+        if np.array(pts).size == 2:
+            pts = [pts]
+
+        xx, yy = self.xy(ctype='center', grid=False)
         for pt in pts:
             ij = self.xy2ij(pt)
             ij = (int(ij[0]+0.5), int(ij[1]+0.5))
-            if mode == 'mean':
-                rpts.append(np.nanmean(self.img[ij[0]-neighbors:ij[0]+neighbors+1,
-                                                ij[1]-neighbors:ij[1]+neighbors+1]))
-            elif mode == 'median':
-                rpts.append(np.nanmedian(self.img[ij[0]-neighbors:ij[0]+neighbors+1,
-                                                  ij[1]-neighbors:ij[1]+neighbors+1]))
+            if self.outside_image(ij):
+                rpts.append(np.nan)
+            x = xx[ij[1]-1:ij[1]+2]
+            y = yy[ij[0]-1:ij[0]+2]
+            z = self.img[ij[0]-1:ij[0]+2, ij[1]-1:ij[1]+2]
+            X, Y = np.meshgrid(x, y)
+            f = interp2d(X, Y, z, kind=mode)
+            rpts.append(f(pt[0], pt[1]))
+
         return np.array(rpts)
 
-    def std(self):
+    def outside_image(self, ij, index=True):
+        """Check whether a given point falls outside of the image.
+        
+        Parameters
+        ----------
+        ij : array-like
+            Indices (or coordinates) of point to check.
+        index: bool, optional
+            Interpret ij as raster indices (default is True). If False,
+            assumes ij is coordinates.
+        """
+        if not index:
+            ij = self.xy2ij(ij)
+
+        if np.any(np.array(ij) < 0):
+            return True
+        elif ij[0] > self.npix_y or ij[1] > self.npix_x:
+            return True
+        else:
+            return False
+
+    def std(self):        
         return np.nanstd(self.img)
 
     def mean(self):
