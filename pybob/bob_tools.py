@@ -110,27 +110,69 @@ def parse_lsat_scene(scenename, string_out=True):
         return sensor, path, row, year, doy
 
 
-def bin_data(bins, data2bin, bindata, mode='mean'):
+def bin_data(bins, data2bin, bindata, mode='mean', nbinned=False):
+    """ Place data into bins based on a secondary dataset, calculate statistics on them.
+    
+    Parameters
+    ----------
+    bins : array-like
+        array-like structure indicating the bins into which data should be placed.
+    data2bin : array-like
+        data that should be binned.
+    bindata : array-like
+        secondary dataset that decides how data2bin should be binned. Should have same size/shape
+        as data2bin.
+    mode : str, optional
+        How to calculate statistics of binned data. One of 'mean', 'median', 'std', 'max', or 'min'.
+    nbinned : bool, optional
+        If True, returns a second array, nbinned, with number of data points that fit into each bin.
+        Default is False.
+        
+    Returns
+    -------
+    binned : array-like
+        calculated and binned data with same size as bins.
+    nbinned : array-like
+        number of data points that went into each bin.
+    """
+    assert mode in ['mean', 'median', 'std', 'max', 'min'], "mode not recognized: {}".format(mode)
     digitized = np.digitize(bindata, bins)
     binned = np.zeros(len(bins)) * np.nan
+    if nbinned:  
+        numbinned = np.zeros(len(bins))
+
     if mode == 'mean':
         for i, _ in enumerate(bins):
-            binned[i] = np.nanmean(data2bin[np.logical_and(np.isfinite(bindata), digitized == i)])
+            binned[i] = np.nanmean(data2bin[np.logical_and(np.isfinite(bindata), digitized == i+1)])
+            if nbinned:
+                numbinned[i] = np.count_nonzero(np.logical_and(np.isfinite(data2bin), digitized == i+1))
     elif mode == 'median':
         for i, _ in enumerate(bins):
-            binned[i] = np.nanmedian(data2bin[np.logical_and(np.isfinite(bindata), digitized == i)])
+            binned[i] = np.nanmedian(data2bin[np.logical_and(np.isfinite(bindata), digitized == i+1)])
+            if nbinned:
+                numbinned[i] = np.count_nonzero(np.logical_and(np.isfinite(data2bin), digitized == i+1))
     elif mode == 'std':
         for i, _ in enumerate(bins):
-            binned[i] = np.nanstd(data2bin[np.logical_and(np.isfinite(bindata), digitized == i)])
+            binned[i] = np.nanstd(data2bin[np.logical_and(np.isfinite(bindata), digitized == i+1)])
+            if nbinned:
+                numbinned[i] = np.count_nonzero(np.logical_and(np.isfinite(data2bin), digitized == i+1))
     elif mode == 'max':
         for i, _ in enumerate(bins):
-            binned[i] = np.nanmax(data2bin[np.logical_and(np.isfinite(bindata), digitized == i)])
+            binned[i] = np.nanmax(data2bin[np.logical_and(np.isfinite(bindata), digitized == i+1)])
+            if nbinned:
+                numbinned[i] = np.count_nonzero(np.logical_and(np.isfinite(data2bin), digitized == i+1))
     elif mode == 'min':
         for i, _ in enumerate(bins):
-            binned[i] = np.nanmin(data2bin[np.logical_and(np.isfinite(bindata), digitized == i)])
+            binned[i] = np.nanmin(data2bin[np.logical_and(np.isfinite(bindata), digitized == i+1)])
+            if nbinned:
+                numbinned[i] = np.count_nonzero(np.logical_and(np.isfinite(data2bin), digitized == i+1))
     else:
-        raise ValueError('mode must be mean, median, or std')
-    return np.array(binned)
+        raise ValueError('mode must be mean, median, std, max, or min')
+    
+    if nbinned:
+        return np.array(binned), np.array(numbinned)
+    else:
+        return np.array(binned)
 
 
 def random_points_in_polygon(poly, npts=1):
