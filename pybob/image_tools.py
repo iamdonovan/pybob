@@ -1,3 +1,4 @@
+from __future__ import print_function
 import gdal
 import os
 import ogr
@@ -249,8 +250,8 @@ def stitcher(outputs, nblocks, overlap=0):
 
 def parallel_img_proc(fun, funargs, nproc=2):
     if nproc > mp.cpu_count():
-        print "{} cores specified, but I can only find \
-               {} cores on this machine. I'll use those.".format(nproc, mp.cpu_count())
+        print("{} cores specified, but I can only find \
+               {} cores on this machine. I'll use those.".format(nproc, mp.cpu_count()))
 
     pool = mp.Pool(nproc)
     outputs = pool.map(fun, funargs)

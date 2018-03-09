@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import random
 import datetime as dt
@@ -74,7 +75,7 @@ class GeoImg(object):
                     self.doy = int(self.filename[13:16])
                     self.imagedatetime = dt.date.fromordinal(dt.date(self.year-1, 12, 31).toordinal()+self.doy)
                 except:
-                    print "This doesn't actually look like a Landsat file."
+                    print("This doesn't actually look like a Landsat file.")
             else:
                 self.datetime = None
         else:
@@ -84,21 +85,21 @@ class GeoImg(object):
         self.img_ov10 = self.img[0::10, 0::10]
 
     def info(self):
-        print 'Driver:             {}'.format(self.gd.GetDriver().LongName)
+        print('Driver:             {}'.format(self.gd.GetDriver().LongName))
         if self.intype != 'MEM':
-            print 'File:               {}'.format(self.in_dir_path + os.path.sep + self.filename)
+            print('File:               {}'.format(self.in_dir_path + os.path.sep + self.filename))
         else:
-            print 'File:               {}'.format('in memory')
-        print 'Size:               {}, {}'.format(self.npix_x, self.npix_y)
-        print 'Coordinate System:  EPSG:{}'.format(self.epsg)
-        print 'NoData Value:       {}'.format(self.NDV)
-        print 'Pixel Size:         {}, {}'.format(self.dx, self.dy)
-        print 'Upper Left Corner:  {}, {}'.format(self.xmin, self.ymax)
-        print 'Lower Right Corner: {}, {}'.format(self.xmax, self.ymin)
-        print '[MAXIMUM]:          {}'.format(np.nanmax(self.img))
-        print '[MINIMUM]:          {}'.format(np.nanmin(self.img))
-        # print '[MEAN]:             {}'.format(np.nanmean(self.img))
-        # print '[MEDIAN]:           {}'.format(np.nanmedian(self.img))
+            print('File:               {}'.format('in memory'))
+        print('Size:               {}, {}'.format(self.npix_x, self.npix_y))
+        print('Coordinate System:  EPSG:{}'.format(self.epsg))
+        print('NoData Value:       {}'.format(self.NDV))
+        print('Pixel Size:         {}, {}'.format(self.dx, self.dy))
+        print('Upper Left Corner:  {}, {}'.format(self.xmin, self.ymax))
+        print('Lower Right Corner: {}, {}'.format(self.xmax, self.ymin))
+        print('[MAXIMUM]:          {}'.format(np.nanmax(self.img)))
+        print('[MINIMUM]:          {}'.format(np.nanmin(self.img)))
+        # print('[MEAN]:             {}'.format(np.nanmean(self.img)))
+        # print('[MEDIAN]:           {}'.format(np.nanmedian(self.img)))
 
     def display(self, fig=None, cmap='gray', extent=None, sfact=None, showfig=True, band=[0, 1, 2]):
         if fig is None:
@@ -368,7 +369,7 @@ class GeoImg(object):
             xycorners = [self.ij2xy(corner) for corner in corners]
             return xycorners
         elif mode != 'ij':
-            print "Unknown mode encountered (expected 'xy' or 'ij'); defaulting to ij"
+            print("Unknown mode encountered (expected 'xy' or 'ij'); defaulting to ij")
         return corners
 
     def find_valid_bbox(self, nodata=np.nan):
