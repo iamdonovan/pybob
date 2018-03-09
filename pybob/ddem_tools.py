@@ -308,7 +308,11 @@ def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=None):
         raise TypeError('DEM must be a GeoImg')
     if glacier_inds is None:
         dem_data = DEM.img[glacier_shapes]
-
+        if bin_width is None:
+            z_range = np.nanmax(dem_data) - np.nanmin(dem_data)
+            this_bin_width = min(50, int(z_range / 10))
+        else:
+            this_bin_width = bin_width
         min_el = np.nanmin(dem_data) - (np.nanmin(dem_data) % bin_width)
         max_el = np.nanmax(dem_data) + (bin_width - (np.nanmax(dem_data) % bin_width))
         bins = np.arange(min_el, max_el+1, bin_width)
@@ -333,6 +337,6 @@ def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=None):
             bins.append(thisbin)
             aads.append(thisaad * np.abs(DEM.dx) * np.abs(DEM.dy))  # make it an area!
 
-    return bins, aads
+    return bins[:-1], aads
 
 
