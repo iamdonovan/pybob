@@ -235,7 +235,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         stable_mask = create_stable_mask(masterDEM, glaciermask, landmask)
 
         slope_geo = get_slope(masterDEM)
-        aspect_geo = get_slope(masterDEM)
+        aspect_geo = get_aspect(masterDEM)
         slope_geo.write('tmp_slope.tif', out_folder=outdir)
         aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
         masterDEM.mask(stable_mask)
@@ -304,8 +304,8 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             aspect_geo.shift(dx, dy)
             stable_mask.shift(dx, dy)
         else:
-            this_slave.mask(stable_mask)
             this_slave = this_slave.reproject(masterDEM)
+            this_slave.mask(stable_mask)
 
 
         # slaves[-1].display()

@@ -304,6 +304,28 @@ def calculate_volume_changes(dDEM, glacier_shapes, burn_handle=None, ind_glac_va
 
 # create an area-altitude distribution for a DEM and a glacier shapefile
 def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=None):
+    """Calculate an Area-Altitude Distribution for a glacier outline(s), given an input DEM.
+    
+    Parameters
+    ----------
+    DEM : GeoImg
+        input DEM.
+    glacier_shapes : array-like
+        array representing glacier outlines. Can be boolean or integer, depending on whether
+        one AAD or many should be calculated.
+    glacier_inds : array-like, optional
+        array representing glacier indicies. If unspecified, only one AAD will be returned.
+    bin_width: numeric, optional
+        width of elevation bands to calculate area distribution in. If unspecified, result will be
+        the minimum of 50m or 10% of the elevation range.
+        
+    Returns
+    -------
+    bins : array-like
+        array(s) representing elevation bands over which area is calculated. 
+    aads : array-like
+        array(s) containing area (in DEM horizontal units) per elevation band.
+    """
     if type(DEM) is not GeoImg:
         raise TypeError('DEM must be a GeoImg')
     if glacier_inds is None:
