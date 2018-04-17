@@ -23,9 +23,9 @@ def main():
                         help="Process assuming that master DEM is ICESat data [False].")
     args = parser.parse_args()
 
-    master, coreg_slave = dem_coregistration(args.masterdem, args.slavedem,
-                                             glaciermask=args.mask1, landmask=args.mask2,
-                                             outdir=args.outdir, pts=args.icesat)
+    master, coreg_slave, _ = dem_coregistration(args.masterdem, args.slavedem,
+                                                glaciermask=args.mask1, landmask=args.mask2,
+                                                outdir=args.outdir, pts=args.icesat)
 
 
 if __name__ == "__main__":

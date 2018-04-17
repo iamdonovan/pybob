@@ -74,7 +74,7 @@ def preprocess(stable_mask, slope, aspect, master, slave):
         dH.img[stable_mask] = np.nan
 
         dHtan = dH.img / stan
-        mykeep = ((np.absolute(dH.img) < 60.0) & np.isfinite(dH.img) &
+        mykeep = ((np.absolute(dH.img) < 200.0) & np.isfinite(dH.img) &
                   (slope > 7.0) & (dH.img != 0.0) & (aspect >= 0))
         dH.img[np.invert(mykeep)] = np.nan
         xdata = aspect[mykeep]
@@ -359,4 +359,4 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     print("Fin.", file=paramf)
     paramf.close()
 
-    return masterDEM, this_slave
+    return masterDEM, this_slave, (tot_dx, tot_dy, tot_dz)

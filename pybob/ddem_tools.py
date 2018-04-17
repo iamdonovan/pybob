@@ -335,11 +335,12 @@ def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=None):
             this_bin_width = min(50, int(z_range / 10))
         else:
             this_bin_width = bin_width
-        min_el = np.nanmin(dem_data) - (np.nanmin(dem_data) % bin_width)
-        max_el = np.nanmax(dem_data) + (bin_width - (np.nanmax(dem_data) % bin_width))
-        bins = np.arange(min_el, max_el+1, bin_width)
+        min_el = np.nanmin(dem_data) - (np.nanmin(dem_data) % this_bin_width)
+        max_el = np.nanmax(dem_data) + (this_bin_width - (np.nanmax(dem_data) % this_bin_width))
+        bins = np.arange(min_el, max_el+1, this_bin_width)
         aads, _ = np.histogram(dem_data, bins=bins, range=(min_el, max_el))
         aads = aads * np.abs(DEM.dx) * np.abs(DEM.dy)
+        bins = bins[:-1]  # remove the last element, because it's actually above the glacier range.
     else:
         bins = []
         aads = []
@@ -356,9 +357,9 @@ def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=None):
             thisbin = np.arange(min_el, max_el+1, this_bin_width)
             thisaad, _ = np.histogram(dem_data, bins=thisbin, range=(min_el, max_el))
 
-            bins.append(thisbin)
+            bins.append(thisbin[:-1])  # remove last element.
             aads.append(thisaad * np.abs(DEM.dx) * np.abs(DEM.dy))  # make it an area!
 
-    return bins[:-1], aads
+    return bins, aads
 
 
