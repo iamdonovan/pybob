@@ -359,4 +359,6 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     print("Fin.", file=paramf)
     paramf.close()
 
-    return masterDEM, this_slave, (tot_dx, tot_dy, tot_dz)
+    out_offs = [tot_dx, tot_dy, tot_dz]
+
+    return masterDEM, this_slave, out_offs

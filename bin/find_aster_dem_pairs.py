@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from future_builtins import zip
 import argparse
 import datetime as dt
 import numpy as np
@@ -25,6 +27,13 @@ def parse_aster_date(img, imgdata, args):
     return date, name
 
 
+def sort_chronologically(dates, data):
+    datedict = list(zip(dates, data))
+    if all(dates):
+        datedict.sort(reverse=True)
+    return datedict
+
+
 def main():
     parser = argparse.ArgumentParser(description="Find ASTER dDEM pairs based on area overlap, time separation.")
     parser.add_argument('footprints', action='store', type=str, help="Shapefile of image footprints to read in.")
@@ -36,7 +45,7 @@ def main():
                         help="Maximum amount of time (in years) to separate images [default: 1000 years]")
     parser.add_argument('--imagename', action='store', type=str, default='filename',
                         help="Name of the shapefile field that contains the DEM filenames")
-    parser.add_argument('--datefield', action='store', type='int', default=None,
+    parser.add_argument('--datefield', action='store', type=str, default=None,
                         help="Name of the shapefield field that contains the date information [None]")
     args = parser.parse_args()
 
@@ -62,7 +71,8 @@ def main():
             cdate, cname = parse_aster_date(c, footprint_data, args)
             tsep = np.abs((cdate - this_date).days / 365.2425)  # this is seriously close enough.
             if tsep >= args.tmin_sep and tsep <= args.tmax_sep:
-                print cname, this_name
+                ddict = sort_chronologically((cdate, this_date), (cname, this_name))
+                print(ddict[0][1], ddict[1][1])
         footprints.remove(img)
 
 
