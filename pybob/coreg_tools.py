@@ -4,6 +4,7 @@ import errno
 import gdal
 import numpy as np
 import matplotlib.pylab as plt
+plt.switch_backend('agg')
 import scipy.optimize as optimize
 from matplotlib.backends.backend_pdf import PdfPages
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -95,7 +96,7 @@ def preprocess(stable_mask, slope, aspect, master, slave):
 
         dHtan = dH / stan
 
-        mykeep = ((np.absolute(dH) < 60.0) & np.isfinite(dH) &
+        mykeep = ((np.absolute(dH) < 200.0) & np.isfinite(dH) &
                   (slope_pts > 3.0) & (dH != 0.0) & (aspect_pts >= 0))
         
         dH[np.invert(mykeep)] = np.nan
@@ -117,8 +118,14 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
 
     def errfun(p, x, y): return fitfun(p, x) - y
 
+    print("soft_l1")
+    #lb = [-200, 0, -100]
+    #ub = [200, 359, 100]
     p0 = [-1, 1, -1]
-    p1, success = optimize.leastsq(errfun, p0[:], args=(xdata, ydata))
+    #p1, success, _ = optimize.least_squares(errfun, p0[:], args=([xdata], [ydata]), method='trf', bounds=([lb],[ub]), loss='soft_l1', f_scale=0.1)
+    myresults = optimize.least_squares(errfun, p0, args=(xdata, ydata), method='trf', loss='soft_l1', f_scale=0.5)    
+    p1 = myresults.x
+    success = myresults.success
     # print success
     # print p1
     # convert to shift parameters in cartesian coordinates
@@ -133,7 +140,8 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
         mysamp = np.random.randint(0, xdata.size, 50000)
     else:
         mysamp = np.arange(0, xdata.size)
-
+    mysamp=mysamp.astype(np.int64)
+    
     fig = plt.figure(figsize=(7, 5), dpi=600)
     fig.suptitle(title, fontsize=14)
     plt.plot(xdata[mysamp], ydata[mysamp], '^', ms=0.5, color='0.5', rasterized=True, fillstyle='full')
@@ -141,23 +149,70 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     plt.plot(xp, yp, 'r-', ms=2)
 
     plt.xlim(0, 360)
-    ymin, ymax = plt.ylim(np.nanmean(ydata[mysamp])-2*np.nanstd(ydata[mysamp]),
-                          np.nanmean(ydata[mysamp])+2*np.nanstd(ydata[mysamp]))
+    #plt.ylim(-200,200)
+    ymin, ymax = plt.ylim((np.nanmean(ydata[mysamp]))-2*np.nanstd(ydata[mysamp]),
+                          (np.nanmean(ydata[mysamp]))+2*np.nanstd(ydata[mysamp]))
     # plt.axis([0, 360, -200, 200])
     plt.xlabel('Aspect [degrees]')
     plt.ylabel('dH / tan(slope)')
     numwidth = max([len('{:.1f} m'.format(xadj)), len('{:.1f} m'.format(yadj)), len('{:.1f} m'.format(zadj))])
-    plt.text(0.05, 0.05, '$\Delta$x: ' + ('{:.1f} m'.format(xadj)).rjust(numwidth),
+    plt.text(0.05, 0.15, '$\Delta$x: ' + ('{:.1f} m'.format(xadj)).rjust(numwidth),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
     plt.text(0.05, 0.1, '$\Delta$y: ' + ('{:.1f} m'.format(yadj)).rjust(numwidth),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
-    plt.text(0.05, 0.15, '$\Delta$z: ' + ('{:.1f} m'.format(zadj)).rjust(numwidth),
+    plt.text(0.05, 0.05, '$\Delta$z: ' + ('{:.1f} m'.format(zadj)).rjust(numwidth),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
     pp.savefig(fig, bbox_inches='tight', dpi=200)
 
     return xadj, yadj, zadj
 
+def final_histogram(dH0, dHfinal, pp):
+    title='Elevation difference histograms'
+    fig = plt.figure(figsize=(7, 5), dpi=600)
+    fig.suptitle(title, fontsize=14)
+    
+    j1,j2=np.histogram(dH0[np.isfinite(dH0)],bins=100, range = (-60, 60))
+    k1,k2=np.histogram(dHfinal[np.isfinite(dHfinal)],bins=100, range = (-60, 60))
+    
+    stats0 = [np.nanmean(dH0), np.nanmedian(dH0), np.nanstd(dH0), RMSE(dH0)]
+    stats_fin = [np.nanmean(dHfinal), np.nanmedian(dHfinal), np.nanstd(dHfinal), RMSE(dHfinal)]    
+    
+    plt.plot(j2[1:],j1,'k-',ms=2)
+    plt.plot(k2[1:],k1,'r-',ms=2)
+    #plt.legend(['Original', 'Coregistered'])
+    
+    plt.xlabel('Elevation difference [meters]')
+    plt.ylabel('Number of samples')
+    plt.xlim(-50,50)
+    
+    #numwidth = max([len('{:.1f} m'.format(xadj)), len('{:.1f} m'.format(yadj)), len('{:.1f} m'.format(zadj))])
+    plt.text(0.05, 0.90, 'Mean: ' + ('{:.1f} m'.format(stats0[0])),
+             fontsize=12, fontweight='bold', color='black', family='monospace', transform=plt.gca().transAxes)
+    plt.text(0.05, 0.85, 'Median: ' + ('{:.1f} m'.format(stats0[1])),
+             fontsize=12, fontweight='bold', color='black', family='monospace', transform=plt.gca().transAxes)
+    plt.text(0.05, 0.80, 'Std dev.: ' + ('{:.1f} m'.format(stats0[2])),
+             fontsize=12, fontweight='bold', color='black', family='monospace', transform=plt.gca().transAxes)
+    plt.text(0.05, 0.75, 'RMSE: ' + ('{:.1f} m'.format(stats0[3])),
+             fontsize=12, fontweight='bold', color='black', family='monospace', transform=plt.gca().transAxes)
 
+
+    plt.text(0.4, 0.90, 'Mean: ' + ('{:.1f} m'.format(stats_fin[0])),
+             fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
+    plt.text(0.4, 0.85, 'Median: ' + ('{:.1f} m'.format(stats_fin[1])),
+             fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
+    plt.text(0.4, 0.80, 'Std dev.: ' + ('{:.1f} m'.format(stats_fin[2])),
+             fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
+    plt.text(0.4, 0.75, 'RMSE: ' + ('{:.1f} m'.format(stats_fin[3])),
+             fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
+    pp.savefig(fig, bbox_inches='tight', dpi=200)
+    
+    
+def RMSE(indata): 
+    myrmse = np.sqrt(np.nanmean(indata**2))
+    
+    return myrmse
+    
+    
 def get_geoimg(indata):
     if type(indata) is str or type(indata) is gdal.Dataset:
         return GeoImg(indata)
@@ -219,6 +274,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     if pts:
         masterDEM = ICESat(masterDEM)
         masterDEM.project('epsg:{}'.format(slaveDEM.epsg))
+        mybounds=[slaveDEM.xmin, slaveDEM.xmax, slaveDEM.ymin, slaveDEM.ymax]
+        masterDEM.clip(mybounds)
+        masterDEM.clean()
         slope_geo = get_slope(slaveDEM)
         aspect_geo = get_aspect(slaveDEM)
 
@@ -243,13 +301,13 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     slope = slope_geo.img
     aspect = aspect_geo.img
 
-    mythresh = np.float64(100)  # float64 really necessary?
-    mystd = np.float64(100)
+    mythresh = np.float64(200)  # float64 really necessary?
+    mystd = np.float64(200)
     mycount = 0
     tot_dx = np.float64(0)
     tot_dy = np.float64(0)
     tot_dz = np.float64(0)
-    magnthresh = 100
+    magnthresh = 200
     mytitle = 'DEM difference: pre-coregistration'
     if pts:
         this_slave = slaveDEM
@@ -276,9 +334,15 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             dH, xdata, ydata, sdata = preprocess(stable_mask, slope_geo, aspect_geo, masterDEM, this_slave)
             dH_img = dH
 
+        if mycount == 1:
+            dH0 = dH_img
+
         # calculate threshold, standard deviation of dH
-        mythresh = 100 * (mystd-np.nanstd(dH_img))/mystd
-        mystd = np.nanstd(dH_img)
+        #mythresh = 100 * (mystd-np.nanstd(dH_img))/mystd
+        #mystd = np.nanstd(dH_img)
+        # USE RMSE instead ( this is to make su that there is improvement in the spread)
+        mythresh = 100 * (mystd-RMSE(dH_img))/mystd
+        mystd = RMSE(dH_img)
 
         mytitle2 = "Co-registration: Iteration {}".format(mycount)
         dx, dy, dz = coreg_fitting(xdata, ydata, sdata, mytitle2, pp)
@@ -307,7 +371,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             this_slave = this_slave.reproject(masterDEM)
             this_slave.mask(stable_mask)
 
-
+        print("Percent-improvement threshold and Magnitute threshold:")
+        print(mythresh, magnthresh)
+        
         # slaves[-1].display()
         if mythresh > 2 and magnthresh > 1:
             dH = None
@@ -319,11 +385,24 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             sdata = None
         else:
             if not pts:
-                # dHfinal = dH
+                dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, this_slave)
                 mytitle = "DEM difference: After Iteration {}".format(mycount)
                 false_hillshade(dH, mytitle, pp)
+                dHfinal = dH.img
+                
+            
             # slaves.pop(-1)
+            else:
+                mytitle2 = "Co-registration: FINAL"
+                dH, xdata, ydata, sdata = preprocess(stable_mask, slope_geo, aspect_geo, masterDEM, this_slave)
+                dx, dy, dz = coreg_fitting(xdata, ydata, sdata, mytitle2, pp)
+                dHfinal = dH            
+ 
+    # Create final histograms pre and post coregistration
+    shift = [tot_dx, tot_dy, tot_dz]
+    final_histogram(dH0,dHfinal,pp)
 
+                    
     # create new raster with dH sample used for co-registration as the band
     # dHSample = dH.copy(new_raster=dHpost_sample)
     # dHSample.write(outdir + os.path.sep + 'dHpost_sample.tif') # have to fill these in!

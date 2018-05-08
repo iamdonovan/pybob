@@ -283,6 +283,7 @@ class GeoImg(object):
         self.xmax = self.gt[0] + self.npix_x * self.gt[1] + self.npix_y * self.gt[2]
         self.ymin = self.gt[3] + self.npix_x * self.gt[4] + self.npix_y * self.gt[5]
         self.ymax = self.gt[3]
+        self.UTMtfm = [self.xmin, self.ymax, self.dx, self.dy]
 
     def ij2xy(self, ij):
         x = self.UTMtfm[0]+((ij[1]+0.5)*self.UTMtfm[2])
