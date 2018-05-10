@@ -125,7 +125,7 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     #p1, success, _ = optimize.least_squares(errfun, p0[:], args=([xdata], [ydata]), method='trf', bounds=([lb],[ub]), loss='soft_l1', f_scale=0.1)
     myresults = optimize.least_squares(errfun, p0, args=(xdata, ydata), method='trf', loss='soft_l1', f_scale=0.5)    
     p1 = myresults.x
-    success = myresults.success
+    # success = myresults.success # commented because it wasn't actually being used.
     # print success
     # print p1
     # convert to shift parameters in cartesian coordinates
@@ -167,18 +167,17 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     return xadj, yadj, zadj
 
 def final_histogram(dH0, dHfinal, pp):
-    title='Elevation difference histograms'
     fig = plt.figure(figsize=(7, 5), dpi=600)
-    fig.suptitle(title, fontsize=14)
+    plt.title('Elevation difference histograms', fontsize=14)
     
-    j1,j2=np.histogram(dH0[np.isfinite(dH0)],bins=100, range = (-60, 60))
-    k1,k2=np.histogram(dHfinal[np.isfinite(dHfinal)],bins=100, range = (-60, 60))
+    j1, j2 = np.histogram(dH0[np.isfinite(dH0)], bins=100, range=(-60, 60))
+    k1, k2 = np.histogram(dHfinal[np.isfinite(dHfinal)], bins=100, range=(-60, 60))
     
     stats0 = [np.nanmean(dH0), np.nanmedian(dH0), np.nanstd(dH0), RMSE(dH0)]
     stats_fin = [np.nanmean(dHfinal), np.nanmedian(dHfinal), np.nanstd(dHfinal), RMSE(dHfinal)]    
     
-    plt.plot(j2[1:],j1,'k-',ms=2)
-    plt.plot(k2[1:],k1,'r-',ms=2)
+    plt.plot(j2[1:], j1,'k-', linewidth=2)
+    plt.plot(k2[1:], k1,'r-', linewidth=2)
     #plt.legend(['Original', 'Coregistered'])
     
     plt.xlabel('Elevation difference [meters]')
@@ -208,8 +207,8 @@ def final_histogram(dH0, dHfinal, pp):
     
     
 def RMSE(indata): 
+    """ Return root mean square of indata."""
     myrmse = np.sqrt(np.nanmean(indata**2))
-    
     return myrmse
     
     
@@ -389,9 +388,6 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
                 mytitle = "DEM difference: After Iteration {}".format(mycount)
                 false_hillshade(dH, mytitle, pp)
                 dHfinal = dH.img
-                
-            
-            # slaves.pop(-1)
             else:
                 mytitle2 = "Co-registration: FINAL"
                 dH, xdata, ydata, sdata = preprocess(stable_mask, slope_geo, aspect_geo, masterDEM, this_slave)
@@ -399,10 +395,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
                 dHfinal = dH            
  
     # Create final histograms pre and post coregistration
-    shift = [tot_dx, tot_dy, tot_dz]
-    final_histogram(dH0,dHfinal,pp)
+    # shift = [tot_dx, tot_dy, tot_dz]  # commented because it wasn't actually used.
+    final_histogram(dH0, dHfinal, pp)
 
-                    
     # create new raster with dH sample used for co-registration as the band
     # dHSample = dH.copy(new_raster=dHpost_sample)
     # dHSample.write(outdir + os.path.sep + 'dHpost_sample.tif') # have to fill these in!

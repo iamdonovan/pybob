@@ -2,6 +2,7 @@ from __future__ import print_function
 from future_builtins import zip
 import os
 import h5py
+import numpy as np
 import pyproj
 import matplotlib.pyplot as plt
 #import numpy as np
@@ -99,22 +100,30 @@ class ICESat(object):
     def to_shp(self, out_filename):
         """ Write ICESat data to shapefile (NOT IMPLEMENTED YET) """
         pass
+
     def clean(self, el_limit=-500):
-        """ Cleans up the icesat points stored in x, y, z and elev
-        Removes all elev < el_limit
+        """ Remove all elevation points below a given elevation.
         """
-        mykeep = ((self.elev > el_limit))
-        self.x=self.x[mykeep]
-        self.y=self.y[mykeep]
-        self.elev=self.elev[mykeep]
+        mykeep = self.elev > el_limit
+        self.x = self.x[mykeep]
+        self.y = self.y[mykeep]
+        self.elev = self.elev[mykeep]
         self.xy = list(zip(self.x,self.y))
         pass
         
-    def clip(self,bounds):
-        """ Clip ICESat data to bounds (BETA IMPLEMENTATION YET) 
-        bounds = xmin, xmax, ymin, ymax
+    def clip(self, bounds):
+        """ Remove ICEsat data that falls outside of a given bounding box.
+        
+        Parameters
+        ----------
+        bounds: array-like
+            bounding box to clip to, given as xmin, xmax, ymin, ymax
         """
-        mykeep = ((self.x > bounds[0]) & (self.x < bounds[1]) & (self.y > bounds[2]) & (self.y < bounds[3]))
+        xmin, xmax, ymin, ymax = bounds
+        mykeep_x = np.logical_and(self.x > xmin, self.x < xmax)
+        mykeep_y = np.logical_and(self.y > ymin, self.y < ymax)
+        mykeep = np.logical_and(mykeep_x, mykeep_y)
+        
         self.x=self.x[mykeep]
         self.y=self.y[mykeep]
         self.elev=self.elev[mykeep]
@@ -161,7 +170,32 @@ class ICESat(object):
         self.xy = list(zip(self.x, self.y))
         self.proj = dest_proj
 
-    def display(self, fig=None, extent=None, sfact=None, showfig=True, geo=False, **kwargs):
+    def display(self, fig=None, extent=None, sfact=1, showfig=True, geo=False, **kwargs):
+        """
+        Plot ICESat tracks in a figure.
+        
+        Parameters
+        ----------
+        fig : matplotlib.figure.Figure, optional
+            Figure to plot tracks in. If not set, creates a new figure.
+        extent : array-like, optional
+            Spatial extent to limit the figure to, given as xmin, xmax, ymin, ymax.
+        sfact : int, optional
+            Factor by which to reduce the number of points plotted.
+            Default is 1 (i.e., all points are plotted).
+        showfig : bool, optional
+            Open the figure window. Default is True.
+        geo : bool, optional
+            Plot tracks in lat/lon coordinates, rather than projected coordinates.
+            Default is False.
+        **kwargs :
+            Optional keyword arguments to pass to matplotlib.pyplot.plot
+            
+        Returns
+        -------
+        fig : matplotlib.figure.Figure
+            Handle pointing to the matplotlib Figure created (or passed to display).
+        """
         if fig is None:
             fig = plt.figure(facecolor='w')
             # fig.hold(True)
@@ -180,16 +214,10 @@ class ICESat(object):
             this_marker = kwargs['marker']
             kwargs.pop('marker')
 
-        if sfact is None:
-            if geo:
-                plt.plot(self.lon, self.lat, marker=this_marker, ls='None', **kwargs)
-            else:
-                plt.plot(self.x, self.y, marker=this_marker, ls='None', **kwargs)
+        if geo:
+            plt.plot(self.lon[::sfact], self.lat[::sfact], marker=this_marker, ls='None', **kwargs)
         else:
-            if geo:
-                plt.plot(self.lon[::sfact], self.lat[::sfact], marker=this_marker, ls='None', **kwargs)
-            else:
-                plt.plot(self.x[::sfact], self.y[::sfact], marker=this_marker, ls='None', **kwargs)
+            plt.plot(self.x[::sfact], self.y[::sfact], marker=this_marker, ls='None', **kwargs)
 
         ax = fig.gca()  # get current axes
         ax.set_aspect('equal')    # set equal aspect
