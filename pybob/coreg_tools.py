@@ -221,7 +221,7 @@ def get_geoimg(indata):
         raise TypeError('input data must be a string pointing to a gdal dataset, or a GeoImg object.')
 
 
-def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.', pts=False):
+def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.', pts=False, full_ext=False):
     """
     Iteratively co-register elevation data, based on routines described in Nuth and Kaeaeb, 2011.
 
@@ -243,6 +243,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         If True, program assumes that masterDEM represents point data (i.e., ICESat),
         as opposed to raster data. Slope/aspect are then calculated from slaveDEM.
         masterDEM should be a string representing an HDF5 file continaing ICESat data.
+    full_ext : bool, optional
+        If True, program writes full extents of input DEMs. If False, program writes
+        input DEMs cropped to their common extent. Default is False.
     """
     # if the output directory does not exist, create it.
     outdir = os.path.abspath(outdir)
@@ -257,6 +260,11 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     paramf = open(outdir + os.path.sep + 'coreg_params.txt', 'w')
     # create the output pdf
     pp = PdfPages(outdir + os.path.sep + 'CoRegistration_Results.pdf')
+
+    if full_ext:
+        print('Writing full extents of output DEMs.')
+    else:
+        print('Writing DEMs cropped to common extent.')
 
     if type(masterDEM) is str:
         mfilename = os.path.basename(masterDEM)
@@ -412,7 +420,11 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     if pts:
         outslave = slaveDEM.copy()
     else:        
-        outslave = slaveDEM.reproject(masterDEM)
+        if full_ext:
+            outslave = get_geoimg(slaveDEM)
+        else:
+            outslave = slaveDEM.reproject(masterDEM)
+    
     outslave.shift(tot_dx, tot_dy)
     outslave.img = outslave.img + tot_dz
     outslave.write(slaveoutfile, out_folder=outdir)
@@ -422,6 +434,8 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             mastoutfile = '.'.join(mfilename.split('.')[0:-1]) + '_adj.tif'
         else:
             mastoutfile = 'master_adj.tif'
+        if full_ext:
+            masterDEM = get_geoimg(mfilename)
         masterDEM.write(mastoutfile, out_folder=outdir)
 
     if pts:
@@ -435,4 +449,4 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
     out_offs = [tot_dx, tot_dy, tot_dz]
 
-    return masterDEM, this_slave, out_offs
+    return masterDEM, outslave, out_offs

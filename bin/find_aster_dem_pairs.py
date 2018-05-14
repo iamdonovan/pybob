@@ -64,7 +64,7 @@ def main():
             this_date = mmdd2dec(yy, mm, dd)
         candidates = s.query(img)
         candidates.remove(img)  # query returns itself
-        overlaps = [img.intersection(c).area / img.area for c in candidates]
+        overlaps = [max(img.intersection(c).area / img.area, img.intersection(c).area / c.area) for c in candidates]
 
         cull1 = [c for i, c in enumerate(candidates) if overlaps[i] > args.overlap]
         for c in cull1:

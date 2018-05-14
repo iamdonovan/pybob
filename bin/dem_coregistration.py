@@ -21,11 +21,13 @@ def main():
                         help='Directory to output files to (creates if not already present). [.]')
     parser.add_argument('-i', '--icesat', action='store_true', default=False,
                         help="Process assuming that master DEM is ICESat data [False].")
+    parser.add_argument('-f', '--full_ext', action='store_true', default=False,
+                        help="Write full extent of master DEM and shifted slave DEM. [False].")
     args = parser.parse_args()
 
     master, coreg_slave, _ = dem_coregistration(args.masterdem, args.slavedem,
                                                 glaciermask=args.mask1, landmask=args.mask2,
-                                                outdir=args.outdir, pts=args.icesat)
+                                                outdir=args.outdir, pts=args.icesat, full_ext=args.full_ext)
 
 
 if __name__ == "__main__":
