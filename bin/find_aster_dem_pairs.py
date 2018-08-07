@@ -18,12 +18,20 @@ def mmdd2dec(year, month, day):
 
 def parse_aster_date(img, imgdata, args):
     name = imgdata[args.imagename][imgdata['geometry'] == img].values[0]
-    datestr = name[11:19]
-    yy = int(datestr[4:])
-    mm = int(datestr[0:2])
-    dd = int(datestr[2:4])
-    date = dt.datetime(yy, mm, dd)
-
+    if name[:3] == 'AST':
+        datestr = name[11:19]
+        date = dt.datetime.strptime(datestr, '%m%d%Y')
+    elif name[:3] == 'SPO':
+        datestr = name[9:17]
+        date = dt.datetime.strptime(datestr, '%Y%m%d')        
+    elif name[:3] == 'SET':
+        datestr = name[11:19]
+        date = dt.datetime.strptime(datestr, '%Y%m%d')
+    elif name[:3] == 'HMA':
+	datestr = name[4:12]
+	date = dt.datetime.strptime(datestr, '%Y%m%d')
+    else:
+        raise ValueError("I don't know how to parse date information from {}".format(name))
     return date, name
 
 

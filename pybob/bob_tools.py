@@ -70,6 +70,24 @@ def doy2mmdd(year, doy, string_out=True, outform='%Y/%m/%d'):
 
 
 def mmdd2doy(year, month, day, string_out=True):
+    """Return a string or an int representing a day of year, given a date.
+
+    Parameters
+    ----------
+    year : int
+        Year of the input date, e.g., ``2018``.
+    mm : int
+        Month of the year of the input date, e.g., ``1`` for Jan.
+    dd : int
+        Day of the month of the input date.
+    string_out : bool
+        Return a string (True) or an int (False). Default is True.
+
+    Examples
+    --------
+    >>> bt.mmdd2doy(2018, 1, , 1string_out=True)
+    `1`
+    """
     doy = dt.datetime(year, month, day).timetuple().tm_yday
     if string_out:
         return str(doy)
@@ -90,10 +108,26 @@ def doy2dec(year, doy):
 
 
 def dec2mmdd(decdate):
-    pass
+    year = int(np.floor(decdate))
+    datefrac = decdate - year
+    
+    yearstart = dt.datetime(year, 1, 1).toordinal()
+    nextyearstart = dt.datetime(year+1, 1, 1).toordinal()
+    
+    days = np.round((nextyearstart - yearstart) * datefrac - 0.5)
+    return dt.datetime(year, 1, 1) + dt.timedelta(days)
 
 
 def dec2doy(decdate):
+    year = int(np.floor(decdate))
+    datefrac = decdate - year
+    
+    yearstart = dt.datetime(year, 1, 1).toordinal()
+    nextyearstart = dt.datetime(year+1, 1, 1).toordinal()
+    
+    days = np.round((nextyearstart - yearstart) * datefrac - 0.5)
+    return year, days+1
+
     pass
 
 

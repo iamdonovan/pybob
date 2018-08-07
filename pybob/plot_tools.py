@@ -2,12 +2,32 @@ from __future__ import print_function
 import os
 import numpy as np
 import cv2
+import matplotlib
 import matplotlib.pyplot as plt
+import geopandas as gpd
+from descartes import PolygonPatch
 from matplotlib.figure import Figure
 from matplotlib.pyplot import savefig
+from matplotlib.collections import PatchCollection
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from numpy.polynomial.polynomial import polyval, polyfit
 from pybob.bob_tools import bin_data
+from pybob.image_tools import hillshade
+
+
+def set_pretty_fonts():
+    font = {'family': 'sans',
+            'weight': 'normal',
+            'size': 24}
+    legend_font = {'family': 'sans',
+                   'weight': 'normal',
+                   'size': '16'}
+    matplotlib.rc('font', **font)
+    plt.ion()
+
+def truncate_colormap(cmap, minval=0, maxval=1, n=100):
+    new_cmap = matplotlib.colors.LinearSegmentedColormap.from_list('trunc({n}, {a:.2f}, {b:.2f})'.format(n=cmap.name, a=minval, b=maxval), cmap(np.linspace(minval, maxval, n)))
+    return new_cmap
 
 
 def save_results_quicklook(img, raster, com_ext, outfilename, vmin=0, vmax=10, sfact=2, output_directory='.'):
@@ -139,4 +159,124 @@ def plot_dh_elevation(dDEM, DEM, glacier_mask=None, binning=None, bin_width=50, 
             pfit = polyfit(dem_data, ddem_data, polyorder)
             interp_points = polyval(bins, pfit)
             plt.plot(bins, interp_points, 'r', linewidth=3)
+    return fig
+
+
+def plot_polygon_df(polygon_df, fig=None, ax=None, mpl='mpl_polygon', **kwargs):
+    """Plot a GeoDataFrame of polygons to figure.
+
+    Parameters
+    ----------
+    polygon_df : geopandas.GeoDataFrame
+        GeoDataFrame of polygon(s) to plot.
+    fig : matplotlib.pyplot.Figure, optional
+        Optional exisiting figure to plot polygons to. If unset, creates a new figure.
+    ax : matplotlib.axes, optional
+        Optional axis handle to plot polygons to. If unset, uses fig.gca()
+    mpl : string, optional
+        GeoDataFrame column name containing multipolygon indices. Default is mpl_polygon.
+    **kwargs : optional
+        Keyword options to pass to matplotlib.collections.PatchCollection.
+        
+    Returns
+    -------
+    
+    fig : matplotlib.pyplot.Figure
+        Figure handle of the plot.
+    polygon_df : geopandas.GeoDataFrame
+        Input dataframe with additional column of plot geometries.
+
+    Examples
+    --------
+    >>> rgi = gpd.read_file('07_rgi60_Svalbard.shp')
+    >>> f, rgi = plot_polygon_df(rgi, color='w', edgecolor='k', lw=.2, alpha=0.5)
+    """    
+    if not isinstance(polygon_df, gpd.GeoDataFrame):
+        raise Exception('polygon_df must be a GeoDataFrame.')
+    
+    if fig is None:
+        fig = plt.figure()
+        ax = fig.gca()
+    elif ax is None:
+        ax = fig.gca()
+    
+    if mpl not in polygon_df.columns:
+        polygon_df[mpl] = np.nan
+        polygon_df[mpl] = polygon_df[mpl].astype(object)
+        
+        for i, row in polygon_df.iterrows():
+            m_poly = row['geometry']
+            poly = []
+            if m_poly.geom_type == 'MultiPolygon':
+                for pol in m_poly:
+                    poly.append(PolygonPatch(pol))
+            else:
+                poly.append(PolygonPatch(m_poly))
+            polygon_df.set_value(i, mpl, poly)
+        
+    mapindex = polygon_df[mpl].to_dict()
+    for i, g in mapindex.items():
+        p = PatchCollection(g, **kwargs)
+        ax.add_collection(p)
+    
+    plt.axis('equal')
+
+    return fig, polygon_df
+    
+
+def plot_shaded_dem(dem, azimuth=315, altitude=45, fig=None, extent=None, alpha=0.35, **kwargs):
+    """
+    Plot a shaded relief image of a DEM.
+
+    Parameters
+    ----------
+
+    dem : GeoImg
+        GeoImg representing a DEM.
+    azimuth : float
+        Solar azimuth angle, in degress from North. Default 315.
+    altitude : float
+        Solar altitude angle, in degrees from horizon. Default 45.
+    fig : matplotlib.figure.Figure, optional
+        Figure to show image in. If not set, creates a new figure.
+    extent : array-like, optional
+        Spatial extent to limit the figure to, given as xmin, xmax, ymin, ymax.
+    alpha : float
+        Alpha value to set DEM to. Default is 0.35.
+    **kwargs: optional
+        Optional keyword arguments to pass to plt.imshow
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Handle pointing to the matplotlib Figure created (or passed to display).
+    """
+    if fig is None:
+        fig = plt.figure()
+
+    cmap = plt.get_cmap('terrain')
+    new_cmap = truncate_colormap(cmap, 0.25, 0.95)
+
+    shaded = hillshade(dem, azimuth=azimuth, altitude=altitude)
+    if extent is None:
+        extent = [dem.xmin, dem.xmax, dem.ymin, dem.ymax]
+
+        mini = 0
+        maxi = dem.npix_y
+        minj = 0
+        maxj = dem.npix_x
+    else:
+        xmin, xmax, ymin, ymax = extent
+        mini, minj = dem.xy2ij((xmin, ymax))
+        maxi, maxj = dem.xy2ij((xmax, ymin))
+
+        mini += 0.5
+        minj += 0.5
+
+        maxi -= 0.5
+        maxj -= 0.5  # subtract the .5 for half a pixel, add 1 for slice
+
+    plt.imshow(255 * (shaded[int(mini):int(maxi+1), int(minj):int(maxj+1)] + 1) / 2, extent=extent, cmap='gray')
+    plt.imshow(dem.img[int(mini):int(maxi+1), int(minj):int(maxj+1)], cmap=new_cmap, extent=extent, alpha=alpha, **kwargs)
+
     return fig

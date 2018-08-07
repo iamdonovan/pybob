@@ -1,10 +1,13 @@
 from __future__ import print_function
 from future_builtins import zip
+from collections import OrderedDict
 import os
 import h5py
 import numpy as np
 import pyproj
+import fiona
 import matplotlib.pyplot as plt
+from shapely.geometry import Point, mapping
 #import numpy as np
 
 
@@ -97,10 +100,60 @@ class ICESat(object):
         self.ellipse_hts = False
         self.elev = self.elev - de
 
-    def to_shp(self, out_filename):
-        """ Write ICESat data to shapefile (NOT IMPLEMENTED YET) """
-        pass
+    def to_shp(self, out_filename, driver='ESRI Shapefile', epsg=4326):
+        """ Write ICESat data to shapefile.
+        
+        Parameters
+        ----------
+        out_filename : string
+            Filename (optionally with path) of file to read out.
+        driver : string, optional
+            Name of driver fiona should use to create the outpufile. Default is 'ESRI Shapefile'.
+        epsg : int, optional
+            EPSG code to project data to. Default is 4326, WGS84 Lat/Lon.
+    
+        Examples
+        --------
+        >>> donjek_icesat.to_shp('donjek_icesat.shp', epsg=3338)
+        """
+        # skip the lat, lon columns in the h5data
+        # get the columns we're writing out
+        props = []
+        prop_inds = []
+        data_names = [d.split('/')[-1] for d in self.data_names]
 
+        for i, d in enumerate(data_names):
+            props.append([d.rsplit(str(i), 1)[0], 'float'])
+            prop_inds.append(i)
+        lat_ind, _ = find_keyname(data_names, 'lat')
+        lon_ind, _ = find_keyname(data_names, 'lon')
+        prop_inds.remove(lat_ind)
+        prop_inds.remove(lon_ind)        
+
+        props = OrderedDict(props)
+        del props['d_lat'], props['d_lon']
+                
+        schema = {'properties': props, 'geometry': 'Point'}
+
+        outfile = fiona.open(out_filename, 'w', crs=fiona.crs.from_epsg(epsg), driver=driver, schema=schema)
+        lat = self.lat
+        lon = self.lon
+        
+        if epsg != 4326:
+            dest_proj = pyproj.Proj(init='epsg:{}'.format(epsg))
+            x, y = pyproj.transform(pyproj.Proj(init='epsg:4326'), dest_proj, lon, lat)
+            pts = zip(x, y)
+        else:
+            pts = zip(lat, lon)
+
+        for i, pt in enumerate(pts):
+            this_data = self.h5data[prop_inds, i]
+            out_data = OrderedDict(zip(props.keys(), this_data))
+            point = Point(pt)
+            outfile.write({'properties': out_data, 'geometry': mapping(point)})
+
+        outfile.close()
+        
     def clean(self, el_limit=-500):
         """ Remove all elevation points below a given elevation.
         """
@@ -109,7 +162,6 @@ class ICESat(object):
         self.y = self.y[mykeep]
         self.elev = self.elev[mykeep]
         self.xy = list(zip(self.x,self.y))
-        pass
         
     def clip(self, bounds):
         """ Remove ICEsat data that falls outside of a given bounding box.

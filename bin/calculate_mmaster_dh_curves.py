@@ -15,9 +15,45 @@ from gdal import GRA_NearestNeighbour
 from pybob.GeoImg import GeoImg
 from pybob.bob_tools import bin_data
 import pybob.image_tools as it
-import pybob.ddem_tools as ddem_tools
+#import pybob.ddem_tools as ddem_tools
 
 
+def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=None):
+    if glacier_inds is None:
+        dem_data = DEM.img[glacier_shapes]
+        if bin_width is None:
+            z_range = np.nanmax(dem_data) - np.nanmin(dem_data)
+            this_bin_width = min(100, int(z_range / 5))
+        else:
+            this_bin_width = bin_width
+        min_el = np.nanmin(dem_data) - (np.nanmin(dem_data) % this_bin_width)
+        max_el = np.nanmax(dem_data) + (this_bin_width - (np.nanmax(dem_data) % this_bin_width))
+        bins = np.arange(min_el, max_el+1, this_bin_width)
+        aads, _ = np.histogram(dem_data, bins=bins, range=(min_el, max_el))
+        aads = aads * np.abs(DEM.dx) * np.abs(DEM.dy)
+        bins = bins[:-1]  # remove the last element, because it's actually above the glacier range.
+    else:
+        bins = []
+        aads = []
+
+        for i in glacier_inds:
+            dem_data = DEM.img[glacier_shapes == i]
+            if bin_width is None:
+                z_range = np.nanmax(dem_data) - np.nanmin(dem_data)
+                this_bin_width = min(100, int(z_range / 5))
+            else:
+                this_bin_width = bin_width
+            min_el = np.nanmin(dem_data) - (np.nanmin(dem_data) % this_bin_width)
+            max_el = np.nanmax(dem_data) + (this_bin_width - (np.nanmax(dem_data) % this_bin_width))
+            thisbin = np.arange(min_el, max_el+1, this_bin_width)
+            thisaad, _ = np.histogram(dem_data, bins=thisbin, range=(min_el, max_el))
+
+            bins.append(thisbin[:-1])  # remove last element.
+            aads.append(thisaad * np.abs(DEM.dx) * np.abs(DEM.dy))  # make it an area!
+
+    return bins, aads
+    
+    
 def get_dH_curve(DEM, dDEM, glacier_mask, bins=None, mode='mean'):
     valid = np.logical_and(np.isfinite(DEM), np.isfinite(dDEM))
     dem_data = DEM[valid]
@@ -29,14 +65,13 @@ def get_dH_curve(DEM, dDEM, glacier_mask, bins=None, mode='mean'):
 
     return bins, mean_dH, bin_areas
 
-
 def get_bins(DEM, glacier_mask):
     dem_data = DEM[np.isfinite(DEM)]
     zmax = np.nanmax(dem_data)
     zmin = np.nanmin(dem_data)
 
     zrange = zmax - zmin
-    bin_width = min(50, int(zrange / 10))
+    bin_width = min(100, int(zrange / 5))
 
     min_el = zmin - (zmin % bin_width)
     max_el = zmax + (bin_width - (zmax % bin_width))
@@ -69,7 +104,7 @@ def outlier_filter(bins, DEM, dDEM, nsig=3):
     new_ddem = np.zeros(dDEM.size)
     digitized = np.digitize(DEM, bins)
     for i, _ in enumerate(bins):
-        this_bindata = dDEM[digitized == i]
+        this_bindata = dDEM[digitized == i+1]
         dstd = 1
         old_mean = np.nanmean(this_bindata)
         old_std = np.nanstd(this_bindata)
@@ -80,7 +115,7 @@ def outlier_filter(bins, DEM, dDEM, nsig=3):
             dstd = np.nanstd(this_bindata) - old_std
             old_mean = np.nanmean(this_bindata)
             old_std = np.nanstd(this_bindata)
-        new_ddem[digitized == i] = this_bindata
+        new_ddem[digitized == i+1] = this_bindata
     return new_ddem
 
 
@@ -152,7 +187,7 @@ def main():
     parser.add_argument('glac_outlines', action='store', type=str, help="Shapefile of glacier outlines")
     parser.add_argument('--glac_mask', action='store', type=str, help="(optional) raster of glacier outlines with \
                          unique values for each glacier")
-    parser.add_argument('--outlier', action='store', type=float, default=100, help="Value to use as outlier [100]")
+    parser.add_argument('--outlier', action='store', type=float, help="Value to use as outlier [None]")
     parser.add_argument('--pct_comp', action='store', type=float, default=0.67, help="Coverage of glacier elevation \
                         range curve must cover to be included [0.67]")
     parser.add_argument('--namefield', action='store', type=str,
@@ -177,19 +212,21 @@ def main():
     # load base dem
     print('Loading DEM {}'.format(args.basedem))
     basedem = GeoImg(args.basedem)
-
+    print('DEM loaded.')
     # get glacier masks
     if args.glac_mask is None:
+        print('Rasterizing glacier polygons to DEM extent.')
         master_mask, master_glacs = it.rasterize_polygons(basedem, args.glac_outlines, burn_handle='fid')
+        master_mask[master_mask < 0] = np.nan
     else:
+        print('Loading raster of glacier polygons {}'.format(args.glac_mask))
         master_mask_geo = GeoImg(args.glac_mask)
         master_mask = master_mask_geo.img
         master_glacs = np.unique(master_mask[np.isfinite(master_mask)])
     # master_mask = np.logical_and(master_mask, np.isfinite(basedem.img))
-
     # get names
     gshp = gpd.read_file(args.glac_outlines)
-
+    print('Glacier masks loaded.')
     # create output folder if it doesn't already exist
     os.system('mkdir -p {}'.format(args.out_folder))
 
@@ -197,8 +234,9 @@ def main():
     for g in gshp[args.namefield]:
         os.system('mkdir -p {}'.format(os.path.sep.join([args.out_folder, g])))
 
+    print('Getting glacier AADs.')
     # get aad
-    aad_bins, aads = ddem_tools.area_alt_dist(basedem, master_mask, glacier_inds=master_glacs)
+    aad_bins, aads = area_alt_dist(basedem, master_mask, glacier_inds=master_glacs)
     # initialize pd dataframes for dH_curves
     df_list = [pd.DataFrame(aad_bin, columns=['elevation']) for aad_bin in aad_bins]
     g_list = [str(gshp[args.namefield][gshp['fid'] == glac].values[0]) for glac in master_glacs]
@@ -207,13 +245,19 @@ def main():
     # turn aad_bins, aads into dicts with RGIId as keys
     bin_dict = dict(zip(g_list, aad_bins))
     aad_dict = dict(zip(g_list, aads))
-
+    
     for i, df in enumerate(df_list):
         df['area'] = pd.Series(aads[i], index=df.index)
+    
+    # now that we have the AADs, make sure we preserve that distribution when we reproject.
+    bin_widths = [np.diff(b)[0] for b in aad_bins]  
+    basedem.img[np.isnan(master_mask)] = np.nan # remove all elevations outside of the glacier mask
+    for i, g in enumerate(master_glacs):
+        basedem.img[master_mask == g] = np.floor(basedem.img[master_mask == g] / bin_widths[i]) * bin_widths[i]
 
     # get a list of all dH
     dH_list = glob('{}/*.tif'.format(args.dH_folder))
-
+    
     # initialize ur_dataframe
     ur_df = pd.DataFrame([os.path.basename(x) for x in dH_list], columns=['filename'])
     ur_df['dem1'] = [nice_split(x)[0] for x in ur_df['filename']]
@@ -223,10 +267,10 @@ def main():
     ur_df['date1'] = date1
     ur_df['date2'] = date2
     ur_df['delta_t'] = [(x - y).days / 365.2425 for x, y in list(zip(date1, date2))]
-    ur_df['centerdate'] = [(y + dt.timedelta((x - y).days / 2)).date() for x, y in list(zip(date1, date2))]
+    ur_df['centerdate'] = [(y + dt.timedelta((x - y).days / 2)) for x, y in list(zip(date1, date2))]
 
-    print('Getting dH curves.')
     print('Found {} files in {}'.format(len(dH_list), args.dH_folder))
+    print('Getting dH curves.')
     for i, dHfile in enumerate(dH_list):
         dH = GeoImg(dHfile)
         print('{} ({}/{})'.format(dH.filename, i+1, len(dH_list)))
@@ -236,7 +280,7 @@ def main():
             tmp_dh_mask = master_mask_geo.reproject(dH, method=GRA_NearestNeighbour)
             dh_mask = tmp_dh_mask.img
             dh_glacs = np.unique(dh_mask[np.isfinite(dh_mask)])
-        tmp_basedem = basedem.reproject(dH)
+        tmp_basedem = basedem.reproject(dH, method=GRA_NearestNeighbour)
         deltat = ur_df.loc[i, 'delta_t']
         this_fname = ur_df.loc[i, 'filename']
         for i, glac in enumerate(dh_glacs):
@@ -267,6 +311,7 @@ def main():
     print('Writing dH curves to {}'.format(args.out_folder))
     # write all dH_curves
     for g in df_dict.keys():
+        print(g)
         df_dict[g].to_csv(os.path.sep.join([args.out_folder, '{}_dH_curves.csv'.format(g)]), index=False)
 
 

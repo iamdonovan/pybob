@@ -34,13 +34,13 @@ def sort_chronologically(dates, data):
 
 
 def pretty_granules(fname):
-    splitname = fname.split('_')
-    if splitname[0] == 'AST':
-        pname = '_'.join(splitname[0:3])
-    elif splitname[0] == 'SETSM':
-        pname = '_'.join(splitname[0:-2]).replace('30m', '2m')
-    else:
-        pname = os.path.splitext(fname)[0].rsplit('_adj', 1)[0]
+#    splitname = fname.split('_')
+#    if splitname[0] == 'AST':
+#        pname = '_'.join(splitname[0:3])
+#    elif splitname[0] == 'SETSM':
+#        pname = '_'.join(splitname[0:-2]).replace('30m', '2m')
+#    else:
+    pname = os.path.splitext(fname)[0].rsplit('_adj', 1)[0]
     return pname
 
 
@@ -48,7 +48,7 @@ def rmsd(diffs):
     return np.sqrt(np.nanmean(diffs ** 2))
 
 
-def write_meta_file(datedict, dDEM, gmask=None, slope=None, outlier=None, outfile=None):
+def write_meta_file(datedict, dDEM, gmask=None, slope=None, outlier=None, outfile=None, soutlier=None):
     # want to include: file 1, file 2, date 1, date 2, time separation
     # also RMSE, mean/std, slope category
     # get pretty crs and bounding box
@@ -67,7 +67,12 @@ def write_meta_file(datedict, dDEM, gmask=None, slope=None, outlier=None, outfil
         delta_t = None
 
     # get statistics
-    diff_rast = dDEM.img
+    if type(dDEM.img) is np.ma.core.MaskedArray:
+        diff_rast = dDEM.img.data
+        diff_rast[dDEM.img.mask] = np.nan
+    else:
+        diff_rast = dDEM.img
+        
     if gmask is not None:
         glacier_mask = create_mask_from_shapefile(dDEM, gmask)
         diff_rast[glacier_mask] = np.nan
@@ -84,6 +89,7 @@ def write_meta_file(datedict, dDEM, gmask=None, slope=None, outlier=None, outfil
         stab_nsamp = np.nan
     if slope is not None:
         srast = GeoImg(slope)
+        srast = srast.reproject(dDEM)
         smask = srast.img < 20
         slope_mean = np.nanmean(diff_rast[smask])
         slope_median = np.nanmedian(diff_rast[smask])
@@ -104,9 +110,9 @@ def write_meta_file(datedict, dDEM, gmask=None, slope=None, outlier=None, outfil
     print('DEM Differences provided as part of the ESA Glaciers_CCI project', file=f)
     print('---------------------------------------dem information---------------------------------------', file=f)
     print('dH filename:\t{}'.format(outfile + '.tif'), file=f)
-    print('DEM1 source:\t{}'.format(pretty_granules(datedict[1][1].filename)), file=f)
+    print('DEM1 source:\t{}'.format(pretty_granules(datedict[0][1].filename)), file=f)
     print('DEM1 date:\t{}'.format(date1str), file=f)
-    print('DEM2 source:\t{}'.format(pretty_granules(datedict[0][1].filename)), file=f)
+    print('DEM2 source:\t{}'.format(pretty_granules(datedict[1][1].filename)), file=f)
     print('DEM2 date:\t{}'.format(date0str), file=f)
     print('centerdate:\t{}'.format(centerdatestr), file=f)
     print('dt:\t\t{} years'.format(delta_t), file=f)
@@ -114,7 +120,10 @@ def write_meta_file(datedict, dDEM, gmask=None, slope=None, outlier=None, outfil
     print('coordinate reference system:\t{}'.format(prettycrs), file=f)
     print('bounding box:\t{}'.format(bbox), file=f)
     print('------------------------------------------statistics-----------------------------------------', file=f)
-    print('outlier value:\t{}'.format(outlier), file=f)
+    if outlier is not None:
+        print('outlier value:\t{}'.format(outlier), file=f)
+    else:
+        print('outlier value (statistics only):\t{}'.format(soutlier), file=f)
     print('stable terrain statistics, post-co-registration:', file=f)
     print('\t\tall stable terrain\tslope < 20 degrees', file=f)
     print('mean:\t\t{:.2f}\t\t\t{:.2f}'.format(stab_mean, slope_mean), file=f)
@@ -133,6 +142,8 @@ def main():
     parser.add_argument('DEM2', action='store', type=str, help="Path to DEM 2")
     parser.add_argument('-mask', action='store', type=str, help="Glacier mask (optional)")
     parser.add_argument('-slope', action='store', type=str, help="Terrain slope (optional)")
+    parser.add_argument('-s_outlier', action='store', type=float, default=100,
+                        help="Set differences above/below to NaN to calculate statistics only.")
     parser.add_argument('-outlier', action='store', type=float, help="Set differences above/below to NaN")
     parser.add_argument('-o', '--outfile', action='store', type=str, help="Specify output filename")
     args = parser.parse_args()
@@ -147,8 +158,12 @@ def main():
 
     demA = GeoImg(args.DEM1)
     print('Loaded {}'.format(args.DEM1))
-    demB = GeoImg(args.DEM2)
+    tmp_demB = GeoImg(args.DEM2)
     print('Loaded {}'.format(args.DEM2))
+    
+    # make sure that the images are lined up to their common extents
+    demB = tmp_demB.reproject(demA)
+    demB.filename = tmp_demB.filename    
 
     datedict = sort_chronologically((dateA, dateB), (demA, demB))
     if dateA is None or dateB is None:
@@ -159,8 +174,16 @@ def main():
         print(datedict[0][0], datedict[1][0])
         dDEM = datedict[0][1].copy(new_raster=(datedict[0][1].img - datedict[1][1].img))
 
+    # crop dDEM to valid extent to save on space
+    valid_ext = dDEM.find_valid_bbox()
+    dDEM = dDEM.crop_to_extent(valid_ext)
+
+
     if args.outlier is not None:
         dDEM.img[np.abs(dDEM.img) > args.outlier] = np.nan
+    else:
+        dDEM.mask(np.abs(dDEM.img) > args.s_outlier)
+    
     if args.outfile is None:
         out1 = 'dH_' + pretty_granules(datedict[0][1].filename)
         out2 = '_' + pretty_granules(datedict[1][1].filename) + '.tif'
@@ -172,7 +195,8 @@ def main():
 
     metaname = os.path.splitext(outname)[0]
     print('Writing metadata to {}'.format(metaname + '.txt'))
-    write_meta_file(datedict, dDEM, gmask=args.mask, slope=args.slope, outlier=args.outlier, outfile=metaname)
+    write_meta_file(datedict, dDEM, gmask=args.mask, slope=args.slope, 
+                    outlier=args.outlier, outfile=metaname, soutlier=args.s_outlier)
     print('Finished.')
 
 

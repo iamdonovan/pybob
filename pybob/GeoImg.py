@@ -12,6 +12,12 @@ from scipy.interpolate import griddata
 from scipy.spatial import ConvexHull
 
 
+numpy2gdal = {np.uint8: gdal.GDT_Byte, np.uint16: gdal.GDT_UInt16, np.int16: gdal.GDT_Int16,
+              np.float32: gdal.GDT_Float32, np.float64: gdal.GDT_Float64, 
+              np.uint32: gdal.GDT_UInt32, np.int32: gdal.GDT_Int32, 
+              np.complex64: gdal.GDT_CFloat64}
+
+
 def get_file_info(in_filestring):
     in_filename = os.path.basename(in_filestring)
     in_dir = os.path.dirname(in_filestring)
@@ -37,9 +43,11 @@ class GeoImg(object):
     datefmt : str, optional
         Format of datestr that datetime.datetime should use to parse datestr.
         Default is %m/%d/%y.
+    dtype : numpy datatype
+        numpy datatype to read input data as. Default is np.float32. See numpy docs for more details.
         
     """
-    def __init__(self, in_filename, in_dir=None, datestr=None, datefmt='%m/%d/%y'):
+    def __init__(self, in_filename, in_dir=None, datestr=None, datefmt='%m/%d/%y', dtype=np.float32):
 
         if type(in_filename) is gdal.Dataset:
             self.filename = None
@@ -73,10 +81,13 @@ class GeoImg(object):
         self.dy = self.gt[5]
         self.UTMtfm = [self.xmin, self.ymax, self.dx, self.dy]
         self.NDV = self.gd.GetRasterBand(1).GetNoDataValue()
-        self.img = self.gd.ReadAsArray().astype(np.float32)
+        self.img = self.gd.ReadAsArray().astype(dtype)
         self.dtype = self.gd.ReadAsArray().dtype
-        if self.NDV is not None:
+
+        if self.NDV is not None and isinstance(self.dtype, float):
             self.img[self.img == self.NDV] = np.nan
+        elif self.NDV is not None:
+            self.img = np.ma.masked_where(self.img == self.NDV, self.img)
 
         if self.filename is not None:
             if (datestr is not None):
@@ -118,7 +129,7 @@ class GeoImg(object):
         # print('[MEAN]:             {}'.format(np.nanmean(self.img)))
         # print('[MEDIAN]:           {}'.format(np.nanmedian(self.img)))
 
-    def display(self, fig=None, cmap='gray', extent=None, sfact=None, showfig=True, band=[0, 1, 2]):
+    def display(self, fig=None, cmap='gray', extent=None, sfact=None, showfig=True, band=[0, 1, 2], **kwargs):
         """
         Display GeoImg in a figure.
         
@@ -137,6 +148,8 @@ class GeoImg(object):
             Open the figure window. Default is True.
         band : array-like, optional
             Image bands to use, if GeoImg represents a multi-band image.
+        **kwargs: optional
+            Optional keyword arguments to pass to plt.imshow
             
         Returns
         -------
@@ -173,13 +186,13 @@ class GeoImg(object):
                 showimg = self.img[int(mini):int(maxi+1), int(minj):int(maxj+1)]
             else:
                 showimg = self.img[int(mini):int(maxi+1):sfact, int(minj):int(maxj+1):sfact]
-            plt.imshow(showimg, extent=extent, cmap=cmap)
+            plt.imshow(showimg, extent=extent, cmap=cmap, **kwargs)
         elif type(band) is int:
             if sfact is None:
                 showimg = self.img[band][int(mini):int(maxi+1), int(minj):int(maxj+1)]
             else:
                 showimg = self.img[band][int(mini):int(maxi+1):sfact, int(minj):int(maxj+1):sfact]
-            plt.imshow(showimg, extent=extent, cmap=cmap)
+            plt.imshow(showimg, extent=extent, cmap=cmap, **kwargs)
         else:  # if we have more than one band and we've asked to display them all, do it.
             if sfact is None:
                 b1 = self.img[band[0]][int(mini):int(maxi+1), int(minj):int(maxj+1)]
@@ -190,7 +203,7 @@ class GeoImg(object):
                 b2 = self.img[band[1]][int(mini):int(maxi+1):sfact, int(minj):int(maxj+1):sfact]
                 b3 = self.img[band[2]][int(mini):int(maxi+1):sfact, int(minj):int(maxj+1):sfact]
             rgb = np.dstack([b1, b2, b3]).astype(self.dtype)
-            plt.imshow(rgb, extent=extent)
+            plt.imshow(rgb, extent=extent, **kwargs)
 
         ax = fig.gca()  # get current axes
         ax.set_aspect('equal')    # set equal aspect
@@ -201,7 +214,7 @@ class GeoImg(object):
 
         return fig
 
-    def write(self, outfilename, out_folder=None, driver='GTiff', datatype=gdal.GDT_Float32):
+    def write(self, outfilename, out_folder=None, driver='GTiff', dtype=None, bands=None):
         """
         Write GeoImg to a gdal-supported raster file.
         
@@ -215,22 +228,28 @@ class GeoImg(object):
         driver : str, optional
             String representing the gdal driver to use to write the raster file. Default is GTiff.
             Options include: HDF4, HDF5, JPEG, PNG, JPEG2000 (if enabled). See gdal docs for more options.
-        datatype : gdal datatype
-            Type of data to write the raster as. Default is GDT_Float32 (32-bit float).
-            Other common options include: GDT_Float64 (64-bit float), GDT_Byte (8-bit integer),
-                GDT_Int16 (16-bit integer), GDT_UInt16 (16-bit unsigned integer). See gdal docs for
-                more options.    
+        datatype : numpy datatype
+            Type of data to write the raster as. Check GeoImg.numpy2gdal.keys() to see numpy data types implemented.
+        bands : array-like
+            Specify band(s) to write to file. Default behavior is all bands.
         """
+        if dtype is None:
+            dtype = self.dtype
+        # if we don't specify which bands, we're going to write all of them
+        if bands is None:
+            nband = self.gd.RasterCount
+        else:
+            nband = len(bands)
+        
         driver = gdal.GetDriverByName(driver)
 
         ncols = self.npix_x
         nrows = self.npix_y
-        nband = 1
 
         if out_folder is None:
             outfilename, out_folder = get_file_info(outfilename)
             
-        out = driver.Create(os.path.sep.join([out_folder, outfilename]), ncols, nrows, nband, datatype)
+        out = driver.Create(os.path.sep.join([out_folder, outfilename]), ncols, nrows, nband, numpy2gdal[dtype])
 
         setgeo = out.SetGeoTransform(self.gt)
         setproj = out.SetProjection(self.proj)
@@ -239,11 +258,28 @@ class GeoImg(object):
         if self.NDV is not None:
             self.img[nanmask] = self.NDV
 
-        write = out.GetRasterBand(1).WriteArray(self.img)
-        if self.NDV is not None:
-            out.GetRasterBand(1).SetNoDataValue(self.NDV)
+        if bands is None:
+            if nband == 1:
+                write = out.GetRasterBand(1).WriteArray(self.img)
+                if self.NDV is not None:
+                    out.GetRasterBand(1).SetNoDataValue(self.NDV)                
+            else:
+                for i in range(nband):
+                    out.GetRasterBand(i+1).WriteArray(self.img[i, :, :])
+                    if self.NDV is not None:
+                        out.GetRasterBand(i+1).SetNoDataValue(self.NDV)
+        else:
+            if nband == 1:
+                write = out.GetRasterBand(1).WriteArray(self.img[bands[0], :, :])
+                if self.NDV is not None:
+                    out.GetRasterBand(1).SetNoDataValue(self.NDV)
+            else:
+                for i, b in enumerate(bands):
+                    write = out.GetRasterBand(i+1).WriteArray(self.img[b, :, :])
+                    if self.NDV is not None:
+                        out.GetRasterBand(i+1).SetNoDataValue(self.NDV)
 
-        out.GetRasterBand(1).FlushCache()
+        out.FlushCache()
 
         if self.NDV is not None:
             self.img[nanmask] = np.nan

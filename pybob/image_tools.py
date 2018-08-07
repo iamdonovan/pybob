@@ -11,6 +11,37 @@ from pybob.bob_tools import parse_lsat_scene, round_down
 from pybob.GeoImg import GeoImg
 
 
+def hillshade(dem, azimuth=315, altitude=45):
+    """
+    Create a hillshade image of a DEM, given the azimuth and altitude.
+
+    Parameters
+    ----------
+
+    dem : GeoImg
+        GeoImg representing a DEM.
+    azimuth : float
+        Solar azimuth angle, in degress from North. Default 315.
+    altitude : float
+        Solar altitude angle, in degrees from horizon. Default 45.
+
+    Returns
+    -------
+   
+    shaded : numpy array
+        numpy array of the same size as dem.img, representing the hillshade image.
+    """
+    x, y = np.gradient(dem.img, dem.dx, dem.dy)
+    slope = np.pi/2 - np.arctan(np.sqrt(x*x + y*y))
+    aspect = np.arctan2(-x, y)
+    azimuthrad = azimuth * np.pi / 180
+    altituderad = altitude * np.pi / 180
+    shaded = np.sin(altituderad) * np.sin(slope) + np.cos(altituderad) *\
+             np.cos(slope) * np.cos(azimuthrad - aspect)
+
+    return shaded
+
+
 def generate_panchrome(imgname, outname=None, out_dir='.', interactive=False):
     if outname is None:
         outname = imgname + '_B8.TIF'
