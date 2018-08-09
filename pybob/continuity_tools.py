@@ -45,6 +45,7 @@ class Cell(Polygon):
         plt.quiver(self.x_up, self.y_up, self.n_up[0], self.n_up[1], color='k')
         plt.quiver(self.x_dn, self.y_dn, self.n_dn[0], self.n_dn[1], color='r')
         plt.plot(self.x, self.y, 'r*', markersize=12)
+        return fig
 
 
 # ditto for 'flowline'

@@ -82,7 +82,7 @@ class GeoImg(object):
         self.UTMtfm = [self.xmin, self.ymax, self.dx, self.dy]
         self.NDV = self.gd.GetRasterBand(1).GetNoDataValue()
         self.img = self.gd.ReadAsArray().astype(dtype)
-        self.dtype = self.gd.ReadAsArray().dtype
+        self.dtype = dtype
 
         if self.NDV is not None and isinstance(self.dtype, float):
             self.img[self.img == self.NDV] = np.nan
@@ -90,7 +90,7 @@ class GeoImg(object):
             self.img = np.ma.masked_where(self.img == self.NDV, self.img)
 
         if self.filename is not None:
-            if (datestr is not None):
+            if datestr is not None:
                 self.imagedatetime = dt.datetime.strptime(datestr, datefmt)
             elif (self.filename[0] == 'L'):  # if it looks like a Landsat file
                 try:
