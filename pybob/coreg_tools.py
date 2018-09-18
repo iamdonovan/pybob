@@ -285,8 +285,10 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
     if type(masterDEM) is str:
         mfilename = os.path.basename(masterDEM)
+        mfiledir = os.path.dirname(masterDEM)
     else:
         mfilename = masterDEM.filename
+        mfiledir = masterDEM.in_dir_path
 
     if type(slaveDEM) is str:
         sfilename = os.path.basename(slaveDEM)
@@ -311,9 +313,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         slaveDEM.mask(smask)
         stable_mask = slaveDEM.copy(new_raster=smask)  # make the mask a geoimg
     else:
-        masterDEM = get_geoimg(masterDEM)
+        orig_masterDEM = get_geoimg(masterDEM)
         
-        masterDEM = masterDEM.reproject(slaveDEM)  # need to resample masterDEM to cell size of slave.
+        masterDEM = orig_masterDEM.reproject(slaveDEM)  # need to resample masterDEM to cell size of slave.
         #masterDEM.img[masterDEM.img<1]=np.nan
         stable_mask = create_stable_mask(masterDEM, glaciermask, landmask)
 
@@ -454,25 +456,24 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     outslave.img = outslave.img + tot_dz
     outslave.write(slaveoutfile, out_folder=outdir)
     outslave.filename=slaveoutfile
-
-    
-    if not pts:
-        if mfilename is not None:
-            mastoutfile = '.'.join(mfilename.split('.')[0:-1]) + '_adj.tif'
-        else:
-            mastoutfile = 'master_adj.tif'
-        if full_ext:
-            masterDEM = get_geoimg(mfilename)
-        masterDEM.write(mastoutfile, out_folder=outdir)
-
+   
     if pts:
         slope_geo.write('tmp_slope.tif', out_folder=outdir)
         aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
 
     # Final Check --- for debug
-    dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, outslave)
-    false_hillshade(dH, 'FINAL CHECK', pp)
+    if not pts:
+        dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, outslave)
+        false_hillshade(dH, 'FINAL CHECK', pp)
 
+        if mfilename is not None:
+            mastoutfile = '.'.join(mfilename.split('.')[0:-1]) + '_adj.tif'
+        else:
+            mastoutfile = 'master_adj.tif'
+
+        if full_ext:
+            masterDEM = orig_masterDEM
+        masterDEM.write(mastoutfile, out_folder=outdir)
 
     pp.close()
     print("Fin.")

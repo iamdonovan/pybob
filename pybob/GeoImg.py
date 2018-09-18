@@ -172,7 +172,7 @@ class GeoImg(object):
             self.sensor_name = 'ASTER'
             self.satellite = 'Terra'
             self.tile = None
-            self.datetime = dt.datetime.strptime(gname.split('_')[2][3:], '%m%d%Y%H%M%S')
+            self.datetime = dt.datetime.strptime(bname.split('_')[2][3:], '%m%d%Y%H%M%S')
             self.date = self.datetime.date()
         elif gname.split('_')[0] == 'SETSM':
             self.sensor_name = 'SETSM'
