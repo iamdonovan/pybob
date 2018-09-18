@@ -72,7 +72,17 @@ def preprocess(stable_mask, slope, aspect, master, slave):
         stan = np.tan(np.radians(slope)).astype(np.float32)
 
         dH = master.copy(new_raster=(master.img-slave.img))
-        dH.img[stable_mask] = np.nan
+        master_mask = isinstance(master.img, np.ma.masked_array)
+        slave_mask = isinstance(slave.img, np.ma.masked_array)
+        if master_mask and slave_mask:
+            dH.mask(np.logical_or(master.img.mask, slave.img.mask))
+        elif master_mask:
+            dH.mask(master.img.mask)
+        elif slave_mask:
+            dH.mask(slave.img.mask)
+        
+        if dH.isfloat:
+            dH.img[stable_mask] = np.nan
 
         dHtan = dH.img / stan
         mykeep = ((np.absolute(dH.img) < 200.0) & np.isfinite(dH.img) &
