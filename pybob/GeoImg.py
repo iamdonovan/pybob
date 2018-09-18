@@ -84,7 +84,7 @@ class GeoImg(object):
         self.img = self.gd.ReadAsArray().astype(dtype)
         self.dtype = dtype
 
-        if self.NDV is not None and isinstance(self.dtype, float):
+        if self.NDV is not None and self.dtype in [np.float32, np.float64, np.complex64, np.floating, float]:
             self.img[self.img == self.NDV] = np.nan
         elif self.NDV is not None:
             self.img = np.ma.masked_where(self.img == self.NDV, self.img)
@@ -265,7 +265,7 @@ class GeoImg(object):
                     out.GetRasterBand(1).SetNoDataValue(self.NDV)                
             else:
                 for i in range(nband):
-                    out.GetRasterBand(i+1).WriteArray(self.img[i, :, :])
+                    write = out.GetRasterBand(i+1).WriteArray(self.img[i, :, :])
                     if self.NDV is not None:
                         out.GetRasterBand(i+1).SetNoDataValue(self.NDV)
         else:
@@ -430,7 +430,7 @@ class GeoImg(object):
         gdal.ReprojectImage(self.gd, dest, self.proj, dst_raster.proj, method)
 
         out = GeoImg(dest)
-        # out.img[out.img == self.NDV] = np.nan
+        #out.img[out.img == self.NDV] = np.nan
 
         return out
 

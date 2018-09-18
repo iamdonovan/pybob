@@ -11,7 +11,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pybob.GeoImg import GeoImg
 from pybob.ICESat import ICESat
 from pybob.image_tools import create_mask_from_shapefile
-
+from IPython import embed
 
 def get_slope(geoimg):
     slope_ = gdal.DEMProcessing('', geoimg.gd, 'slope', format='MEM')
@@ -70,8 +70,9 @@ def preprocess(stable_mask, slope, aspect, master, slave):
 
     if isinstance(master, GeoImg):
         stan = np.tan(np.radians(slope)).astype(np.float32)
-
         dH = master.copy(new_raster=(master.img-slave.img))
+        #dH.mask(np.logical_or(master.img.mask, slave.img.mask))
+        
         dH.img[stable_mask] = np.nan
 
         dHtan = dH.img / stan
@@ -117,13 +118,23 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     def fitfun(p, x): return p[0] * np.cos(np.radians(p[1] - x)) + p[2]
 
     def errfun(p, x, y): return fitfun(p, x) - y
-
-    print("soft_l1")
-    #lb = [-200, 0, -100]
-    #ub = [200, 359, 100]
-    p0 = [-1, 1, -1]
+    
+    if xdata.size > 20000:
+        mysamp = np.random.randint(0, xdata.size, 20000)
+    else:
+        mysamp = np.arange(0, xdata.size)
+    mysamp=mysamp.astype(np.int64)
+    
+    
+    #embed()
+    #print("soft_l1")
+    lb = [-200, 0, -300]
+    ub = [200, 180, 300]
+    p0 = [1, 1, -1]
     #p1, success, _ = optimize.least_squares(errfun, p0[:], args=([xdata], [ydata]), method='trf', bounds=([lb],[ub]), loss='soft_l1', f_scale=0.1)
-    myresults = optimize.least_squares(errfun, p0, args=(xdata, ydata), method='trf', loss='soft_l1', f_scale=0.5)    
+    #myresults = optimize.least_squares(errfun, p0, args=(xdata, ydata), method='trf', loss='soft_l1', f_scale=0.5)    
+    myresults = optimize.least_squares(errfun, p0, args=(xdata[mysamp], ydata[mysamp]), method='trf', loss='soft_l1', f_scale=0.1,ftol=1E-4,xtol=1E-4)    
+    #myresults = optimize.least_squares(errfun, p0, args=(xdata[mysamp], ydata[mysamp]), method='trf', bounds=([lb,ub]), loss='soft_l1', f_scale=0.1,ftol=1E-8,xtol=1E-8)    
     p1 = myresults.x
     # success = myresults.success # commented because it wasn't actually being used.
     # print success
@@ -136,11 +147,7 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     xp = np.linspace(0, 360, 361)
     yp = fitfun(p1, xp)
 
-    if xdata.size > 50000:
-        mysamp = np.random.randint(0, xdata.size, 50000)
-    else:
-        mysamp = np.arange(0, xdata.size)
-    mysamp=mysamp.astype(np.int64)
+
     
     fig = plt.figure(figsize=(7, 5), dpi=600)
     fig.suptitle(title, fontsize=14)
@@ -295,8 +302,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         stable_mask = slaveDEM.copy(new_raster=smask)  # make the mask a geoimg
     else:
         masterDEM = get_geoimg(masterDEM)
+        
         masterDEM = masterDEM.reproject(slaveDEM)  # need to resample masterDEM to cell size of slave.
-
+        #masterDEM.img[masterDEM.img<1]=np.nan
         stable_mask = create_stable_mask(masterDEM, glaciermask, landmask)
 
         slope_geo = get_slope(masterDEM)
@@ -315,6 +323,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     tot_dy = np.float64(0)
     tot_dz = np.float64(0)
     magnthresh = 200
+    magnlimit=1
     mytitle = 'DEM difference: pre-coregistration'
     if pts:
         this_slave = slaveDEM
@@ -323,7 +332,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         this_slave = slaveDEM.reproject(masterDEM)
         this_slave.mask(stable_mask)
 
-    while mythresh > 2 and magnthresh > 1:
+    while mythresh > 2 and magnthresh > magnlimit:
         if mycount != 0:
             # slaves.append(slaves[-1].reproject(masterDEM))
             # slaves[-1].mask(stable_mask)
@@ -382,7 +391,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         print(mythresh, magnthresh)
         
         # slaves[-1].display()
-        if mythresh > 2 and magnthresh > 1:
+        if mythresh > 2 and magnthresh > magnlimit:
             dH = None
             dx = None
             dy = None
@@ -394,13 +403,19 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             if not pts:
                 dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, this_slave)
                 mytitle = "DEM difference: After Iteration {}".format(mycount)
+                #adjust final dH
+                #myfadj=np.nanmean([np.nanmean(dH.img),np.nanmedian(dH.img)])
+                #myfadj=np.nanmedian(dH.img)
+                #tot_dz += myfadj
+                #dH.img = dH.img-myfadj
+                
                 false_hillshade(dH, mytitle, pp)
                 dHfinal = dH.img
             else:
                 mytitle2 = "Co-registration: FINAL"
                 dH, xdata, ydata, sdata = preprocess(stable_mask, slope_geo, aspect_geo, masterDEM, this_slave)
                 dx, dy, dz = coreg_fitting(xdata, ydata, sdata, mytitle2, pp)
-                dHfinal = dH            
+                dHfinal = dH
  
     # Create final histograms pre and post coregistration
     # shift = [tot_dx, tot_dy, tot_dz]  # commented because it wasn't actually used.
@@ -428,7 +443,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     outslave.shift(tot_dx, tot_dy)
     outslave.img = outslave.img + tot_dz
     outslave.write(slaveoutfile, out_folder=outdir)
+    outslave.filename=slaveoutfile
 
+    
     if not pts:
         if mfilename is not None:
             mastoutfile = '.'.join(mfilename.split('.')[0:-1]) + '_adj.tif'
@@ -441,6 +458,11 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     if pts:
         slope_geo.write('tmp_slope.tif', out_folder=outdir)
         aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
+
+    # Final Check --- for debug
+    dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, outslave)
+    false_hillshade(dH, 'FINAL CHECK', pp)
+
 
     pp.close()
     print("Fin.")
