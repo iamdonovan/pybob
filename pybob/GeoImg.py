@@ -1,5 +1,6 @@
 from __future__ import print_function
 import os
+import re
 import random
 import datetime as dt
 import numpy as np
@@ -7,7 +8,6 @@ import matplotlib.pyplot as plt
 import gdal
 import osr
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from pybob.bob_tools import standard_landsat
 from scipy.interpolate import griddata
 from scipy.spatial import ConvexHull
 
@@ -16,6 +16,28 @@ numpy2gdal = {np.uint8: gdal.GDT_Byte, np.uint16: gdal.GDT_UInt16, np.int16: gda
               np.float32: gdal.GDT_Float32, np.float64: gdal.GDT_Float64, 
               np.uint32: gdal.GDT_UInt32, np.int32: gdal.GDT_Int32, 
               np.complex64: gdal.GDT_CFloat64}
+
+lsat_sensor = {'C': 'OLI/TIRS', 'E': 'ETM+', 'T': 'TM', 'M': 'MSS', 'O': 'OLI', 'TI': 'TIRS'}
+
+
+def parse_landsat(gname):
+    attrs = []
+    if len(gname.split('_')) == 1:
+        attrs.append(lsat_sensor[gname[1]])
+        attrs.append('Landsat {}'.format(int(gname[2])))
+        attrs.append((int(gname[3:6]), int(gname[6:9])))
+        year = int(gname[9:13])
+        doy = int(gname[13:16])
+        attrs.append(dt.datetime.fromordinal(dt.date(year-1, 12, 31).toordinal()+doy))
+        attrs.append(attrs[3].date())
+    elif re.match('L[COTEM][0-9]{2}', gname.split('_')[0]):
+        split_name = gname.split('_')
+        attrs.append(lsat_sensor[split_name[0][1]])
+        attrs.append('Landsat {}'.format(int(split_name[0][2:4])))
+        attrs.append((int(split_name[2][0:3]), int(split_name[2][3:6])))
+        attrs.append(dt.datetime.strptime(split_name[3], '%Y%m%d'))
+        attrs.append(attrs[3].date())
+    return attrs
 
 
 def get_file_info(in_filestring):
@@ -47,7 +69,7 @@ class GeoImg(object):
         numpy datatype to read input data as. Default is np.float32. See numpy docs for more details.
         
     """
-    def __init__(self, in_filename, in_dir=None, datestr=None, datefmt='%m/%d/%y', dtype=np.float32):
+    def __init__(self, in_filename, in_dir=None, datestr=None, datefmt='%m/%d/%y', dtype=np.float32, attrs=None):
 
         if type(in_filename) is gdal.Dataset:
             self.filename = None
@@ -83,33 +105,96 @@ class GeoImg(object):
         self.NDV = self.gd.GetRasterBand(1).GetNoDataValue()
         self.img = self.gd.ReadAsArray().astype(dtype)
         self.dtype = dtype
+        if dtype in [np.float32, np.float64, np.complex64, np.floating, float]:
+            self.isfloat = True
+        else:
+            self.isfloat = False
 
-        if self.NDV is not None and self.dtype in [np.float32, np.float64, np.complex64, np.floating, float]:
+        if self.NDV is not None and self.isfloat:
             self.img[self.img == self.NDV] = np.nan
         elif self.NDV is not None:
             self.img = np.ma.masked_where(self.img == self.NDV, self.img)
 
         if self.filename is not None:
-            if datestr is not None:
-                self.imagedatetime = dt.datetime.strptime(datestr, datefmt)
-            elif (self.filename[0] == 'L'):  # if it looks like a Landsat file
-                try:
-                    self.filename = standard_landsat(self.filename)
-                    self.sensor = self.filename[0:3]
-                    self.path = int(self.filename[3:6])
-                    self.row = int(self.filename[6:9])
-                    self.year = int(self.filename[9:13])
-                    self.doy = int(self.filename[13:16])
-                    self.imagedatetime = dt.date.fromordinal(dt.date(self.year-1, 12, 31).toordinal()+self.doy)
-                except:
-                    print("This doesn't actually look like a Landsat file.")
-            else:
-                self.datetime = None
+            self.match_sensor(in_filename, datestr=datestr, datefmt=datefmt)
+        elif attrs is not None:
+            self.sensor_name = attrs.sensor_name
+            self.satellite = attrs.satellite
+            self.tile = attrs.tile
+            self.datetime = attrs.datetime
+            self.date = attrs.date
         else:
-            self. datetime = None
-
+            self.sensor_name = None
+            self.satellite = None
+            self.tile = None
+            self.datetime = None
+            self.date = None
+        
         self.img_ov2 = self.img[0::2, 0::2]
         self.img_ov10 = self.img[0::10, 0::10]
+
+    def match_sensor(self, fname, datestr=None, datefmt=''):
+        bname = os.path.splitext(os.path.basename(fname))[0]
+        # assumes that the filename has a form GRANULE_BXX.ext
+        gname = '_'.join(bname.split('_')[:-1])
+        # now, try a few different things
+        # first, check if we've been given a date
+        if datestr is not None:
+            self.sensor_name = None
+            self.satellite = None
+            self.tile = None
+            self.datetime = dt.datetime.strptime(datestr, datefmt)
+            self.date = self.datetime.date()
+        elif re.match('L[COTEM][0-9]{2}', gname.split('_')[0]):
+            attrs = parse_landsat(gname)
+            self.sensor_name = attrs[0]
+            self.satellite = attrs[1]
+            self.tile = attrs[2]
+            self.datetime = attrs[3]
+            self.date = attrs[4]
+        elif gname.split('_')[0][0] == 'L' and len(gname.split('_')) == 1:
+            attrs = parse_landsat(gname)
+            self.sensor_name = attrs[0]
+            self.satellite = attrs[1]
+            self.tile = attrs[2]
+            self.datetime = attrs[3]
+            self.date = attrs[4]
+        # next, sentinel 2
+        elif re.match('T[0-9]{2}[A-Z]{3}', gname.split('_')[0]):
+            # sentinel 2 tiles have form
+            self.sensor_name = 'MSI'
+            self.satellite = 'Sentinel-2'
+            self.tile = gname.split('_')[0][1:]
+            self.datetime = dt.datetime.strptime(gname.split('_')[1], '%Y%m%dT%H%M%S')
+            self.date = self.datetime.date()
+        # next, aster
+        elif gname.split('_')[0] == 'AST':
+            self.sensor_name = 'ASTER'
+            self.satellite = 'Terra'
+            self.tile = None
+            self.datetime = dt.datetime.strptime(gname.split('_')[2][3:], '%m%d%Y%H%M%S')
+            self.date = self.datetime.date()
+        elif gname.split('_')[0] == 'SETSM':
+            self.sensor_name = 'SETSM'
+            self.satellite = gname.split('_')[1]
+            self.tile = None
+            self.datetime = dt.datetime.strptime(gname.split('_')[2], '%Y%m%d')
+            self.date = self.datetime.date()
+        elif gname.split('_')[0]== 'SPOT':
+            self.sensor_name = 'HFS'
+            self.satellite = 'SPOT5'
+            self.tile = None
+            self.datetime = dt.datetime.strptime(bname.split('_')[2], '%Y%m%d')
+            self.date = self.datetime.date()
+        else:
+            print("I don't recognize this filename format.")
+            print("Make sure to specify a date and format if you need date info,")
+            print("  and your filename is not a standard filename.")
+            self.sensor_name = None
+            self.satellite = None
+            self.tile = None
+            self.datetime = None
+            self.date = None
 
     def info(self):
         """ Prints information about the GeoImg (filename, coordinate system, number of columns/rows, etc.)."""
@@ -163,8 +248,9 @@ class GeoImg(object):
             # fig.hold(True)
 
         if extent is None:
-            extent = [self.xmin, self.xmax, self.ymin, self.ymax]
 
+            extent = [self.xmin, self.xmax, self.ymin, self.ymax]
+            disp_ext = extent
             mini = 0
             maxi = self.npix_y
             minj = 0
@@ -173,26 +259,33 @@ class GeoImg(object):
             xmin, xmax, ymin, ymax = extent
             mini, minj = self.xy2ij((xmin, ymax))
             maxi, maxj = self.xy2ij((xmax, ymin))
-
+                       
             mini += 0.5
             minj += 0.5
 
             maxi -= 0.5
             maxj -= 0.5  # subtract the .5 for half a pixel, add 1 for slice
 
+            mini = max(0, mini)
+            maxi = min(maxi, self.npix_y)
+
+            minj = max(0, minj)
+            maxj = min(maxj, self.npix_x)
+            disp_ext = [max(xmin, self.xmin), min(xmax, self.xmax), max(ymin, self.ymin), min(ymax, self.ymax)]
+            
         # if we only have one band, plot it.
         if self.gd.RasterCount == 1:
             if sfact is None:
                 showimg = self.img[int(mini):int(maxi+1), int(minj):int(maxj+1)]
             else:
                 showimg = self.img[int(mini):int(maxi+1):sfact, int(minj):int(maxj+1):sfact]
-            plt.imshow(showimg, extent=extent, cmap=cmap, **kwargs)
+            plt.imshow(showimg, extent=disp_ext, cmap=cmap, **kwargs)
         elif type(band) is int:
             if sfact is None:
                 showimg = self.img[band][int(mini):int(maxi+1), int(minj):int(maxj+1)]
             else:
                 showimg = self.img[band][int(mini):int(maxi+1):sfact, int(minj):int(maxj+1):sfact]
-            plt.imshow(showimg, extent=extent, cmap=cmap, **kwargs)
+            plt.imshow(showimg, extent=disp_ext, cmap=cmap, **kwargs)
         else:  # if we have more than one band and we've asked to display them all, do it.
             if sfact is None:
                 b1 = self.img[band[0]][int(mini):int(maxi+1), int(minj):int(maxj+1)]
@@ -203,8 +296,10 @@ class GeoImg(object):
                 b2 = self.img[band[1]][int(mini):int(maxi+1):sfact, int(minj):int(maxj+1):sfact]
                 b3 = self.img[band[2]][int(mini):int(maxi+1):sfact, int(minj):int(maxj+1):sfact]
             rgb = np.dstack([b1, b2, b3]).astype(self.dtype)
-            plt.imshow(rgb, extent=extent, **kwargs)
+            plt.imshow(rgb, extent=disp_ext, **kwargs)
 
+        plt.xlim(extent[0], extent[1])
+        plt.ylim(extent[2], extent[3])
         ax = fig.gca()  # get current axes
         ax.set_aspect('equal')    # set equal aspect
         ax.autoscale(tight=True)  # set axes tight
@@ -350,7 +445,7 @@ class GeoImg(object):
 
         del wa, sg, sp
 
-        return GeoImg(newGdal)
+        return GeoImg(newGdal, attrs=self)
 
     # return X,Y grids of coordinates for each pixel    
     def xy(self, ctype='corner', grid=True):
@@ -429,8 +524,11 @@ class GeoImg(object):
 
         gdal.ReprojectImage(self.gd, dest, self.proj, dst_raster.proj, method)
 
-        out = GeoImg(dest)
-        #out.img[out.img == self.NDV] = np.nan
+        out = GeoImg(dest, attrs=self)
+        if out.NDV is not None and out.isfloat:
+            out.img[out.img == out.NDV] = np.nan
+        elif out.NDV is not None:
+            out.img = np.ma.masked_where(out.img == out.NDV, out.img)
 
         return out
 
@@ -689,7 +787,7 @@ class GeoImg(object):
         if self.NDV is not None:
             dest.GetRasterBand(1).SetNoDataValue(self.NDV)
 
-        return GeoImg(dest)
+        return GeoImg(dest, attrs=self)
 
     def overlay(self, raster, extent=None, vmin=0, vmax=10, sfact=None, showfig=True, alpha=0.25, cmap='jet'):
         """
