@@ -4,6 +4,7 @@ from collections import OrderedDict
 import os
 import h5py
 import numpy as np
+import pandas as pd
 import pyproj
 import fiona
 import matplotlib.pyplot as plt
@@ -153,6 +154,33 @@ class ICESat(object):
             outfile.write({'properties': out_data, 'geometry': mapping(point)})
 
         outfile.close()
+        
+    def to_csv(self, out_filename):
+        """
+        Write ICESat data to csv format using pandas.
+        
+        Parameters
+        ----------
+        out_filename : string
+            Filename (optionally with path) of file to read out.
+        """
+        darr = np.transpose(np.array(self.h5data))
+        data_names = [d.split('/')[-1] for d in self.data_names]
+        for i, d in enumerate(data_names):
+            data_names[i] = d.rsplit(str(i), 1)[0]
+        df = pd.DataFrame(darr, columns=data_names)
+        df['x'] = self.x
+        df['y'] = self.y
+        df['z'] = self.elev
+    
+        col_names = ['x', 'y', 'z']
+        col_names.extend(data_names)
+        df = df[col_names]
+        del df['d_elev']
+        del df['d_lat']
+        del df['d_lon']
+    
+        df.to_csv(out_filename, index=False)
         
     def clean(self, el_limit=-500):
         """ Remove all elevation points below a given elevation.
