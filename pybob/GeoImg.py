@@ -445,7 +445,13 @@ class GeoImg(object):
 
         del wa, sg, sp
 
-        return GeoImg(newGdal, attrs=self)
+        out = GeoImg(newGdal, attrs=self)
+        # make sure to app
+        if isinstance(new_raster, np.ma.MaskedArray):
+            out.mask(new_raster.mask)
+        elif isinstance(self.img, np.ma.MaskedArray):
+            out.mask(self.img.mask)
+        return out
 
     # return X,Y grids of coordinates for each pixel    
     def xy(self, ctype='corner', grid=True):
