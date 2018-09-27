@@ -137,9 +137,16 @@ class GeoImg(object):
         bname = os.path.splitext(os.path.basename(fname))[0]
         # assumes that the filename has a form GRANULE_BXX.ext
         gname = '_'.join(bname.split('_')[:-1])
+
+        if len(gname.split('_')) == 1:
+            self.sensor_name = None
+            self.satellite = None
+            self.tile = None
+            self.datetime = None
+            self.date = None
         # now, try a few different things
         # first, check if we've been given a date
-        if datestr is not None:
+        elif datestr is not None:
             self.sensor_name = None
             self.satellite = None
             self.tile = None
@@ -187,9 +194,6 @@ class GeoImg(object):
             self.datetime = dt.datetime.strptime(bname.split('_')[2], '%Y%m%d')
             self.date = self.datetime.date()
         else:
-            print("I don't recognize this filename format.")
-            print("Make sure to specify a date and format if you need date info,")
-            print("  and your filename is not a standard filename.")
             self.sensor_name = None
             self.satellite = None
             self.tile = None
