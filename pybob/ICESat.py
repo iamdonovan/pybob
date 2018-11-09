@@ -7,6 +7,9 @@ import numpy as np
 import pandas as pd
 import pyproj
 import fiona
+import subprocess
+from osgeo import ogr,osr
+from pybob.GeoImg import GeoImg
 import matplotlib.pyplot as plt
 from shapely.geometry import Point, mapping
 #import numpy as np
@@ -29,6 +32,88 @@ def find_keyname(keys, subkey, mode='first'):
     else:
         return out_keys
 
+def extract_ICESat(in_filename,workdir=None,outfile=None):
+    """Extract ICESat data given the extent of a GeoImg.
+
+    Parameters
+    ----------
+    in_filename : string
+        Filename (optionally with path) of geotiff file to be read in using GeoImg.
+    workdir : string, optional
+        Directory where in_filename is located. If not given, the directory
+        will be determined from the input filename.
+    outfile : name of the output file, optional [default='ICESat_DEM.h5']
+    """
+
+    def getExtent(in_filename):
+    #This function uses GeoImg.find_valid_bbox to get the extent, then projects 
+    #extent into the same reference system as in_filename
+    #in_filename - input filename (string). should be a geotiff
+        myDEM = GeoImg(in_filename)
+        mybbox = myDEM.find_valid_bbox()
+        
+        # Setup the source projection - you can also import from epsg, proj4...
+        source = osr.SpatialReference()
+        source.ImportFromEPSG(myDEM.epsg)
+    
+        # The target projection
+        target = osr.SpatialReference()
+        target.ImportFromEPSG(4326)
+    
+        # Create the transform - this can be used repeatedly
+        transform = osr.CoordinateTransformation(source, target)
+    
+        # Transform the point. You can also create an ogr geometry and use the more generic `point.Transform()`
+        J1 = transform.TransformPoint(mybbox[0], mybbox[2])
+        J2 = transform.TransformPoint(mybbox[1], mybbox[3])
+        
+        minLat = J1[1]
+        maxLat = J2[1]
+        
+        minLon = J1[0]
+        maxLon = J2[0]
+        
+    #    if minLon<0:
+    #        minLon = 360 + minLon
+    #    if maxLon<0:
+    #        maxLon = 360 + maxLon
+    
+        return minLat, maxLat, minLon, maxLon
+        
+    #workdir = os.path.abspath(workdir)
+    minLat, maxLat, minLon, maxLon = getExtent(in_filename)    
+    
+    # Hard coded name of the input configuration file for ICESat extraction. Here we will 
+    # read it in, modify it using the extent of a GeoImg
+    filename="/net/lagringshotell/uio/lagringshotell/geofag/icemass/icemass-data/ICESatData/ICESat_archive/Programs/user_input_running.txt"
+    
+    # Check for the working directory, and set if None
+    if workdir is None: 
+        workdir= os.path.abspath('./')
+    tfilename = workdir + os.path.sep + "ICESat_input.txt"
+    # Read in the input_file for icesat extraction
+    with open(filename) as f:
+        lines = f.readlines()
+        #print lines
+
+    # Set the output file 
+    if outfile is None: 
+        outfile='ICESat_DEM.h5'
+    # replace lines
+    strout = str(minLat) + "\t" + str(maxLat) + "\t" + str(minLon) + "\t" + str(maxLon)
+    lines[10] = strout + "\n"
+    lines[12] = outfile + "\n"    
+    
+    # write output configuration file
+    with open(tfilename, 'w') as f:
+        for item in lines:
+            f.write(str(item))
+    
+    # Here run bash command to the ICESat extraction routine using our newly created config file
+    bshcmd = "module load ICESat; importICESat -in " + str(tfilename) + " > ICESat_import_LOG.txt"
+    subprocess.call(bshcmd,stdout=subprocess.PIPE, shell=True)
+    
+    pass
 
 class ICESat(object):
     """Create an ICESat dataset from an HDF5 file containing ICESat data.
