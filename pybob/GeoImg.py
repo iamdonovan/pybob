@@ -904,7 +904,7 @@ class GeoImg(object):
             # return a random list as above, but remember to shift everything by the edge buffer.
             return np.array([np.array(np.unravel_index(x, tmp_img.shape))+edge_buffer for x in random.sample(goodinds, Npts)])
 
-    def raster_points(self, pts, mode='linear'):
+    def raster_points(self, pts, nsize=1, mode='linear'):
         """Interpolate raster values at a given point, or sets of points. 
         
         Parameters
@@ -912,7 +912,9 @@ class GeoImg(object):
         
         pts : array-like
             Point(s) at which to interpolate raster value. If points fall outside
-            of image, value returned is nan.
+            of image, value returned is nan.'
+        nsize : int, optional
+            Number of neighboring points to include in the interpolation. Default is 1.
         mode : str, optional
             One of 'linear', 'cubic', or 'quintic'. Determines what type of spline is
             used to interpolate the raster value at each point. For more information, see 
@@ -939,9 +941,9 @@ class GeoImg(object):
                 continue
             else:
                 # print("not outside!")
-                x = xx[ij[1]-1:ij[1]+2]
-                y = yy[ij[0]-1:ij[0]+2]
-                z = self.img[ij[0]-1:ij[0]+2, ij[1]-1:ij[1]+2]
+                x = xx[ij[1]-nsize:ij[1]+nsize+1]
+                y = yy[ij[0]-nsize:ij[0]+nsize+1]
+                z = self.img[ij[0]-nsize:ij[0]+nsize+1, ij[1]-nsize:ij[1]+nsize+1]
                 X, Y = np.meshgrid(x, y)
                 try:
                     zint = griddata((X.flatten(), Y.flatten()), z.flatten(), pt)
