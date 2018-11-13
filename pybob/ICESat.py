@@ -1,5 +1,5 @@
 from __future__ import print_function
-from future_builtins import zip
+#from future_builtins import zip
 from collections import OrderedDict
 import os
 import h5py
