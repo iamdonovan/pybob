@@ -162,6 +162,14 @@ class ICESat(object):
         self.y = self.y[mykeep]
         self.elev = self.elev[mykeep]
         self.xy = list(zip(self.x,self.y))
+
+    def mask(self, mykeep):
+        """ Masks out points not True in boolean array mykeep
+        """
+        self.x = self.x[mykeep]
+        self.y = self.y[mykeep]
+        self.elev = self.elev[mykeep]
+        self.xy = list(zip(self.x,self.y))
         
     def clip(self, bounds):
         """ Remove ICEsat data that falls outside of a given bounding box.

@@ -934,7 +934,7 @@ class GeoImg(object):
                 z = self.img[ij[0]-1:ij[0]+2, ij[1]-1:ij[1]+2]
                 X, Y = np.meshgrid(x, y)
                 try:
-                    zint = griddata((X.flatten(), Y.flatten()), z.flatten(), pt)
+                    zint = griddata((X.flatten(), Y.flatten()), z.flatten(), pt, method=mode)
                 except:
                     zint = np.nan
                 rpts.append(zint)
