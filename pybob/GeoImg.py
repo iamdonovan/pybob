@@ -88,7 +88,10 @@ class GeoImg(object):
 
         self.gt = self.gd.GetGeoTransform()
         self.proj = self.gd.GetProjection()
-        self.epsg = int(''.join(filter(lambda x: x.isdigit(), self.proj.split(',')[-1])))
+        try:   # Starting to implement the possibility to load raster without ESPG pre-assigned
+            self.epsg = int(''.join(filter(lambda x: x.isdigit(), self.proj.split(',')[-1])))
+        except:
+            self.epsg = None
         self.spatialReference = osr.SpatialReference()
         dump = self.spatialReference.ImportFromEPSG(self.epsg)  # do this to make our SRS nice and easy for osr later.
         del dump
