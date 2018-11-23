@@ -522,7 +522,8 @@ class GeoImg(object):
         elif driver == 'GTiff' and filename == '':
             raise Exception('must specify an output filename')
 
-        dest = drv.Create('', dst_raster.npix_x, dst_raster.npix_y, 1, gdal.GDT_Float32)
+        dest = drv.Create('', dst_raster.npix_x, dst_raster.npix_y,
+                          1, gdal.GDT_Float32)
         dest.SetProjection(dst_raster.proj)
         dest.SetGeoTransform(dst_raster.gt)
         if dst_raster.NDV is not None:
@@ -759,7 +760,7 @@ class GeoImg(object):
 
         return simages
 
-    def crop_to_extent(self, extent):
+    def crop_to_extent(self, extent, pixel_size=None, bands=None):
         """
         Crop image to given extent.
         
@@ -769,7 +770,13 @@ class GeoImg(object):
             Extent to which image should be cropped. If extent is a matplotlib figure handle, the image
             extent is taken from the x and y limits of the current figure axes. If extent is array-like, 
             it is assumed to be [xmin, xmax, ymin, ymax]
-        
+        pixel_size : float, default None
+            Set pixel size of output raster. Default is calculated based on current
+            pixel size and extent.
+        bands : array-like, default None
+            Image band(s) to crop - default assumes first (only) band.
+            Remember that numpy indices start at 0 - i.e., the first band is band 0.
+            
         Returns
         -------
         cropped_img : GeoImg
@@ -781,23 +788,43 @@ class GeoImg(object):
         else:
             xmin, xmax, ymin, ymax = extent
 
-        npix_x = int(np.round((xmax - xmin) / float(self.dx)))
-        npix_y = int(np.round((ymin - ymax) / float(self.dy)))
+        if bands is None:
+            bands = [0]
 
-        dx = (xmax - xmin) / float(npix_x)
-        dy = (ymin - ymax) / float(npix_y)
+        nbands = len(bands)
+        
+        if pixel_size is None:
+            npix_x = int(np.round((xmax - xmin) / float(self.dx)))
+            npix_y = int(np.round((ymin - ymax) / float(self.dy)))
+
+            dx = (xmax - xmin) / float(npix_x)
+            dy = (ymin - ymax) / float(npix_y)
+        else:
+            dx = pixel_size
+            dy = -pixel_size            
+            npix_x = int(np.round((xmax - xmin) / float(dx)))
+            npix_y = int(np.round((ymin - ymax) / float(dy)))
 
         drv = gdal.GetDriverByName('MEM')
-        dest = drv.Create('', npix_x, npix_y, 1, gdal.GDT_Float32)
+        dest = drv.Create('', npix_x, npix_y, nbands, gdal.GDT_Float32)
         dest.SetProjection(self.proj)
         newgt = (xmin, dx, 0.0, ymax, 0.0, dy)
         dest.SetGeoTransform(newgt)
-        gdal.ReprojectImage(self.gd, dest, self.proj, self.proj, gdal.GRA_Bilinear)
-
+        
         if self.NDV is not None:
-            dest.GetRasterBand(1).SetNoDataValue(self.NDV)
+            for i in range(len(bands)):
+                dest.GetRasterBand(i+1).SetNoDataValue(self.NDV)
+                dest.GetRasterBand(i+1).Fill(self.NDV)
 
-        return GeoImg(dest, attrs=self)
+        gdal.ReprojectImage(self.gd, dest, self.proj, self.proj, gdal.GRA_Bilinear)
+        out = GeoImg(dest, attrs=self)
+        if out.NDV is not None and out.isfloat:
+            out.img[out.img == out.NDV] = np.nan
+        elif out.NDV is not None:
+            out.img = np.ma.masked_where(out.img == out.NDV, out.img)
+
+        return out
+
 
     def overlay(self, raster, extent=None, vmin=0, vmax=10, sfact=None, showfig=True, alpha=0.25, cmap='jet'):
         """
