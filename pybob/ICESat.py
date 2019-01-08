@@ -32,7 +32,7 @@ def find_keyname(keys, subkey, mode='first'):
     else:
         return out_keys
 
-def extract_ICESat(in_filename,workdir=None,outfile=None):
+def extract_ICESat(in_filename, workdir=None, outfile=None):
     """Extract ICESat data given the extent of a GeoImg.
 
     Parameters

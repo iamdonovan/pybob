@@ -37,7 +37,7 @@ def false_hillshade(dH, title, pp):
     im1 = ax.imshow(dH.img, extent=niceext)
     im1.set_clim(-20, 20)
     im1.set_cmap('Greys')
-    fig.suptitle(title, fontsize=14)
+    ax.set_title(title, fontsize=14)
     numwid = max([len('{:.1f} m'.format(np.nanmean(dH_vec))),
                   len('{:.1f} m'.format(np.nanmedian(dH_vec))), len('{:.1f} m'.format(np.nanstd(dH_vec)))])
     plt.annotate('MEAN:'.ljust(8) + ('{:.1f} m'.format(np.nanmean(dH_vec))).rjust(numwid), xy=(0.65, 0.95),
@@ -48,10 +48,10 @@ def false_hillshade(dH, title, pp):
     plt.annotate('STD:'.ljust(8) + ('{:.1f} m'.format(np.nanstd(dH_vec))).rjust(numwid), xy=(0.65, 0.85),
                  xycoords='axes fraction', fontsize=12, fontweight='bold', color='red', family='monospace')
 
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    plt.colorbar(im1, cax=cax)
-
+    #divider = make_axes_locatable(ax)
+    #cax = divider.append_axes("right", size="5%", pad=0.05)
+    #plt.colorbar(im1, cax=cax)
+    plt.colorbar(im1)
     plt.tight_layout()
     pp.savefig(fig, bbox_inches='tight', dpi=200)
     return
@@ -167,7 +167,8 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
 
     
     fig = plt.figure(figsize=(7, 5), dpi=600)
-    fig.suptitle(title, fontsize=14)
+    #fig.suptitle(title, fontsize=14)
+    plt.title(title, fontsize=14)
     plt.plot(xdata[mysamp], ydata[mysamp], '^', ms=0.5, color='0.5', rasterized=True, fillstyle='full')
     plt.plot(xp, np.zeros(xp.size), 'k', ms=3)
     plt.plot(xp, yp, 'r-', ms=2)
