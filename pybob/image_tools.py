@@ -68,14 +68,13 @@ def nanmedian_filter(img, **kwargs):
     
     nanmedian_filter : array-like
         Return of same shape as input.
-    """
+    """  
     # set up the wrapper function to call generic filter
     @jit_filter_function
     def nanmed(a):
         return np.nanmedian(a)
     
     return ndimage.filters.generic_filter(img, nanmed, **kwargs)
-    
     
 
 def generate_panchrome(imgname, outname=None, out_dir='.', interactive=False):

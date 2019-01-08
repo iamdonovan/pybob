@@ -450,7 +450,7 @@ class GeoImg(object):
         del wa, sg, sp
 
         out = GeoImg(newGdal, attrs=self)
-        # make sure to app
+        # make sure to apply mask
         if isinstance(new_raster, np.ma.MaskedArray):
             out.mask(new_raster.mask)
         elif isinstance(self.img, np.ma.MaskedArray):

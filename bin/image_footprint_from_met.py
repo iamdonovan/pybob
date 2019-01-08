@@ -44,7 +44,7 @@ def main():
                           driver='ESRI Shapefile', schema=schema)
 
     if args.processed:
-        flist = glob.glob('AST*/*.zip.met')
+        flist = glob.glob('AST*/*.zip.met') + glob.glob('AST*/zips/*.zip.met')
     else:
         flist = glob.glob('*.zip.met')
 

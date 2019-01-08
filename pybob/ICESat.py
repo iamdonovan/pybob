@@ -1,4 +1,4 @@
-from __future__ import print_function
+#from __future__ import print_function
 #from future_builtins import zip
 from collections import OrderedDict
 import os
@@ -110,7 +110,7 @@ def extract_ICESat(in_filename,workdir=None,outfile=None):
             f.write(str(item))
     
     # Here run bash command to the ICESat extraction routine using our newly created config file
-    bshcmd = "module load ICESat; importICESat -in " + str(tfilename) + " > ICESat_import_LOG.txt"
+    bshcmd = "module load ICESat; importICESat -np 20 -in " + str(tfilename) + " > ICESat_import_LOG.txt"
     subprocess.call(bshcmd,stdout=subprocess.PIPE, shell=True)
     
     pass
@@ -143,7 +143,7 @@ class ICESat(object):
         self.in_dir_path = in_dir
         self.in_dir_abs_path = os.path.abspath(in_dir)
 
-        h5f = h5py.File(os.path.join(self.in_dir_path, self.filename))
+        h5f = h5py.File(os.path.join(self.in_dir_path, self.filename),'r')
         h5data = h5f['ICESatData']  # if data come from Anne's ICESat scripts, should be the only data group
         data_names = h5data.attrs.keys()
         # make sure that our default attributes are included.

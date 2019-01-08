@@ -224,7 +224,7 @@ def plot_polygon_df(polygon_df, fig=None, ax=None, mpl='mpl_polygon', **kwargs):
     return fig, polygon_df
     
 
-def plot_shaded_dem(dem, azimuth=315, altitude=45, fig=None, extent=None, alpha=0.35, **kwargs):
+def plot_shaded_dem(dem, azimuth=315, altitude=45, fig=None, extent=None, alpha=0.35, colormap='terrain', **kwargs):
     """
     Plot a shaded relief image of a DEM.
 
@@ -243,6 +243,8 @@ def plot_shaded_dem(dem, azimuth=315, altitude=45, fig=None, extent=None, alpha=
         Spatial extent to limit the figure to, given as xmin, xmax, ymin, ymax.
     alpha : float
         Alpha value to set DEM to. Default is 0.35.
+    colormap: string
+        colormap style for matplotlib
     **kwargs: optional
         Optional keyword arguments to pass to plt.imshow
 
@@ -254,8 +256,8 @@ def plot_shaded_dem(dem, azimuth=315, altitude=45, fig=None, extent=None, alpha=
     if fig is None:
         fig = plt.figure()
 
-    cmap = plt.get_cmap('terrain')
-    new_cmap = truncate_colormap(cmap, 0.25, 0.95)
+    cmap = plt.get_cmap(colormap)
+    new_cmap = truncate_colormap(cmap, 0.25, 0.75)
 
     shaded = hillshade(dem, azimuth=azimuth, altitude=altitude)
     if extent is None:
