@@ -1,4 +1,4 @@
-from __future__ import print_function
+#from __future__ import print_function
 import os
 import errno
 import gdal
@@ -11,6 +11,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pybob.GeoImg import GeoImg
 from pybob.ICESat import ICESat
 from pybob.image_tools import create_mask_from_shapefile
+from pybob.plot_tools import plot_shaded_dem
 
 
 def get_slope(geoimg):
@@ -25,6 +26,9 @@ def get_aspect(geoimg):
 
 def false_hillshade(dH, title, pp):
     niceext = np.array([dH.xmin, dH.xmax, dH.ymin, dH.ymax])/1000.
+    mykeep = np.logical_and.reduce((np.isfinite(dH.img), (np.abs(dH.img) < np.nanstd(dH.img) * 3)))
+    dH_vec = dH.img[mykeep]
+
     fig = plt.figure(figsize=(7, 5), dpi=300)
     ax = plt.gca()
 
@@ -32,17 +36,16 @@ def false_hillshade(dH, title, pp):
     im1.set_clim(-20, 20)
     im1.set_cmap('Greys')
 
-    #fig.suptitle(title, fontsize=14)
     plt.title(title, fontsize=14)
 
-    numwid = max([len('{:.1f} m'.format(np.nanmean(dH.img))),
-                  len('{:.1f} m'.format(np.nanmedian(dH.img))), len('{:.1f} m'.format(np.nanstd(dH.img)))])
-    plt.annotate('MEAN:'.ljust(8) + ('{:.1f} m'.format(np.nanmean(dH.img))).rjust(numwid), xy=(0.65, 0.95),
+    numwid = max([len('{:.1f} m'.format(np.mean(dH_vec))),
+                  len('{:.1f} m'.format(np.median(dH_vec))), len('{:.1f} m'.format(np.std(dH_vec)))])
+    plt.annotate('MEAN:'.ljust(8) + ('{:.1f} m'.format(np.mean(dH_vec))).rjust(numwid), xy=(0.65, 0.95),
                  xycoords='axes fraction', fontsize=12, fontweight='bold', color='red', family='monospace')
-    plt.annotate('MEDIAN:'.ljust(8) + ('{:.1f} m'.format(np.nanmedian(dH.img))).rjust(numwid),
+    plt.annotate('MEDIAN:'.ljust(8) + ('{:.1f} m'.format(np.median(dH_vec))).rjust(numwid),
                  xy=(0.65, 0.90), xycoords='axes fraction', fontsize=12, fontweight='bold',
                  color='red', family='monospace')
-    plt.annotate('STD:'.ljust(8) + ('{:.1f} m'.format(np.nanstd(dH.img))).rjust(numwid), xy=(0.65, 0.85),
+    plt.annotate('STD:'.ljust(8) + ('{:.1f} m'.format(np.std(dH_vec))).rjust(numwid), xy=(0.65, 0.85),
                  xycoords='axes fraction', fontsize=12, fontweight='bold', color='red', family='monospace')
 
     divider = make_axes_locatable(ax)
@@ -193,11 +196,17 @@ def final_histogram(dH0, dHfinal, pp):
     fig = plt.figure(figsize=(7, 5), dpi=200)
     plt.title('Elevation difference histograms', fontsize=14)
     
-    j1, j2 = np.histogram(dH0[np.isfinite(dH0)], bins=100, range=(-60, 60))
-    k1, k2 = np.histogram(dHfinal[np.isfinite(dHfinal)], bins=100, range=(-60, 60))
+    dH0 = np.squeeze(np.asarray(dH0[ np.logical_and.reduce((np.isfinite(dH0), (np.abs(dH0) < np.nanstd(dH0) * 3)))]))
+    dHfinal = np.squeeze(np.asarray(dHfinal[ np.logical_and.reduce((np.isfinite(dHfinal), (np.abs(dHfinal) < np.nanstd(dHfinal) * 3)))]))
     
-    stats0 = [np.nanmean(dH0), np.nanmedian(dH0), np.nanstd(dH0), RMSE(dH0)]
-    stats_fin = [np.nanmean(dHfinal), np.nanmedian(dHfinal), np.nanstd(dHfinal), RMSE(dHfinal)]    
+    dH0=dH0[np.isfinite(dH0)]
+    dHfinal=dHfinal[np.isfinite(dHfinal)]
+    
+    j1, j2 = np.histogram(dH0, bins=100, range=(-60, 60))
+    k1, k2 = np.histogram(dHfinal, bins=100, range=(-60, 60))
+    
+    stats0 = [np.mean(dH0), np.median(dH0), np.std(dH0), RMSE(dH0), np.sum(np.isfinite(dH0))]
+    stats_fin = [np.mean(dHfinal), np.median(dHfinal), np.std(dHfinal), RMSE(dHfinal), np.sum(np.isfinite(dHfinal))]    
     
     plt.plot(j2[1:], j1,'k-', linewidth=2)
     plt.plot(k2[1:], k1,'r-', linewidth=2)
@@ -228,10 +237,11 @@ def final_histogram(dH0, dHfinal, pp):
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
     pp.savefig(fig, dpi=200)
     
+    return stats_fin, stats0
     
 def RMSE(indata): 
     """ Return root mean square of indata."""
-    myrmse = np.sqrt(np.nanmean(indata**2))
+    myrmse = np.sqrt(np.nanmean(np.asarray(indata)**2))
     return myrmse
     
     
@@ -244,7 +254,7 @@ def get_geoimg(indata):
         raise TypeError('input data must be a string pointing to a gdal dataset, or a GeoImg object.')
 
 
-def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.', pts=False, full_ext=False):
+def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.', pts=False, full_ext=False, return_var=True):
     """
     Iteratively co-register elevation data, based on routines described in Nuth and Kaeaeb, 2011.
 
@@ -270,6 +280,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         If True, program writes full extents of input DEMs. If False, program writes
         input DEMs cropped to their common extent. Default is False.
     """
+    
     # if the output directory does not exist, create it.
     outdir = os.path.abspath(outdir)
     try:
@@ -279,8 +290,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             pass
         else:
             raise
-    # make a file to save the coregistration parameters to.
+    # make a file to save the coregistration parameters and statistics to.
     paramf = open(outdir + os.path.sep + 'coreg_params.txt', 'w')
+    statsf = open(outdir + os.path.sep + 'stats.txt', 'w')
     # create the output pdf
     pp = PdfPages(outdir + os.path.sep + 'CoRegistration_Results.pdf')
 
@@ -328,6 +340,12 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         smask = create_stable_mask(slaveDEM, glaciermask, landmask)
         slaveDEM.mask(smask)
         stable_mask = slaveDEM.copy(new_raster=smask)  # make the mask a geoimg
+        
+        ### Create initial plot of where stable terrain is, including ICESat pts
+        fig1 = plot_shaded_dem(slaveDEM)
+        plt.plot(masterDEM.x[~np.isnan(masterDEM.elev)], masterDEM.y[~np.isnan(masterDEM.elev)], 'k.')
+        pp.savefig(fig1, bbox_inches='tight', dpi=200)
+
     else:
         orig_masterDEM = get_geoimg(masterDEM)
         if orig_masterDEM.is_point():
@@ -343,7 +361,10 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
     slope = slope_geo.img
     aspect = aspect_geo.img
-
+    
+    if np.sum(np.greater(slope.flatten(),3))<500:
+        return
+    
     mythresh = np.float64(200)  # float64 really necessary?
     mystd = np.float64(200)
     mycount = 0
@@ -372,12 +393,22 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         # if we don't have two DEMs, showing the false hillshade doesn't work.
         if not pts:
             dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, this_slave)
+            #if np.logical_or(np.sum(np.isfinite(xdata.flatten()))<100, np.sum(np.isfinite(ydata.flatten()))<100):
+            if np.logical_or.reduce((np.sum(np.isfinite(xdata.flatten()))<100, np.sum(np.isfinite(ydata.flatten()))<100, np.sum(np.isfinite(sdata.flatten()))<100)):
+                print("Exiting: Less than 100 data points")
+                return
             false_hillshade(dH, mytitle, pp)
             dH_img = dH.img
+
         else:
             dH, xdata, ydata, sdata = preprocess(stable_mask, slope_geo, aspect_geo, masterDEM, this_slave)
             dH_img = dH
-
+            #if np.logical_or(np.sum(np.isfinite(dH.flatten()))<100, np.sum(np.isfinite(ydata.flatten()))<100):
+            if np.logical_or.reduce((np.sum(np.isfinite(xdata.flatten()))<100, np.sum(np.isfinite(ydata.flatten()))<100, np.sum(np.isfinite(sdata.flatten()))<100)):
+                print("Exiting: Not enough data points")
+                return 
+        
+        
         if mycount == 1:
             dH0 = dH_img
 
@@ -447,7 +478,10 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
  
     # Create final histograms pre and post coregistration
     # shift = [tot_dx, tot_dy, tot_dz]  # commented because it wasn't actually used.
-    final_histogram(dH0, dHfinal, pp)
+    stats_final, stats_init = final_histogram(dH0, dHfinal, pp)
+    print("MEAN, MEDIAN, STD, RMSE, COUNT", file=statsf)
+    print(stats_init, file=statsf)
+    print(stats_final, file=statsf)
 
     # create new raster with dH sample used for co-registration as the band
     # dH.write(outdir + os.path.sep + 'dHpost.tif') # have to fill these in!
@@ -473,7 +507,6 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     #outslave.img = outslave.img + tot_dz
     if not pts and not full_ext:
         outslave = outslave.reproject(masterDEM)
-    
     outslave.write(slaveoutfile, out_folder=outdir)
     if pts:
         slope_geo.write('tmp_slope.tif', out_folder=outdir)
@@ -481,8 +514,12 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
     # Final Check --- for debug
     if not pts:
+        print("FinalCHECK")
+       #outslave = outslave.reproject(masterDEM)
+        masterDEM = orig_masterDEM.reproject(outslave)
         dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, outslave)
         false_hillshade(dH, 'FINAL CHECK', pp)
+        #dx, dy, dz = coreg_fitting(xdata, ydata, sdata, "Final Check", pp)
 
         if mfilename is not None:
             mastoutfile = '.'.join(mfilename.split('.')[0:-1]) + '_adj.tif'
@@ -497,7 +534,10 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     print("Fin.")
     print("Fin.", file=paramf)
     paramf.close()
+    statsf.close()
+    plt.close("all")
 
     out_offs = [tot_dx, tot_dy, tot_dz]
 
-    return masterDEM, outslave, out_offs
+    if return_var:
+        return masterDEM, outslave, out_offs

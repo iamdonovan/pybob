@@ -4,6 +4,7 @@ import os
 import ogr
 import numpy as np
 import multiprocessing as mp
+from llc import jit_filter_function
 import scipy.ndimage as ndimage
 import scipy.ndimage.filters as filters
 from skimage.feature import greycomatrix, greycoprops
@@ -41,6 +42,40 @@ def hillshade(dem, azimuth=315, altitude=45):
 
     return shaded
 
+
+def nanmedian_filter(img, **kwargs):
+    """
+    Calculate a multi-dimensional median filter that respects NaN values
+    and masked arrays.
+    
+    Parameters
+    ----------
+
+    img : array-like
+        image on which to calculate the median filter
+    **kwargs : additional arguments to ndimage.generic_filter
+        Note that either size or footprint must be defined. size gives the shape
+        that is taken from the input array, at every element position, to define 
+        the input to the filter function. footprint is a boolean array that 
+        specifies (implicitly) a shape, but also which of the elements within 
+        this shape will get passed to the filter function. Thus size=(n,m) is 
+        equivalent to footprint=np.ones((n,m)). We adjust size to the number 
+        of dimensions of the input array, so that, if the input array is 
+        shape (10,10,10), and size is 2, then the actual size used is (2,2,2).
+        
+    Returns
+    -------
+    
+    nanmedian_filter : array-like
+        Return of same shape as input.
+    """  
+    # set up the wrapper function to call generic filter
+    @jit_filter_function
+    def nanmed(a):
+        return np.nanmedian(a)
+    
+    return ndimage.filters.generic_filter(img, nanmed, **kwargs)
+    
 
 def generate_panchrome(imgname, outname=None, out_dir='.', interactive=False):
     if outname is None:
