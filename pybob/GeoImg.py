@@ -105,6 +105,7 @@ class GeoImg(object):
         self.NDV = self.gd.GetRasterBand(1).GetNoDataValue()
         self.img = self.gd.ReadAsArray().astype(dtype)
         self.dtype = dtype
+        self.px_loc = self.gd.GetMetadataItem('AREA_OR_POINT')
         if dtype in [np.float32, np.float64, np.complex64, np.floating, float]:
             self.isfloat = True
         else:
@@ -129,14 +130,26 @@ class GeoImg(object):
             self.tile = None
             self.datetime = None
             self.date = None
-        
+
         self.img_ov2 = self.img[0::2, 0::2]
         self.img_ov10 = self.img[0::10, 0::10]
 
     def match_sensor(self, fname, datestr=None, datefmt=''):
         bname = os.path.splitext(os.path.basename(fname))[0]
         # assumes that the filename has a form GRANULE_BXX.ext
-        gname = '_'.join(bname.split('_')[:-1])
+        if '_' in bname:
+            gname = '_'.join(bname.split('_')[:-1])
+        else:
+            #print("I don't recognize this filename format.")
+            #print("Make sure to specify a date and format if you need date info,")
+            #print("  and your filename is not a standard filename.")
+            print("No date information read from filename.")
+            self.sensor_name = None
+            self.satellite = None
+            self.tile = None
+            self.datetime = None
+            self.date = None
+            return
         # now, try a few different things
         # first, check if we've been given a date
         if datestr is not None:
@@ -187,9 +200,7 @@ class GeoImg(object):
             self.datetime = dt.datetime.strptime(bname.split('_')[2], '%Y%m%d')
             self.date = self.datetime.date()
         else:
-            print("I don't recognize this filename format.")
-            print("Make sure to specify a date and format if you need date info,")
-            print("  and your filename is not a standard filename.")
+            print("No date information read from filename.")
             self.sensor_name = None
             self.satellite = None
             self.tile = None
@@ -439,11 +450,11 @@ class GeoImg(object):
             newproj = self.proj
 
         sp = newGdal.SetProjection(newproj)
-
+        md = newGdal.SetMetadata(self.gd.GetMetadata())
         if self.NDV is not None:
             newGdal.GetRasterBand(1).SetNoDataValue(self.NDV)
 
-        del wa, sg, sp
+        del wa, sg, sp, md
 
         return GeoImg(newGdal, attrs=self)
 
@@ -456,7 +467,7 @@ class GeoImg(object):
         ----------
         ctype : str, optional
             coordinate type. If 'corner', returns corner coordinates of pixels. 
-            If 'center', returns center coordinates. Default is center.
+            If 'center', returns center coordinates. Default is corner.
         grid : bool, optional
             Return gridded coordinates. Default is True.
             
@@ -515,6 +526,8 @@ class GeoImg(object):
         dest = drv.Create('', dst_raster.npix_x, dst_raster.npix_y, 1, gdal.GDT_Float32)
         dest.SetProjection(dst_raster.proj)
         dest.SetGeoTransform(dst_raster.gt)
+        # copy the metadata of the current GeoImg to the new GeoImg
+        dest.SetMetadata(self.gd.GetMetadata())
         if dst_raster.NDV is not None:
             dest.GetRasterBand(1).SetNoDataValue(dst_raster.NDV)
             dest.GetRasterBand(1).Fill(dst_raster.NDV)
@@ -972,3 +985,31 @@ class GeoImg(object):
     def median(self):
         """ Returns median (ignoring NaNs) of the image."""
         return np.nanmedian(self.img)
+
+    def to_point(self):
+        """Change pixel location from corner ('Area') to center ('Point').
+               Shifts raster by half pixel in the +x, -y direction.
+        """
+        if self.px_loc == 'Area':
+            self.px_loc = 'Point'
+            self.gd.SetMetadataItem('AREA_OR_POINT', self.px_loc)
+            self.shift(self.dx/2, self.dy/2)
+        else:
+            pass
+
+    def to_area(self):
+        """Change pixel location from center ('Point') to corner ('Area').
+               Shifts raster by half pixel in the -x, +y direction.
+        """
+        if self.px_loc == 'Point':
+            self.px_loc = 'Area'
+            self.gd.SetMetadataItem('AREA_OR_POINT', self.px_loc)
+            self.shift(-self.dx/2, -self.dy/2)
+        else:
+            pass
+
+    def is_point(self):
+        return self.px_loc == 'Point'
+
+    def is_area(self):
+        return self.px_loc == 'Area'
