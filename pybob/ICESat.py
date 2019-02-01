@@ -1,4 +1,4 @@
-#from __future__ import print_function
+from __future__ import print_function
 #from future_builtins import zip
 from collections import OrderedDict
 import os
@@ -8,7 +8,7 @@ import pandas as pd
 import pyproj
 import fiona
 import subprocess
-from osgeo import ogr,osr
+from osgeo import ogr, osr
 from pybob.GeoImg import GeoImg
 import matplotlib.pyplot as plt
 from shapely.geometry import Point, mapping

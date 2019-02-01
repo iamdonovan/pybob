@@ -12,7 +12,6 @@ from pybob.GeoImg import GeoImg
 from pybob.ICESat import ICESat
 from pybob.image_tools import create_mask_from_shapefile
 from pybob.plot_tools import plot_shaded_dem
-#from IPython import embed
 
 
 def get_slope(geoimg):
@@ -27,22 +26,20 @@ def get_aspect(geoimg):
 
 def false_hillshade(dH, title, pp):
     niceext = np.array([dH.xmin, dH.xmax, dH.ymin, dH.ymax])/1000.
-    
-    
     mykeep = np.logical_and.reduce((np.isfinite(dH.img), (np.abs(dH.img) < np.nanstd(dH.img) * 3)))
     dH_vec = dH.img[mykeep]
-    
-    
-    
-    fig = plt.figure(figsize=(7, 5))
+
+    fig = plt.figure(figsize=(7, 5), dpi=300)
     ax = plt.gca()
+
     im1 = ax.imshow(dH.img, extent=niceext)
     im1.set_clim(-20, 20)
     im1.set_cmap('Greys')
-    fig.suptitle(title, fontsize=10)
 #    if np.sum(np.isfinite(dH_vec))<10:
 #        print("Error for statistics in false_hillshade")
 #    else: 
+    plt.title(title, fontsize=14)
+
     numwid = max([len('{:.1f} m'.format(np.mean(dH_vec))),
                   len('{:.1f} m'.format(np.median(dH_vec))), len('{:.1f} m'.format(np.std(dH_vec)))])
     plt.annotate('MEAN:'.ljust(8) + ('{:.1f} m'.format(np.mean(dH_vec))).rjust(numwid), xy=(0.65, 0.95),
@@ -56,9 +53,10 @@ def false_hillshade(dH, title, pp):
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(im1, cax=cax)
+    #plt.colorbar(im1)
 
     plt.tight_layout()
-    pp.savefig(fig, bbox_inches='tight', dpi=200)
+    pp.savefig(fig, dpi=200)
     return
 
 
@@ -171,8 +169,9 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
 
 
     
-    fig = plt.figure(figsize=(7, 5), dpi=600)
-    fig.suptitle(title, fontsize=14)
+    fig = plt.figure(figsize=(7, 5), dpi=300)
+    #fig.suptitle(title, fontsize=14)
+    plt.title(title, fontsize=14)
     plt.plot(xdata[mysamp], ydata[mysamp], '^', ms=0.5, color='0.5', rasterized=True, fillstyle='full')
     plt.plot(xp, np.zeros(xp.size), 'k', ms=3)
     plt.plot(xp, yp, 'r-', ms=2)
@@ -191,12 +190,12 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
     plt.text(0.05, 0.05, '$\Delta$z: ' + ('{:.1f} m'.format(zadj)).rjust(numwidth),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
-    pp.savefig(fig, bbox_inches='tight', dpi=200)
+    pp.savefig(fig, dpi=200)
 
     return xadj, yadj, zadj
 
 def final_histogram(dH0, dHfinal, pp):
-    fig = plt.figure(figsize=(7, 5), dpi=600)
+    fig = plt.figure(figsize=(7, 5), dpi=200)
     plt.title('Elevation difference histograms', fontsize=14)
     
     dH0 = np.squeeze(np.asarray(dH0[ np.logical_and.reduce((np.isfinite(dH0), (np.abs(dH0) < np.nanstd(dH0) * 3)))]))
@@ -230,15 +229,15 @@ def final_histogram(dH0, dHfinal, pp):
              fontsize=12, fontweight='bold', color='black', family='monospace', transform=plt.gca().transAxes)
 
 
-    plt.text(0.4, 0.90, 'Mean: ' + ('{:.1f} m'.format(stats_fin[0])),
+    plt.text(0.05, 0.65, 'Mean: ' + ('{:.1f} m'.format(stats_fin[0])),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
-    plt.text(0.4, 0.85, 'Median: ' + ('{:.1f} m'.format(stats_fin[1])),
+    plt.text(0.05, 0.60, 'Median: ' + ('{:.1f} m'.format(stats_fin[1])),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
-    plt.text(0.4, 0.80, 'Std dev.: ' + ('{:.1f} m'.format(stats_fin[2])),
+    plt.text(0.05, 0.55, 'Std dev.: ' + ('{:.1f} m'.format(stats_fin[2])),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
-    plt.text(0.4, 0.75, 'RMSE: ' + ('{:.1f} m'.format(stats_fin[3])),
+    plt.text(0.05, 0.50, 'RMSE: ' + ('{:.1f} m'.format(stats_fin[3])),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
-    pp.savefig(fig, bbox_inches='tight', dpi=200)
+    pp.savefig(fig, dpi=200)
     
     return stats_fin, stats0
     
@@ -307,18 +306,26 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     if type(masterDEM) is str:
         mfilename = os.path.basename(masterDEM)
         mfiledir = os.path.dirname(masterDEM)
+        if mfiledir == '':
+            mfiledir = os.path.abspath('.')
     else:
         mfilename = masterDEM.filename
-        mfiledir = masterDEM.in_dir_path
+        mfiledir = masterDEM.in_dir_abs_path
 
     if type(slaveDEM) is str:
         sfilename = os.path.basename(slaveDEM)
-        sname_orig = slaveDEM
+        sfiledir = os.path.dirname(slaveDEM)
+        if sfiledir == '':
+            sfiledir = os.path.abspath('.')
     else:
         sfilename = slaveDEM.filename
-        sname_orig = slaveDEM.filename
+        sfiledir = slaveDEM.in_dir_abs_path
 
     slaveDEM = get_geoimg(slaveDEM)
+    # we assume that we are working with 'area' pixels (i.e., pixel x,y corresponds to corner)
+    if slaveDEM.is_point():
+        slaveDEM.to_area()
+
     # if we're dealing with ICESat/pt data, change how we load masterDEM data
     if pts:
         masterDEM = ICESat(masterDEM)
@@ -343,9 +350,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
     else:
         orig_masterDEM = get_geoimg(masterDEM)
-        
-        masterDEM = orig_masterDEM.reproject(slaveDEM)  # need to resample masterDEM to cell size of slave.
-        #masterDEM.img[masterDEM.img<1]=np.nan
+        if orig_masterDEM.is_point():
+            orig_masterDEM.to_area()
+        masterDEM = orig_masterDEM.reproject(slaveDEM)  # need to resample masterDEM to cell size, extent of slave.
         stable_mask = create_stable_mask(masterDEM, glaciermask, landmask)
 
         slope_geo = get_slope(masterDEM)
@@ -479,8 +486,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     print(stats_final, file=statsf)
 
     # create new raster with dH sample used for co-registration as the band
-    # dHSample = dH.copy(new_raster=dHpost_sample)
-    # dHSample.write(outdir + os.path.sep + 'dHpost_sample.tif') # have to fill these in!
+    # dH.write(outdir + os.path.sep + 'dHpost.tif') # have to fill these in!
     # save full dH output
     # dHfinal.write('dHpost.tif', out_folder=outdir)
     # save adjusted slave dem
@@ -489,22 +495,21 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     else:
         slaveoutfile = 'slave_adj.tif'
     
-    if pts:
-        outslave = slaveDEM.copy()
-    else:        
-        if type(slaveDEM) is str:
-        #if full_ext:
-        #print(sname_orig)
-            outslave = get_geoimg(sname_orig)
-        else:
-            outslave = slaveDEM.reproject(masterDEM)
-    
-    print([tot_dx, tot_dy, tot_dz])
-    outslave.shift(tot_dx, tot_dy)
-    outslave.img = outslave.img + tot_dz
+    #if pts:
+    #    outslave = slaveDEM.copy()
+    #else:
+    #    if full_ext:
+    #        #outslave = get_geoimg(slaveDEM)
+    #        outslave = slaveDEM.copy()
+    #    else:
+    #        outslave = slaveDEM.reproject(masterDEM)
+    outslave = this_slave.copy()
+    outslave.unmask()
+    #outslave.shift(tot_dx, tot_dy)
+    #outslave.img = outslave.img + tot_dz
+    if not pts and not full_ext:
+        outslave = outslave.reproject(masterDEM)
     outslave.write(slaveoutfile, out_folder=outdir)
-    outslave.filename=slaveoutfile
-   
     if pts:
         slope_geo.write('tmp_slope.tif', out_folder=outdir)
         aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
