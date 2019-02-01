@@ -39,7 +39,7 @@ def false_hillshade(dH, title, pp):
     im1 = ax.imshow(dH.img, extent=niceext)
     im1.set_clim(-20, 20)
     im1.set_cmap('Greys')
-    fig.suptitle(title, fontsize=11)
+    fig.suptitle(title, fontsize=10)
 #    if np.sum(np.isfinite(dH_vec))<10:
 #        print("Error for statistics in false_hillshade")
 #    else: 
@@ -316,6 +316,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         sname_orig = slaveDEM
     else:
         sfilename = slaveDEM.filename
+        sname_orig = slaveDEM.filename
 
     slaveDEM = get_geoimg(slaveDEM)
     # if we're dealing with ICESat/pt data, change how we load masterDEM data
@@ -491,11 +492,12 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     if pts:
         outslave = slaveDEM.copy()
     else:        
+        if type(slaveDEM) is str:
         #if full_ext:
         #print(sname_orig)
-        outslave = get_geoimg(sname_orig)
-        #else:
-        #    outslave = slaveDEM.reproject(masterDEM)
+            outslave = get_geoimg(sname_orig)
+        else:
+            outslave = slaveDEM.reproject(masterDEM)
     
     print([tot_dx, tot_dy, tot_dz])
     outslave.shift(tot_dx, tot_dy)
