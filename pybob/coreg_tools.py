@@ -115,7 +115,7 @@ def preprocess(stable_mask, slope, aspect, master, slave):
 
         dHtan = dH / stan
 
-        mykeep = ((np.absolute(dH) < 200.0) & np.isfinite(dH) &
+        mykeep = ((np.absolute(dH) < 100.0) & np.isfinite(dH) &
                   (slope_pts > 3.0) & (dH != 0.0) & (aspect_pts >= 0))
         
         dH[np.invert(mykeep)] = np.nan
@@ -143,16 +143,13 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
         mysamp = np.arange(0, xdata.size)
     mysamp=mysamp.astype(np.int64)
     
-    
     #embed()
     #print("soft_l1")
-    lb = [-200, 0, -300]
-    ub = [200, 180, 300]
-    p0 = [1, 1, -1]
-    #p1, success, _ = optimize.least_squares(errfun, p0[:], args=([xdata], [ydata]), method='trf', bounds=([lb],[ub]), loss='soft_l1', f_scale=0.1)
-    #myresults = optimize.least_squares(errfun, p0, args=(xdata, ydata), method='trf', loss='soft_l1', f_scale=0.5)    
-    myresults = optimize.least_squares(errfun, p0, args=(xdata[mysamp], ydata[mysamp]), method='trf', loss='soft_l1', f_scale=0.1,ftol=1E-4,xtol=1E-4)    
-    #myresults = optimize.least_squares(errfun, p0, args=(xdata[mysamp], ydata[mysamp]), method='trf', bounds=([lb,ub]), loss='soft_l1', f_scale=0.1,ftol=1E-8,xtol=1E-8)    
+    #lb = [-200, 0, -300]
+    #ub = [200, 180, 300]
+    p0 = [1, 1, -1]  
+    myresults = optimize.least_squares(errfun, p0, args=(xdata[mysamp], ydata[mysamp]),
+                                       method='trf', loss='soft_l1', f_scale=0.1, ftol=1E-6, xtol=1E-6)
     p1 = myresults.x
     # success = myresults.success # commented because it wasn't actually being used.
     # print success
@@ -164,9 +161,7 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
 
     xp = np.linspace(0, 360, 361)
     yp = fitfun(p1, xp)
-
-
-    
+  
     fig = plt.figure(figsize=(7, 5), dpi=300)
     #fig.suptitle(title, fontsize=14)
     plt.title(title, fontsize=14)
@@ -362,7 +357,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     slope = slope_geo.img
     aspect = aspect_geo.img
     
-    if np.sum(np.greater(slope.flatten(),3))<500:
+    if np.sum(np.greater(slope.flatten(),3)) < 500:
         return
     
     mythresh = np.float64(200)  # float64 really necessary?
@@ -372,7 +367,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     tot_dy = np.float64(0)
     tot_dz = np.float64(0)
     magnthresh = 200
-    magnlimit=1
+    magnlimit = 1
     mytitle = 'DEM difference: pre-coregistration'
     if pts:
         this_slave = slaveDEM
@@ -394,7 +389,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         if not pts:
             dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, this_slave)
             #if np.logical_or(np.sum(np.isfinite(xdata.flatten()))<100, np.sum(np.isfinite(ydata.flatten()))<100):
-            if np.logical_or.reduce((np.sum(np.isfinite(xdata.flatten()))<100, np.sum(np.isfinite(ydata.flatten()))<100, np.sum(np.isfinite(sdata.flatten()))<100)):
+            if np.logical_or.reduce((np.sum(np.isfinite(xdata.flatten()))<100, 
+                                     np.sum(np.isfinite(ydata.flatten()))<100, 
+                                     np.sum(np.isfinite(sdata.flatten()))<100)):
                 print("Exiting: Less than 100 data points")
                 return
             false_hillshade(dH, mytitle, pp)
@@ -404,11 +401,12 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             dH, xdata, ydata, sdata = preprocess(stable_mask, slope_geo, aspect_geo, masterDEM, this_slave)
             dH_img = dH
             #if np.logical_or(np.sum(np.isfinite(dH.flatten()))<100, np.sum(np.isfinite(ydata.flatten()))<100):
-            if np.logical_or.reduce((np.sum(np.isfinite(xdata.flatten()))<100, np.sum(np.isfinite(ydata.flatten()))<100, np.sum(np.isfinite(sdata.flatten()))<100)):
+            if np.logical_or.reduce((np.sum(np.isfinite(xdata.flatten()))<100,
+                                     np.sum(np.isfinite(ydata.flatten()))<100,
+                                     np.sum(np.isfinite(sdata.flatten()))<100)):
                 print("Exiting: Not enough data points")
                 return 
-        
-        
+
         if mycount == 1:
             dH0 = dH_img
 
