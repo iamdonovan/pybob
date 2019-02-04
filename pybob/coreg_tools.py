@@ -35,7 +35,9 @@ def false_hillshade(dH, title, pp):
     im1 = ax.imshow(dH.img, extent=niceext)
     im1.set_clim(-20, 20)
     im1.set_cmap('Greys')
-
+#    if np.sum(np.isfinite(dH_vec))<10:
+#        print("Error for statistics in false_hillshade")
+#    else: 
     plt.title(title, fontsize=14)
 
     numwid = max([len('{:.1f} m'.format(np.mean(dH_vec))),
@@ -95,10 +97,11 @@ def preprocess(stable_mask, slope, aspect, master, slave):
 
         dHtan = dH.img / stan
         mykeep = ((np.absolute(dH.img) < 200.0) & np.isfinite(dH.img) &
-                  (slope > 7.0) & (dH.img != 0.0) & (aspect >= 0))
+                  (slope > 3.0) & (dH.img != 0.0) & (aspect >= 0))
         dH.img[np.invert(mykeep)] = np.nan
         xdata = aspect[mykeep]
-        ydata = dHtan[mykeep]
+#        ydata = dHtan[mykeep]
+        ydata = dH.img[mykeep]
         sdata = stan[mykeep]
 
     elif isinstance(master, ICESat):
@@ -131,11 +134,12 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     xdata = xdata.astype(np.float64)  # float64 truly necessary?
     ydata = ydata.astype(np.float64)
     sdata = sdata.astype(np.float64)
+    ydata2 = np.divide(ydata,sdata)
     # fit using equation 3 of Nuth and Kaeaeb, 2011
 
-    def fitfun(p, x): return p[0] * np.cos(np.radians(p[1] - x)) + p[2]
+    def fitfun(p, x, s): return p[0] * np.cos(np.radians(p[1] - x)) * s + p[2]
 
-    def errfun(p, x, y): return fitfun(p, x) - y
+    def errfun(p, x, s, y): return fitfun(p, x, s) - y
     
     if xdata.size > 20000:
         mysamp = np.random.randint(0, xdata.size, 20000)
@@ -150,6 +154,15 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     p0 = [1, 1, -1]  
     myresults = optimize.least_squares(errfun, p0, args=(xdata[mysamp], ydata[mysamp]),
                                        method='trf', loss='soft_l1', f_scale=0.1, ftol=1E-6, xtol=1E-6)
+    #p1, success, _ = optimize.least_squares(errfun, p0[:], args=([xdata], [ydata]), 
+    #                                        method='trf', bounds=([lb],[ub]), loss='soft_l1', f_scale=0.1)
+    #myresults = optimize.least_squares(errfun, p0, args=(xdata, ydata), method='trf', loss='soft_l1', f_scale=0.5)    
+    #myresults = optimize.least_squares(errfun, p0, args=(xdata[mysamp], sdata[mysamp],
+    #                                                     ydata[mysamp], method='trf', loss='soft_l1',
+    #                                                     f_scale=0.1,ftol=1E-4,xtol=1E-4)
+    #myresults = optimize.least_squares(errfun, p0, args=(xdata[mysamp], ydata[mysamp]), 
+    #                                   method='trf', bounds=([lb,ub]), loss='soft_l1',
+    #                                   f_scale=0.1,ftol=1E-8,xtol=1E-8)    
     p1 = myresults.x
     # success = myresults.success # commented because it wasn't actually being used.
     # print success
@@ -157,22 +170,23 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     # convert to shift parameters in cartesian coordinates
     xadj = p1[0] * np.sin(np.radians(p1[1]))
     yadj = p1[0] * np.cos(np.radians(p1[1]))
-    zadj = p1[2] * sdata.mean(axis=0)
+    zadj = p1[2] #* sdata.mean(axis=0)
 
     xp = np.linspace(0, 360, 361)
-    yp = fitfun(p1, xp)
-  
+    sp = np.zeros(xp.size) + 0.785398
+    yp = fitfun(p1, xp, sp)    
+    
     fig = plt.figure(figsize=(7, 5), dpi=300)
     #fig.suptitle(title, fontsize=14)
     plt.title(title, fontsize=14)
-    plt.plot(xdata[mysamp], ydata[mysamp], '^', ms=0.5, color='0.5', rasterized=True, fillstyle='full')
+    plt.plot(xdata[mysamp], ydata2[mysamp], '^', ms=0.5, color='0.5', rasterized=True, fillstyle='full')
     plt.plot(xp, np.zeros(xp.size), 'k', ms=3)
-    plt.plot(xp, yp, 'r-', ms=2)
+    plt.plot(xp, np.divide(yp,np.tan(sp)), 'r-', ms=2)
 
     plt.xlim(0, 360)
     #plt.ylim(-200,200)
-    ymin, ymax = plt.ylim((np.nanmean(ydata[mysamp]))-2*np.nanstd(ydata[mysamp]),
-                          (np.nanmean(ydata[mysamp]))+2*np.nanstd(ydata[mysamp]))
+    ymin, ymax = plt.ylim((np.nanmean(ydata2[mysamp]))-2*np.nanstd(ydata2[mysamp]),
+                          (np.nanmean(ydata2[mysamp]))+2*np.nanstd(ydata2[mysamp]))
     # plt.axis([0, 360, -200, 200])
     plt.xlabel('Aspect [degrees]')
     plt.ylabel('dH / tan(slope)')
@@ -249,7 +263,8 @@ def get_geoimg(indata):
         raise TypeError('input data must be a string pointing to a gdal dataset, or a GeoImg object.')
 
 
-def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.', pts=False, full_ext=False, return_var=True):
+def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.',
+                       pts=False, full_ext=False, return_var=True):
     """
     Iteratively co-register elevation data, based on routines described in Nuth and Kaeaeb, 2011.
 
