@@ -56,7 +56,7 @@ def false_hillshade(dH, title, pp):
     #plt.colorbar(im1)
 
     plt.tight_layout()
-    pp.savefig(fig, dpi=200)
+    pp.savefig(fig, dpi=300)
     return
 
 
@@ -151,9 +151,9 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     #print("soft_l1")
     #lb = [-200, 0, -300]
     #ub = [200, 180, 300]
-    p0 = [1, 1, -1]  
-    myresults = optimize.least_squares(errfun, p0, args=(xdata[mysamp], ydata[mysamp]),
-                                       method='trf', loss='soft_l1', f_scale=0.1, ftol=1E-6, xtol=1E-6)
+    p0 = [1, 1, -1]
+    myresults = optimize.least_squares(errfun, p0, args=(xdata[mysamp], sdata[mysamp], ydata[mysamp]),
+                                       method='trf', loss='soft_l1', f_scale=0.1, ftol=1E-8, xtol=1E-8)
     #p1, success, _ = optimize.least_squares(errfun, p0[:], args=([xdata], [ydata]), 
     #                                        method='trf', bounds=([lb],[ub]), loss='soft_l1', f_scale=0.1)
     #myresults = optimize.least_squares(errfun, p0, args=(xdata, ydata), method='trf', loss='soft_l1', f_scale=0.5)    
@@ -206,10 +206,11 @@ def final_histogram(dH0, dHfinal, pp):
     plt.title('Elevation difference histograms', fontsize=14)
     
     dH0 = np.squeeze(np.asarray(dH0[ np.logical_and.reduce((np.isfinite(dH0), (np.abs(dH0) < np.nanstd(dH0) * 3)))]))
-    dHfinal = np.squeeze(np.asarray(dHfinal[ np.logical_and.reduce((np.isfinite(dHfinal), (np.abs(dHfinal) < np.nanstd(dHfinal) * 3)))]))
+    dHfinal = np.squeeze(np.asarray(dHfinal[np.logical_and.reduce((np.isfinite(dHfinal),
+                                                                  (np.abs(dHfinal) < np.nanstd(dHfinal) * 3)))]))
     
-    dH0=dH0[np.isfinite(dH0)]
-    dHfinal=dHfinal[np.isfinite(dHfinal)]
+    dH0 = dH0[np.isfinite(dH0)]
+    dHfinal = dHfinal[np.isfinite(dHfinal)]
     
     j1, j2 = np.histogram(dH0, bins=100, range=(-60, 60))
     k1, k2 = np.histogram(dHfinal, bins=100, range=(-60, 60))
