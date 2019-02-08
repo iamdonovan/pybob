@@ -92,7 +92,7 @@ def preprocess(stable_mask, slope, aspect, master, slave):
         elif slave_mask:
             dH.mask(slave.img.mask)
         
-        if dH.isfloat:
+        if dH.isfloat:  
             dH.img[stable_mask] = np.nan
 
         dHtan = dH.img / stan
@@ -123,7 +123,8 @@ def preprocess(stable_mask, slope, aspect, master, slave):
         
         dH[np.invert(mykeep)] = np.nan
         xdata = aspect_pts[mykeep]
-        ydata = dHtan[mykeep]
+        #ydata = dHtan[mykeep]
+        ydata = dH[mykeep]
         sdata = stan[mykeep]
 
 
@@ -163,6 +164,8 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     #myresults = optimize.least_squares(errfun, p0, args=(xdata[mysamp], ydata[mysamp]), 
     #                                   method='trf', bounds=([lb,ub]), loss='soft_l1',
     #                                   f_scale=0.1,ftol=1E-8,xtol=1E-8)    
+    myresults = optimize.least_squares(errfun, p0, args=(xdata[mysamp], sdata[mysamp], ydata[mysamp]), method='trf', loss='soft_l1', f_scale=0.1,ftol=1E-8,xtol=1E-8)    
+    #myresults = optimize.least_squares(errfun, p0, args=(xdata[mysamp], ydata[mysamp]), method='trf', bounds=([lb,ub]), loss='soft_l1', f_scale=0.1,ftol=1E-8,xtol=1E-8)    
     p1 = myresults.x
     # success = myresults.success # commented because it wasn't actually being used.
     # print success
@@ -173,7 +176,10 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     zadj = p1[2] #* sdata.mean(axis=0)
 
     xp = np.linspace(0, 360, 361)
-    sp = np.zeros(xp.size) + 0.785398
+    #sp = np.zeros(xp.size) + 0.785398
+#    sp = np.zeros(xp.size) + np.tan(np.radians(5)).astype(np.float32)
+    sp = np.ones(xp.size) + np.nanmean(sdata[mysamp])
+    p1[2] = np.divide(p1[2],np.nanmean(sdata[mysamp]))
     yp = fitfun(p1, xp, sp)    
     
     fig = plt.figure(figsize=(7, 5), dpi=300)
@@ -181,7 +187,8 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     plt.title(title, fontsize=14)
     plt.plot(xdata[mysamp], ydata2[mysamp], '^', ms=0.5, color='0.5', rasterized=True, fillstyle='full')
     plt.plot(xp, np.zeros(xp.size), 'k', ms=3)
-    plt.plot(xp, np.divide(yp,np.tan(sp)), 'r-', ms=2)
+#    plt.plot(xp, np.divide(yp,sp), 'r-', ms=2)
+    plt.plot(xp, np.divide(yp,sp), 'r-', ms=2)
 
     plt.xlim(0, 360)
     #plt.ylim(-200,200)
@@ -209,8 +216,8 @@ def final_histogram(dH0, dHfinal, pp):
     dHfinal = np.squeeze(np.asarray(dHfinal[np.logical_and.reduce((np.isfinite(dHfinal),
                                                                   (np.abs(dHfinal) < np.nanstd(dHfinal) * 3)))]))
     
-    dH0 = dH0[np.isfinite(dH0)]
-    dHfinal = dHfinal[np.isfinite(dHfinal)]
+    # dH0=dH0[np.isfinite(dH0)]
+    # dHfinal=dHfinal[np.isfinite(dHfinal)]
     
     j1, j2 = np.histogram(dH0, bins=100, range=(-60, 60))
     k1, k2 = np.histogram(dHfinal, bins=100, range=(-60, 60))
@@ -331,6 +338,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         sfiledir = slaveDEM.in_dir_abs_path
 
     slaveDEM = get_geoimg(slaveDEM)
+#    slaveDEM.mask(np.less(slaveDEM.img.data,-30))
     # we assume that we are working with 'area' pixels (i.e., pixel x,y corresponds to corner)
     if slaveDEM.is_point():
         slaveDEM.to_area()
@@ -359,6 +367,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
     else:
         orig_masterDEM = get_geoimg(masterDEM)
+#        orig_masterDEM.mask(np.less(orig_masterDEM.img.data,-10))
         if orig_masterDEM.is_point():
             orig_masterDEM.to_area()
         masterDEM = orig_masterDEM.reproject(slaveDEM)  # need to resample masterDEM to cell size, extent of slave.
@@ -369,6 +378,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         slope_geo.write('tmp_slope.tif', out_folder=outdir)
         aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
         masterDEM.mask(stable_mask)
+        
 
     slope = slope_geo.img
     aspect = aspect_geo.img
@@ -383,8 +393,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     tot_dy = np.float64(0)
     tot_dz = np.float64(0)
     magnthresh = 200
-    magnlimit = 1
     mytitle = 'DEM difference: pre-coregistration'
+    magnlimit=2
+    
     if pts:
         this_slave = slaveDEM
         this_slave.mask(stable_mask.img)
@@ -393,10 +404,6 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         this_slave.mask(stable_mask)
 
     while mythresh > 2 and magnthresh > magnlimit:
-        if mycount != 0:
-            # slaves.append(slaves[-1].reproject(masterDEM))
-            # slaves[-1].mask(stable_mask)
-            mytitle = "DEM difference: After Iteration {}".format(mycount)
         mycount += 1
         print("Running iteration #{}".format(mycount))
         print("Running iteration #{}".format(mycount), file=paramf)
@@ -410,9 +417,17 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
                                      np.sum(np.isfinite(sdata.flatten()))<100)):
                 print("Exiting: Less than 100 data points")
                 return
+            if mycount == 1:
+                dH0 = np.copy(dH.img)
+                dH0mean = np.nanmean(ydata)
+                ydata -= dH0mean
+                dH.img -= dH0mean
+                mytitle = "DEM difference: pre-coregistration (dz0={:+.2f})".format(dH0mean)
+            else:
+                mytitle = "DEM difference: After Iteration {}".format(mycount-1)
             false_hillshade(dH, mytitle, pp)
             dH_img = dH.img
-
+            
         else:
             dH, xdata, ydata, sdata = preprocess(stable_mask, slope_geo, aspect_geo, masterDEM, this_slave)
             dH_img = dH
@@ -422,10 +437,12 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
                                      np.sum(np.isfinite(sdata.flatten()))<100)):
                 print("Exiting: Not enough data points")
                 return 
-
-        if mycount == 1:
-            dH0 = dH_img
-
+            if mycount == 1:
+                dH0 = dH_img
+                dH0mean = np.nanmean(ydata)
+                ydata -= dH0mean
+                dH_img -= dH0mean
+                
         # calculate threshold, standard deviation of dH
         #mythresh = 100 * (mystd-np.nanstd(dH_img))/mystd
         #mystd = np.nanstd(dH_img)
@@ -435,6 +452,8 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
         mytitle2 = "Co-registration: Iteration {}".format(mycount)
         dx, dy, dz = coreg_fitting(xdata, ydata, sdata, mytitle2, pp)
+        if mycount == 1:
+            dz += dH0mean
         tot_dx += dx
         tot_dy += dy
         tot_dz += dz
