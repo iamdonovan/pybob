@@ -947,6 +947,9 @@ class GeoImg(object):
         if np.array(pts).size == 2:
             pts = [pts]
 
+        if self.is_area():
+            self.to_point()            
+            
         xx, yy = self.xy(ctype='center', grid=False)
         for pt in pts:
             ij = self.xy2ij(pt)

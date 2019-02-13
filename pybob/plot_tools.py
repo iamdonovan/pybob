@@ -279,6 +279,7 @@ def plot_shaded_dem(dem, azimuth=315, altitude=45, fig=None, extent=None, alpha=
         maxj -= 0.5  # subtract the .5 for half a pixel, add 1 for slice
 
     plt.imshow(255 * (shaded[int(mini):int(maxi+1), int(minj):int(maxj+1)] + 1) / 2, extent=extent, cmap='gray')
-    plt.imshow(dem.img[int(mini):int(maxi+1), int(minj):int(maxj+1)], cmap=new_cmap, extent=extent, alpha=alpha, **kwargs)
+    cimg = plt.imshow(dem.img[int(mini):int(maxi+1), int(minj):int(maxj+1)],
+                      cmap=new_cmap, extent=extent, alpha=alpha, **kwargs)
 
-    return fig
+    return fig, cimg
