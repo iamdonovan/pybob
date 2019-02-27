@@ -24,7 +24,7 @@ def get_aspect(geoimg):
     return GeoImg(aspect_)
 
 
-def false_hillshade(dH, title, pp):
+def false_hillshade(dH, title, pp, clim = (-20,20)):
     niceext = np.array([dH.xmin, dH.xmax, dH.ymin, dH.ymax])/1000.
     mykeep = np.logical_and.reduce((np.isfinite(dH.img), (np.abs(dH.img) < np.nanstd(dH.img) * 3)))
     dH_vec = dH.img[mykeep]
@@ -33,7 +33,7 @@ def false_hillshade(dH, title, pp):
     ax = plt.gca()
 
     im1 = ax.imshow(dH.img, extent=niceext)
-    im1.set_clim(-20, 20)
+    im1.set_clim(clim[0],clim[1])
     im1.set_cmap('Greys')
 #    if np.sum(np.isfinite(dH_vec))<10:
 #        print("Error for statistics in false_hillshade")
@@ -105,14 +105,14 @@ def preprocess(stable_mask, slope, aspect, master, slave):
         sdata = stan[mykeep]
 
     elif isinstance(master, ICESat):
-        slave_pts = slave.raster_points(master.xy)
+        slave_pts = slave.raster_points2(master.xy)
         dH = master.elev - slave_pts
         
-        slope_pts = slope.raster_points(master.xy)
+        slope_pts = slope.raster_points2(master.xy)
         stan = np.tan(np.radians(slope_pts))
         
-        aspect_pts = aspect.raster_points(master.xy)
-        smask = stable_mask.raster_points(master.xy) > 0
+        aspect_pts = aspect.raster_points2(master.xy)
+        smask = stable_mask.raster_points2(master.xy) > 0
         
         dH[smask] = np.nan
 
@@ -208,7 +208,7 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
 
     return xadj, yadj, zadj
 
-def final_histogram(dH0, dHfinal, pp):
+def final_histogram(dH0, dHfinal, pp=None):
     fig = plt.figure(figsize=(7, 5), dpi=200)
     plt.title('Elevation difference histograms', fontsize=14)
     
@@ -363,7 +363,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         ### Create initial plot of where stable terrain is, including ICESat pts
         fig1 = plot_shaded_dem(slaveDEM)
         plt.plot(masterDEM.x[~np.isnan(masterDEM.elev)], masterDEM.y[~np.isnan(masterDEM.elev)], 'k.')
-        pp.savefig(fig1, bbox_inches='tight', dpi=200)
+        pp.savefig(fig1[0], bbox_inches='tight', dpi=200)
 
     else:
         orig_masterDEM = get_geoimg(masterDEM)
@@ -511,7 +511,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
  
     # Create final histograms pre and post coregistration
     # shift = [tot_dx, tot_dy, tot_dz]  # commented because it wasn't actually used.
-    stats_final, stats_init = final_histogram(dH0, dHfinal, pp)
+    stats_final, stats_init = final_histogram(dH0, dHfinal, pp=pp)
     print("MEAN, MEDIAN, STD, RMSE, COUNT", file=statsf)
     print(stats_init, file=statsf)
     print(stats_final, file=statsf)
