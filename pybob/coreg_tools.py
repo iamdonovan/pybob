@@ -416,7 +416,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
                                      np.sum(np.isfinite(ydata.flatten()))<100, 
                                      np.sum(np.isfinite(sdata.flatten()))<100)):
                 print("Exiting: Less than 100 data points")
-                return
+                return masterDEM, slaveDEM, -1
             if mycount == 1:
                 dH0 = np.copy(dH.img)
                 dH0mean = np.nanmean(ydata)
