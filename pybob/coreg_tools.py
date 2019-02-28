@@ -24,7 +24,7 @@ def get_aspect(geoimg):
     return GeoImg(aspect_)
 
 
-def false_hillshade(dH, title, pp, clim = (-20,20)):
+def false_hillshade(dH, title, pp, clim=(-20,20)):
     niceext = np.array([dH.xmin, dH.xmax, dH.ymin, dH.ymax])/1000.
     mykeep = np.logical_and.reduce((np.isfinite(dH.img), (np.abs(dH.img) < np.nanstd(dH.img) * 3)))
     dH_vec = dH.img[mykeep]

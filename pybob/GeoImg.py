@@ -11,8 +11,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.interpolate import griddata
 from scipy.spatial import ConvexHull
 from multiprocessing import Pool
-from numba import autojit
-
 
 numpy2gdal = {np.uint8: gdal.GDT_Byte, np.uint16: gdal.GDT_UInt16, np.int16: gdal.GDT_Int16,
               np.float32: gdal.GDT_Float32, np.float64: gdal.GDT_Float64, 
