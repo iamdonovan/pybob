@@ -10,7 +10,7 @@ import osr
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.interpolate import griddata
 from scipy.spatial import ConvexHull
-
+from multiprocessing import Pool
 
 numpy2gdal = {np.uint8: gdal.GDT_Byte, np.uint16: gdal.GDT_UInt16, np.int16: gdal.GDT_Int16,
               np.float32: gdal.GDT_Float32, np.float64: gdal.GDT_Float64, 
@@ -46,6 +46,15 @@ def get_file_info(in_filestring):
     if in_dir == '':
         in_dir = '.'
     return in_filename, in_dir
+
+def int_pts(myins):
+    pt, ij, X, Y, z, mode = myins            
+    try:
+        zint = griddata((X.flatten(), Y.flatten()), z.flatten(), pt, method=mode)
+    except:
+        zint = np.nan
+    return zint
+#    return griddata((myins[2].flatten(), myins[3].flatten()), myins[4].flatten(), myins[0], method=myins[5])
 
 
 class GeoImg(object):
@@ -545,7 +554,9 @@ class GeoImg(object):
             dest.GetRasterBand(1).Fill(dst_raster.NDV)
         elif self.NDV is not None:
             dest.GetRasterBand(1).SetNoDataValue(self.NDV)
-            dest.GetRasterBand(1).Fill(dst_raster.NDV)
+            dest.GetRasterBand(1).Fill(self.NDV)
+        else:
+            dest.GetRasterBand(1).Fill(0)
 
         gdal.ReprojectImage(self.gd, dest, self.proj, dst_raster.proj, method)
 
@@ -969,6 +980,55 @@ class GeoImg(object):
                     zint = np.nan
                 rpts.append(zint)
         return np.array(rpts)
+
+    def raster_points2(self, pts, nsize=1, mode='linear'):
+        """Interpolate raster values at a given point, or sets of points. 
+        
+        Parameters
+        ----------
+        
+        pts : array-like
+            Point(s) at which to interpolate raster value. If points fall outside
+            of image, value returned is nan.'
+        nsize : int, optional
+            Number of neighboring points to include in the interpolation. Default is 1.
+        mode : str, optional
+            One of 'linear', 'cubic', or 'quintic'. Determines what type of spline is
+            used to interpolate the raster value at each point. For more information, see 
+            scipy.interpolate.interp2d.
+            
+        Returns
+        -------
+        
+        rpts : array-like
+            Array of raster value(s) for the given points.
+        """
+        # if we're given only one point, corresponding array
+        # should have a size of two. in which case, we wrap it in a list.
+        if np.array(pts).size == 2:
+            pts = [pts]
+
+        if self.is_area():
+            self.to_point()            
+            
+        xx, yy = self.xy(ctype='center', grid=False)
+        
+        def getgrids(a):
+            myimg, pt, nsize, mode = a
+            ij = myimg.xy2ij(pt)
+            ij = (int(ij[0]+0.5), int(ij[1]+0.5))
+            x = xx[ij[1]-nsize:ij[1]+nsize+1]
+            y = yy[ij[0]-nsize:ij[0]+nsize+1]
+            X, Y = np.meshgrid(x, y)
+            z = myimg.img[ij[0]-nsize:ij[0]+nsize+1, ij[1]-nsize:ij[1]+nsize+1]
+            return (pt, ij, X, Y, z, mode)
+
+        myins = [getgrids((self, pt, nsize, mode)) for pt in pts]
+#        print("half way")
+#        myout = np.asarray([int_pts(myin,nsize,mode) for myin in myins])
+        pool = Pool(6)
+#        return np.asarray([int_pts(pt,self,nsize,mode) for pt in pts])
+        return np.asarray(pool.map(int_pts,myins))
 
     def outside_image(self, ij, index=True):
         """Check whether a given point falls outside of the image.
