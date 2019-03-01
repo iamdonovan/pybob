@@ -545,7 +545,9 @@ class GeoImg(object):
             dest.GetRasterBand(1).Fill(dst_raster.NDV)
         elif self.NDV is not None:
             dest.GetRasterBand(1).SetNoDataValue(self.NDV)
-            dest.GetRasterBand(1).Fill(dst_raster.NDV)
+            dest.GetRasterBand(1).Fill(self.NDV)
+        else:
+            dest.GetRasterBand(1).Fill(0)
 
         gdal.ReprojectImage(self.gd, dest, self.proj, dst_raster.proj, method)
 
