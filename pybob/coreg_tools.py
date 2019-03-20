@@ -361,7 +361,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         stable_mask = slaveDEM.copy(new_raster=smask)  # make the mask a geoimg
         
         ### Create initial plot of where stable terrain is, including ICESat pts
-        fig1 = plot_shaded_dem(slaveDEM)
+        fig1, _ = plot_shaded_dem(slaveDEM)
         plt.plot(masterDEM.x[~np.isnan(masterDEM.elev)], masterDEM.y[~np.isnan(masterDEM.elev)], 'k.')
         pp.savefig(fig1[0], bbox_inches='tight', dpi=200)
 
@@ -384,7 +384,11 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     aspect = aspect_geo.img
     
     if np.sum(np.greater(slope.flatten(),3)) < 500:
-        return
+        print("Exiting: Fewer than 500 valid slope points")
+        if return_var:
+            return masterDEM, slaveDEM, -1
+        else:
+            return -1
     
     mythresh = np.float64(200)  # float64 really necessary?
     mystd = np.float64(200)
@@ -415,8 +419,11 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             if np.logical_or.reduce((np.sum(np.isfinite(xdata.flatten()))<100, 
                                      np.sum(np.isfinite(ydata.flatten()))<100, 
                                      np.sum(np.isfinite(sdata.flatten()))<100)):
-                print("Exiting: Less than 100 data points")
-                return masterDEM, slaveDEM, -1
+                print("Exiting: Fewer than 100 data points")
+                if return_var:
+                    return masterDEM, slaveDEM, -1
+                else:
+                    return -1
             if mycount == 1:
                 dH0 = np.copy(dH.img)
                 dH0mean = np.nanmean(ydata)
@@ -436,7 +443,10 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
                                      np.sum(np.isfinite(ydata.flatten()))<100,
                                      np.sum(np.isfinite(sdata.flatten()))<100)):
                 print("Exiting: Not enough data points")
-                return 
+                if return_var:
+                    return masterDEM, slaveDEM, -1
+                else:
+                    return -1
             if mycount == 1:
                 dH0 = dH_img
                 dH0mean = np.nanmean(ydata)
