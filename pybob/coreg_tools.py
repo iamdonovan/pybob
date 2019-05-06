@@ -14,12 +14,15 @@ from pybob.image_tools import create_mask_from_shapefile
 from IPython import embed
 
 def get_slope(geoimg):
-    slope_ = gdal.DEMProcessing('', geoimg.gd, 'slope', format='MEM')
+
+    # default slope calculation using Zevenbergen and Thorne Algo
+    slope_ = gdal.DEMProcessing('', geoimg.gd, 'slope', format='MEM', alg='ZevenbergenThorne')
     return GeoImg(slope_)
 
 
 def get_aspect(geoimg):
-    aspect_ = gdal.DEMProcessing('', geoimg.gd, 'aspect', format='MEM')
+    # default aspect calculation using Zevenbergen and Thorne Algo
+    aspect_ = gdal.DEMProcessing('', geoimg.gd, 'aspect', format='MEM', alg='ZevenbergenThorne')
     return GeoImg(aspect_)
 
 
@@ -88,8 +91,43 @@ def create_stable_mask(img, mask1, mask2):
         return np.logical_not(mask)  # false where there's land, true where there isn't
     else:  # if none of the above, we have two masks.
         # implement option if either or, or both mask are given as rasters. 
-        gmask = create_mask_from_shapefile(img, mask1)
-        lmask = create_mask_from_shapefile(img, mask2)
+        
+        if (mask1.split('.')[-1] == 'tif') & (mask2.split('.')[-1] == 'shp'):
+            mask_rast = myRaster=gdal.Open(mask1)
+            transform = myRaster.GetGeoTransform()
+            dx=transform[1]
+            dy=transform[5]
+            Xsize=myRaster.RasterXSize
+            Ysize=myRaster.RasterYSize
+            gmask=myRaster.ReadAsArray(0, 0, Xsize, Ysize)
+            lmask = create_mask_from_shapefile(img, mask2)
+        elif (mask2.split('.')[-1] == 'tif') & (mask1.split('.')[-1] == 'shp'):
+            mask_rast = myRaster=gdal.Open(mask2)
+            transform = myRaster.GetGeoTransform()
+            dx=transform[1]
+            dy=transform[5]
+            Xsize=myRaster.RasterXSize
+            Ysize=myRaster.RasterYSize
+            lmask=myRaster.ReadAsArray(0, 0, Xsize, Ysize)
+            gmask = create_mask_from_shapefile(img, mask1)
+        elif (mask1.split('.')[-1] == 'tif') & (mask2.split('.')[-1] == 'tif'):
+            mask_rast = myRaster=gdal.Open(mask1)
+            transform = myRaster.GetGeoTransform()
+            dx=transform[1]
+            dy=transform[5]
+            Xsize=myRaster.RasterXSize
+            Ysize=myRaster.RasterYSize
+            gmask=myRaster.ReadAsArray(0, 0, Xsize, Ysize)
+            mask_rast = myRaster=gdal.Open(mask2)
+            transform = myRaster.GetGeoTransform()
+            dx=transform[1]
+            dy=transform[5]
+            Xsize=myRaster.RasterXSize
+            Ysize=myRaster.RasterYSize
+            lmask=myRaster.ReadAsArray(0, 0, Xsize, Ysize)
+        else:
+            gmask = create_mask_from_shapefile(img, mask1)
+            lmask = create_mask_from_shapefile(img, mask2)
         return np.logical_or(gmask, np.logical_not(lmask))  # true where there's glacier or water
 
 
@@ -268,7 +306,7 @@ def get_geoimg(indata):
         raise TypeError('input data must be a string pointing to a gdal dataset, or a GeoImg object.')
 
 
-def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.', pts=False, full_ext=False):
+def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.', pts=False, full_ext=False, plot_out=False):
     """
     Iteratively co-register elevation data, based on routines described in Nuth and Kaeaeb, 2011.
 
@@ -293,6 +331,8 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     full_ext : bool, optional
         If True, program writes full extents of input DEMs. If False, program writes
         input DEMs cropped to their common extent. Default is False.
+    plot_out=False: bool, optional  (NOT IMPLEMENTED)
+        If True, it plots the output, if False, no plots are generated to the python console
     """
     # if the output directory does not exist, create it.
     outdir = os.path.abspath(outdir)
@@ -365,7 +405,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     tot_dy = np.float64(0)
     tot_dz = np.float64(0)
     magnthresh = 200
-    magnlimit=1
+    magnlimit=.1
     mytitle = 'DEM difference: pre-coregistration'
     if pts:
         this_slave = slaveDEM
