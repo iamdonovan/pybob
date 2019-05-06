@@ -62,12 +62,32 @@ def create_stable_mask(img, mask1, mask2):
     if mask1 is None and mask2 is None:
         return np.ones(img.img.shape) == 0  # all false, so nothing will get masked.
     elif mask1 is not None and mask2 is None:  # we have a glacier mask, not land
-        mask = create_mask_from_shapefile(img, mask1)
+        
+        if mask1.split('.')[-1] == 'tif':
+            mask_rast = myRaster=gdal.Open(mask1)
+            transform = myRaster.GetGeoTransform()
+            dx=transform[1]
+            dy=transform[5]
+            Xsize=myRaster.RasterXSize
+            Ysize=myRaster.RasterYSize
+            mask=myRaster.ReadAsArray(0, 0, Xsize, Ysize)
+        else:
+            mask = create_mask_from_shapefile(img, mask1)
         return mask  # returns true where there's glacier, false everywhere else
     elif mask1 is None and mask2 is not None:
-        mask = create_mask_from_shapefile(img, mask2)
+        if mask2.split('.')[-1] == 'tif':
+            mask_rast = myRaster=gdal.Open(mask2)
+            transform = myRaster.GetGeoTransform()
+            dx=transform[1]
+            dy=transform[5]
+            Xsize=myRaster.RasterXSize
+            Ysize=myRaster.RasterYSize
+            mask=myRaster.ReadAsArray(0, 0, Xsize, Ysize)
+        else:
+            mask = create_mask_from_shapefile(img, mask2)
         return np.logical_not(mask)  # false where there's land, true where there isn't
     else:  # if none of the above, we have two masks.
+        # implement option if either or, or both mask are given as rasters. 
         gmask = create_mask_from_shapefile(img, mask1)
         lmask = create_mask_from_shapefile(img, mask2)
         return np.logical_or(gmask, np.logical_not(lmask))  # true where there's glacier or water
