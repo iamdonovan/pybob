@@ -4,14 +4,15 @@ import errno
 import gdal
 import numpy as np
 import matplotlib.pylab as plt
-#plt.switch_backend('agg')
+# plt.switch_backend('agg')
 import scipy.optimize as optimize
 from matplotlib.backends.backend_pdf import PdfPages
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pybob.GeoImg import GeoImg
 from pybob.ICESat import ICESat
 from pybob.image_tools import create_mask_from_shapefile
-from IPython import embed
+# from IPython import embed
+
 
 def get_slope(geoimg):
     slope_ = gdal.DEMProcessing('', geoimg.gd, 'slope', format='MEM')
