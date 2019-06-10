@@ -7,3 +7,6 @@
 #python egg metadata
 /*.egg-info
 /*.egg
+
+# pycharm
+.idea/
