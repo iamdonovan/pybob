@@ -548,9 +548,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     outslave.unmask()
     #outslave.shift(tot_dx, tot_dy)
     #outslave.img = outslave.img + tot_dz
-    if not pts and not full_ext:
-        outslave = outslave.reproject(masterDEM)
-    outslave.write(slaveoutfile, out_folder=outdir)
+    
     if pts:
         slope_geo.write('tmp_slope.tif', out_folder=outdir)
         aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
@@ -560,6 +558,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         print("FinalCHECK")
        #outslave = outslave.reproject(masterDEM)
         masterDEM = orig_masterDEM.reproject(outslave)
+
         dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, outslave)
         false_hillshade(dH, 'FINAL CHECK', pp)
         #dx, dy, dz = coreg_fitting(xdata, ydata, sdata, "Final Check", pp)
@@ -571,8 +570,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
         if full_ext:
             masterDEM = orig_masterDEM
+            outslave = outslave.reproject(masterDEM)
         masterDEM.write(mastoutfile, out_folder=outdir)
-
+    outslave.write(slaveoutfile, out_folder=outdir)
     pp.close()
     print("Fin.")
     print("Fin.", file=paramf)
