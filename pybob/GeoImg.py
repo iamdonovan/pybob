@@ -818,6 +818,12 @@ class GeoImg(object):
         dest.SetProjection(self.proj)
         newgt = (xmin, dx, 0.0, ymax, 0.0, dy)
         dest.SetGeoTransform(newgt)
+        if self.NDV is not None:
+            dest.GetRasterBand(1).SetNoDataValue(self.NDV)
+            dest.GetRasterBand(1).Fill(self.NDV)
+        else:
+            dest.GetRasterBand(1).Fill(0)
+
         gdal.ReprojectImage(self.gd, dest, self.proj, self.proj, gdal.GRA_Bilinear)
 
         if self.NDV is not None:
