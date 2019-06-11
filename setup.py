@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='pybob',
-      version='0.21-1',
+      version='0.23',
       description='Collection of geospatial and other tools I find useful.',
       url='http://github.com/iamdonovan/pybob',
       author='Bob McNabb',
@@ -11,7 +11,7 @@ setup(name='pybob',
       install_requires=[
                         'numpy', 'scipy', 'matplotlib', 'fiona',
                         'shapely', 'opencv-python', 'pandas', 'geopandas',
-                        'scikit-image', 'gdal', 'h5py', 'pyproj'
+                        'scikit-image', 'osgeo', 'h5py', 'pyproj', 'descartes'
                          ],
       scripts=['bin/dem_coregistration.py', 'bin/generate_panchromatic.py',
                'bin/print_reverb_browse_urls.py', 'bin/print_reverb_granule_names.py',
