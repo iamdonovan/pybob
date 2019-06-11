@@ -16,7 +16,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
-autodoc_mock_imports = ['numpy', 'scipy', 'matplotlib', 'fiona',
+autodoc_mock_imports = ['numpy', 'scipy', 'matplotlib', 'fiona', 'cv2',
                         'shapely', 'opencv-python', 'pandas', 'geopandas',
                         'skimage', 'gdal', 'h5py', 'pyproj', 'osgeo', 'llc', 'descartes']
 
