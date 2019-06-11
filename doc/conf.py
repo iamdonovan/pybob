@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('..'))
 
 autodoc_mock_imports = ['numpy', 'scipy', 'matplotlib', 'fiona',
                         'shapely', 'opencv-python', 'pandas', 'geopandas',
-                        'scikit-image', 'gdal', 'h5py', 'pyproj', 'osgeo']
+                        'scikit-image', 'gdal', 'h5py', 'pyproj', 'osgeo', 'llc', 'descartes']
 
 def skip(app, what, name, obj, would_skip, options):
     if name == "__init__":
