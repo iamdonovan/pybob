@@ -994,8 +994,7 @@ class GeoImg(object):
 
     def to_point(self):
         """
-        Change pixel location from corner ('Area') to center ('Point'). Shifts raster by half pixel in the
-            +x, -y direction.
+        Change pixel location from corner ('Area') to center ('Point'). Shifts raster by half pixel in the +x, -y direction.
         """
         if self.px_loc == 'Area':
             self.px_loc = 'Point'
@@ -1006,8 +1005,7 @@ class GeoImg(object):
 
     def to_area(self):
         """
-        Change pixel location from center ('Point') to corner ('Area'). Shifts raster by half pixel in the
-            -x, +y direction.
+        Change pixel location from center ('Point') to corner ('Area'). Shifts raster by half pixel in the -x, +y direction.
         """
         if self.px_loc == 'Point':
             self.px_loc = 'Area'
