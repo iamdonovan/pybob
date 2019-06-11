@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
-from future_builtins import zip
+#from future_builtins import zip
 import argparse
 import datetime as dt
 import numpy as np
@@ -28,8 +28,8 @@ def parse_aster_date(img, imgdata, args):
         datestr = name[11:19]
         date = dt.datetime.strptime(datestr, '%Y%m%d')
     elif name[:3] == 'HMA':
-	datestr = name[4:12]
-	date = dt.datetime.strptime(datestr, '%Y%m%d')
+        datestr = name[4:12]
+        date = dt.datetime.strptime(datestr, '%Y%m%d')
     else:
         raise ValueError("I don't know how to parse date information from {}".format(name))
     return date, name

@@ -105,14 +105,14 @@ def preprocess(stable_mask, slope, aspect, master, slave):
         sdata = stan[mykeep]
 
     elif isinstance(master, ICESat):
-        slave_pts = slave.raster_points2(master.xy)
+        slave_pts = slave.raster_points(master.xy, nsize=5, mode='cubic')
         dH = master.elev - slave_pts
         
-        slope_pts = slope.raster_points2(master.xy)
+        slope_pts = slope.raster_points(master.xy, nsize=5, mode='cubic')
         stan = np.tan(np.radians(slope_pts))
         
-        aspect_pts = aspect.raster_points2(master.xy)
-        smask = stable_mask.raster_points2(master.xy) > 0
+        aspect_pts = aspect.raster_points(master.xy, nsize=5, mode='cubic')
+        smask = stable_mask.raster_points(master.xy) > 0
         
         dH[smask] = np.nan
 
@@ -363,7 +363,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         ### Create initial plot of where stable terrain is, including ICESat pts
         fig1, _ = plot_shaded_dem(slaveDEM)
         plt.plot(masterDEM.x[~np.isnan(masterDEM.elev)], masterDEM.y[~np.isnan(masterDEM.elev)], 'k.')
-        pp.savefig(fig1[0], bbox_inches='tight', dpi=200)
+        pp.savefig(fig1, bbox_inches='tight', dpi=200)
 
     else:
         orig_masterDEM = get_geoimg(masterDEM)

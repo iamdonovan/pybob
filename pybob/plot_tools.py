@@ -48,13 +48,13 @@ def plot_geoimg_sidebyside(img1, img2, com_extent=None, fig=None, cmap='gray', o
     else:
         fig = plt.figure(fig)
 
-    ax1 = plt.subplot(121, axisbg=(0.1, 0.15, 0.15))
+    ax1 = plt.subplot(121)
     if com_extent is not None:
         plt.imshow(img1, interpolation='nearest', cmap=cmap, extent=com_extent)
     else:
-        plt.imshow(img2, interpolation='nearest', cmap=cmap)
+        plt.imshow(img1, interpolation='nearest', cmap=cmap)
 
-    ax2 = plt.subplot(122, axisbg=(0.1, 0.15, 0.15))
+    ax2 = plt.subplot(122)
     if com_extent is not None:
         plt.imshow(img2, interpolation='nearest', cmap=cmap, extent=com_extent)
     else:
