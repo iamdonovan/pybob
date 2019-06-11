@@ -1,8 +1,7 @@
 from __future__ import print_function
-import gdal
 import os
-import ogr
 import numpy as np
+from osgeo import gdal, ogr
 import multiprocessing as mp
 from llc import jit_filter_function
 import scipy.ndimage as ndimage

@@ -8,8 +8,7 @@ import random
 import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
-import gdal
-import osr
+from osgeo import gdal, osr
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.interpolate import griddata
 from scipy.spatial import ConvexHull

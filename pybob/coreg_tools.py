@@ -1,7 +1,10 @@
+"""
+pybob.coreg_tools provides a toolset for coregistering DEMs, based on the method presented by Nuth and Kääb (2011).
+"""
 #from __future__ import print_function
 import os
 import errno
-import gdal
+from osgeo import gdal
 import numpy as np
 import matplotlib.pylab as plt
 #plt.switch_backend('agg')

@@ -1,8 +1,7 @@
 from __future__ import print_function
 import random
 import datetime as dt
-import ogr
-import osr
+from osgeo import ogr, osr
 import numpy as np
 from shapely.geometry import Point
 
