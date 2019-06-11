@@ -16,6 +16,8 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
+autodoc_mock_imports = ["osr"]
+
 def skip(app, what, name, obj, would_skip, options):
     if name == "__init__":
         return False
