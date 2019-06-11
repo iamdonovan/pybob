@@ -7,3 +7,9 @@
 #python egg metadata
 /*.egg-info
 /*.egg
+
+# pycharm
+.idea/
+
+# sphinx documentation
+docs/_build/
