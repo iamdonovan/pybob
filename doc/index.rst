@@ -1,18 +1,13 @@
-.. pybob documentation master file, created by
-   sphinx-quickstart on Tue Jun 11 15:07:26 2019.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to pybob's documentation!
 =================================
 
-.. automodule:: pybob.GeoImg
-    :members:
-
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
-
+   :caption: modules:
+   
+   pybob.GeoImg
+   pybob.coreg_tools
+   pybob.bob_tools
 
 Indices and tables
 ==================
