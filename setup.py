@@ -11,7 +11,7 @@ setup(name='pybob',
       install_requires=[
                         'numpy', 'scipy', 'matplotlib', 'fiona',
                         'shapely', 'opencv-python', 'pandas', 'geopandas',
-                        'scikit-image', 'osgeo', 'h5py', 'pyproj', 'descartes'
+                        'scikit-image', 'gdal', 'h5py', 'pyproj', 'descartes'
                          ],
       scripts=['bin/dem_coregistration.py', 'bin/generate_panchromatic.py',
                'bin/print_reverb_browse_urls.py', 'bin/print_reverb_granule_names.py',
