@@ -1,3 +1,6 @@
+"""
+pybob.ICESat provides an interface to extracted ICESat(-1) data stored in HDF5 format.
+"""
 from __future__ import print_function
 #from future_builtins import zip
 from collections import OrderedDict

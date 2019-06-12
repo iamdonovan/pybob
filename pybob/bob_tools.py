@@ -1,3 +1,6 @@
+"""
+pybob.bob_tools is a collection of the tools that didn't really fit other places.
+"""
 from __future__ import print_function
 import random
 import datetime as dt
