@@ -10,8 +10,8 @@ from shapely.geometry import Point
 
 
 def standard_landsat(instring):
-    """Given a string of a landsat scenename, make a standard (pre-Collection) filename,
-        of the form LSSPPPRRRYYYYDDDXXX01.
+    """
+    Given a string of a landsat scenename, make a standard (pre-Collection) filename, of the form LSSPPPRRRYYYYDDDXXX01.
     """
     strsplit = instring.split('_')
     if len(strsplit) < 3:  # if we only have 1 (or fewer) underscores, it's already fine
@@ -72,22 +72,20 @@ def doy2mmdd(year, doy, string_out=True, outform='%Y/%m/%d'):
 
 
 def mmdd2doy(year, month, day, string_out=True):
-    """Return a string or an int representing a day of year, given a date.
+    """
+    Return a string or an int representing a day of year, given a date.
 
-    Parameters
-    ----------
-    year : int
-        Year of the input date, e.g., ``2018``.
-    mm : int
-        Month of the year of the input date, e.g., ``1`` for Jan.
-    dd : int
-        Day of the month of the input date.
-    string_out : bool
-        Return a string (True) or an int (False). Default is True.
+    :param year: Year of the input date, e.g., ``2018``.
+    :param mm: Month of the year of the input date, e.g., ``1`` for Jan.
+    :param dd: Day of the month of the input date.
+    :param string_out: Return a string (True) or an int (False). Default is True.
+    :type year: int
+    :type mm: int
+    :type dd: int
+    :type string_out: bool
+    :returns doy: day of year representation of year, month, day
 
-    Examples
-    --------
-    >>> bt.mmdd2doy(2018, 1, , 1string_out=True)
+    >>> bt.mmdd2doy(2018, 1, 1, string_out=True)
     `1`
     """
     doy = dt.datetime(year, month, day).timetuple().tm_yday
