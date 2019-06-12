@@ -4,12 +4,9 @@ import numpy as np
 from pybob.coreg_tools import dem_coregistration
 
 
-def main():
-    np.seterr(all='ignore')
-    # add master, slave, masks to argparse
-    # can also add output directory
+def _argparser():
     parser = argparse.ArgumentParser(description="Iteratively calculate co-registration \
-                                     parameters for two DEMs, as seen in Nuth and Kaeaeb (2011).")
+                                     parameters for two DEMs, as seen in Nuth and Kääb (2011).")
     parser.add_argument('masterdem', type=str, help='path to master DEM to be used for co-registration')
     parser.add_argument('slavedem', type=str, help='path to slave DEM to be co-registered')
     parser.add_argument('-a', '--mask1', type=str, default=None,
@@ -23,8 +20,16 @@ def main():
                         help="Process assuming that master DEM is ICESat data [False].")
     parser.add_argument('-f', '--full_ext', action='store_true', default=False,
                         help="Write full extent of master DEM and shifted slave DEM. [False].")
-    args = parser.parse_args()
+    return parser
 
+
+def main():
+    np.seterr(all='ignore')
+    # add master, slave, masks to argparse
+    # can also add output directory
+    parser = _argparser()
+
+    args = parser.parse_args()
     master, coreg_slave, _ = dem_coregistration(args.masterdem, args.slavedem,
                                                 glaciermask=args.mask1, landmask=args.mask2,
                                                 outdir=args.outdir, pts=args.icesat, full_ext=args.full_ext)
