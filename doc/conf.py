@@ -14,11 +14,20 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('..'))
+from unittest.mock import MagicMock
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return MagicMock()
 
 autodoc_mock_imports = ['numpy', 'scipy', 'matplotlib', 'fiona', 'cv2', 'pyvips',
                         'shapely', 'opencv-python', 'pandas', 'geopandas',
                         'skimage', 'gdal', 'h5py', 'pyproj', 'osgeo', 'llc', 'descartes']
+
+sys.modules.update((mod_name, Mock()) for mod_name in autodoc_mock_imports)
+sys.path.insert(0, os.path.abspath('..'))
+
 
 def skip(app, what, name, obj, would_skip, options):
     if name == "__init__":
