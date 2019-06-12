@@ -1,5 +1,7 @@
 """
-pybob.coreg_tools provides a toolset for coregistering DEMs, based on the method presented by Nuth and Kääb (2011).
+pybob.coreg_tools provides a toolset for coregistering DEMs, based on the method presented by `Nuth and Kääb (2011)`_.
+
+.. _Nuth and Kääb (2011): https://www.the-cryosphere.net/5/271/2011/tc-5-271-2011.html
 """
 #from __future__ import print_function
 import os

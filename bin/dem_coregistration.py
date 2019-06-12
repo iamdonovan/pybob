@@ -5,8 +5,9 @@ from pybob.coreg_tools import dem_coregistration
 
 
 def _argparser():
-    parser = argparse.ArgumentParser(description="Iteratively calculate co-registration \
-                                     parameters for two DEMs, as seen in Nuth and Kääb (2011).")
+    parser = argparse.ArgumentParser(description="""Iteratively calculate co-registration parameters for two DEMs, as seen in `Nuth and Kääb (2011)`_.
+                                                                                                   
+                                     .. _Nuth and Kääb (2011): https://www.the-cryosphere.net/5/271/2011/tc-5-271-2011.html""")
     parser.add_argument('masterdem', type=str, help='path to master DEM to be used for co-registration')
     parser.add_argument('slavedem', type=str, help='path to slave DEM to be co-registered')
     parser.add_argument('-a', '--mask1', type=str, default=None,
