@@ -1,3 +1,6 @@
+"""
+pybob.image_tools is a collection of tools related to working with images.
+"""
 from __future__ import print_function
 import os
 import numpy as np
@@ -15,21 +18,15 @@ def hillshade(dem, azimuth=315, altitude=45):
     """
     Create a hillshade image of a DEM, given the azimuth and altitude.
 
-    Parameters
-    ----------
+    :param dem: GeoImg representing a DEM.
+    :param azimuth: Solar azimuth angle, in degress from North. Default 315.
+    :param altitude: Solar altitude angle, in degrees from horizon. Default 45.
 
-    dem : GeoImg
-        GeoImg representing a DEM.
-    azimuth : float
-        Solar azimuth angle, in degress from North. Default 315.
-    altitude : float
-        Solar altitude angle, in degrees from horizon. Default 45.
+    :type dem: pybob.GeoImg
+    :type azimuth: float
+    :type altitude: float
 
-    Returns
-    -------
-   
-    shaded : numpy array
-        numpy array of the same size as dem.img, representing the hillshade image.
+    :returns shade: numpy array of the same size as dem.img, representing the hillshade image.
     """
     x, y = np.gradient(dem.img, dem.dx, dem.dy)
     slope = np.pi/2 - np.arctan(np.sqrt(x*x + y*y))
@@ -46,28 +43,21 @@ def nanmedian_filter(img, **kwargs):
     """
     Calculate a multi-dimensional median filter that respects NaN values
     and masked arrays.
-    
-    Parameters
-    ----------
 
-    img : array-like
-        image on which to calculate the median filter
-    **kwargs : additional arguments to ndimage.generic_filter
+    :param img: image on which to calculate the median filter
+    :param kwargs: additional arguments to ndimage.generic_filter
         Note that either size or footprint must be defined. size gives the shape
-        that is taken from the input array, at every element position, to define 
-        the input to the filter function. footprint is a boolean array that 
-        specifies (implicitly) a shape, but also which of the elements within 
-        this shape will get passed to the filter function. Thus size=(n,m) is 
-        equivalent to footprint=np.ones((n,m)). We adjust size to the number 
-        of dimensions of the input array, so that, if the input array is 
+        that is taken from the input array, at every element position, to define
+        the input to the filter function. footprint is a boolean array that
+        specifies (implicitly) a shape, but also which of the elements within
+        this shape will get passed to the filter function. Thus size=(n,m) is
+        equivalent to footprint=np.ones((n,m)). We adjust size to the number
+        of dimensions of the input array, so that, if the input array is
         shape (10,10,10), and size is 2, then the actual size used is (2,2,2).
-        
-    Returns
-    -------
-    
-    nanmedian_filter : array-like
-        Return of same shape as input.
-    """  
+    :type img: array-like
+
+    :returns filtered: Filtered array of same shape as input.
+    """
     # set up the wrapper function to call generic filter
     @jit_filter_function
     def nanmed(a):
@@ -148,6 +138,16 @@ def find_peaks(image, neighborhood_size=5, threshold=1500):
 
 
 def create_mask_from_shapefile(geoimg, shapefile):
+    """
+    Create a boolean mask representing the polygons in a shapefile.
+
+    :param geoimg: input GeoImg to pull spatial extents from
+    :param shapefile: path to polygon shapefile
+    :type geoimg: pybob.GeoImg
+    :type shapefile: str
+
+    :returns mask: boolean array corresponding to rasterized polygons, of same shape as geoimg.img
+    """
     # load shapefile, rasterize to raster's extent
     masksource = ogr.Open(shapefile)
     masklayer = masksource.GetLayer()
@@ -165,6 +165,21 @@ def create_mask_from_shapefile(geoimg, shapefile):
 
 
 def rasterize_polygons(geoimg, shapefile, burn_handle=None, dtype=gdal.GDT_Int16):
+    """
+    Create rasterized polygons given a GeoImg and a shapefile. Useful for creating an index raster with corresponding
+    to polygon IDs.
+
+    :param geoimg: input GeoImg to pull spatial extents from.
+    :param shapefile: path to polygon shapefile
+    :param burn_handle: field to pull values to rasterize. Default looks for the FID field in the shapefile.
+    :param dtype: gdal datatype of rasterized layer. Default is gdal.GDT_Int16.
+    :type geoimg: pybob.GeoImg
+    :type shapefile: str
+    :type burn_handle: str
+    :type dtype: gdal.GDT
+
+    :returns rasterized, inds: rasterized polygon array and values corresponding to polygons that were rasterized.
+    """
     polysource = ogr.Open(shapefile, 0)  # read-only
     polylayer = polysource.GetLayer()
 

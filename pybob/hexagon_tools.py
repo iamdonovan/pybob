@@ -155,20 +155,19 @@ def join_halves(img, overlap, indir='.', outdir='.', color_balance=True):
     """
     Join scanned halves of KH-9 image into one, given a common overlap point.
     
-    Parameters
-    ----------
-    img : str
-        KH-9 image name (i.e., DZB1215-500454L001001) to join. The function will look for open image halves
+    :param img: KH-9 image name (i.e., DZB1215-500454L001001) to join. The function will look for open image halves
         img_a.tif and img_b.tif, assuming 'a' is the left-hand image and 'b' is the right-hand image.
-    overlap : array-like
-        Image coordinates for a common overlap point, in the form [x1, y1, x2, y2]. Best results tend to be overlaps
-        toward the middle of the y range. YMMV.
-    indir : str
-        Directory containing images to join ['.']
-    outdir : str
-        Directory to write joined image to ['.']
-    color_balance : bool
-        Attempt to color balance the two image halves before joining [True].    
+    :param overlap: Image coordinates for a common overlap point, in the form [x1, y1, x2, y2]. Best results tend to be
+        overlaps toward the middle of the y range. YMMV.
+    :param indir: Directory containing images to join ['.']
+    :param outdir: Directory to write joined image to ['.']
+    :param color_balance: Attempt to color balance the two image halves before joining [True].
+
+    :type img: str
+    :type overlap: array-like
+    :type indir: str
+    :type outdir: str
+    :type color_balance: bool
     """
     x1, y1, x2, y2 = overlap
     left = pyvips.Image.new_from_file(os.path.sep.join([indir, '{}_a.tif'.format(img)]), memory=True)
