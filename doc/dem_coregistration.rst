@@ -1,5 +1,7 @@
-bin.dem_coregistration
+dem_coregistration
 =================================
 
-.. automodule:: bin.dem_coregistration
-    :members:
+.. argparse::
+   :filename: ../bin/dem_coregistration.py
+   :func: _argparser
+   :prog: dem_coregistration.py
