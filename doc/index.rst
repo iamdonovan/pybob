@@ -9,6 +9,7 @@ Welcome to pybob's documentation!
    pybob.bob_tools
    pybob.hexagon_tools
    pybob.image_tools
+   pybob.plot_tools
    pybob.ddem_tools
    pybob.GeoImg
    pybob.VelField
