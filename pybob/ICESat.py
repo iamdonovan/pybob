@@ -38,7 +38,8 @@ def find_keyname(keys, subkey, mode='first'):
 def extract_ICESat(in_filename,workdir=None,outfile=None):
     """
     Extract ICESat data given the extent of a GeoImg.
-        **Note - currently not supported outside of UiO working environment.**
+
+    **Note - currently not supported outside of UiO working environment.**
 
     :param in_filename: Filename (optionally with path) of DEM to be opened using GeoImg.
     :param workdir: Directory where in_filename is located. If not given, the directory
