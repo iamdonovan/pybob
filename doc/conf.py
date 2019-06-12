@@ -21,7 +21,8 @@ class Mock(MagicMock):
     def __getattr__(cls, name):
         return MagicMock()
 
-autodoc_mock_imports = ['numpy', 'scipy', 'matplotlib', 'fiona', 'cv2', 'pyvips', 'xml.etree.ElementTree',
+
+autodoc_mock_imports = ['numpy', 'scipy', 'matplotlib', 'fiona', 'cv2', 'pyvips', 'lxml',
                         'shapely', 'opencv-python', 'pandas', 'geopandas', 'fiona.crs', 'scipy.interpolate',
                         'shapely.geometry.polygon', 'shapely.geometry', 'shapely.ops',  'shapely.strtree',
                         'skimage', 'gdal', 'h5py', 'pyproj', 'osgeo', 'llc', 'descartes', 'lxml.etree']
