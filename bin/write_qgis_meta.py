@@ -44,10 +44,7 @@ def write_xml_meta(layer, outdir):
     tree = ET.ElementTree(doc)
     tree.write(out_filename)
 
-
-# fields to write:
-# shortname, title, abstract, keywordList, srs (more later?), extent
-def main():
+def _argparser():
     parser = argparse.ArgumentParser(description="Parse a QGIS document and write metadata \
              as an XML file for given layer(s).", formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('xmlfile', action='store', type=str, help='XML file to open and parse')
@@ -56,6 +53,13 @@ def main():
     parser.add_argument('--outdir', action='store', type=str,
                         help='directory to write metadata to. If left empty, writes metadata \
                               to same directory as original layer.')
+    return parser
+
+
+# fields to write:
+# shortname, title, abstract, keywordList, srs (more later?), extent
+def main():
+    parser = _argparser()
     args = parser.parse_args()
 
     tree = ET.parse(args.xmlfile)

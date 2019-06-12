@@ -5,8 +5,7 @@ Welcome to pybob's documentation!
    :glob:
    :hidden:
    :maxdepth: 2
-   :caption: Contents:
-   
+
    modules/index
    scripts/index
 
