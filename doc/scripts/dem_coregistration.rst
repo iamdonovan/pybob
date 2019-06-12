@@ -1,4 +1,4 @@
-dem_coregistration
+dem_coregistration.py
 =================================
 
 .. argparse::
