@@ -1,26 +1,29 @@
+"""
+pybob.hexagon_tools is a collection of tools for working with KH-9 Hexagon imagery.
+"""
 from __future__ import print_function, division
 import os
-#import errno
-#import argparse
+# import errno
+# import argparse
 import cv2
-#import multiprocessing as mp
-#from functools import partial
-#from scipy.ndimage.filters import median_filter
-#from skimage.io import imsave
-#from skimage.morphology import disk
-#from skimage.filters import rank
+# import multiprocessing as mp
+# from functools import partial
+# from scipy.ndimage.filters import median_filter
+# from skimage.io import imsave
+# from skimage.morphology import disk
+# from skimage.filters import rank
 from scipy.interpolate import RectBivariateSpline as RBS
-#import skimage.transform as tf
+# import skimage.transform as tf
 from scipy import ndimage
 import numpy as np
-#import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import gdal
 import pyvips
-#from numba import jit
+# from numba import jit
 from llc import jit_filter_function
 import pandas as pd
-#import lxml.etree as etree
-#import lxml.builder as builder
+# import lxml.etree as etree
+# import lxml.builder as builder
 
 
 ######################################################################################################################
@@ -109,16 +112,16 @@ def make_template(img, pt, half_size):
 
 
 def find_match(img, template, half_size):
-#def find_match(chip, template, method=cv2.TM_CCOEFF):
-    #res = cv2.matchTemplate(np.float32(img), np.float32(template), cv2.TM_CCORR_NORMED)
-    #img_eq = rank.equalize(img, selem=disk(40))
+# def find_match(chip, template, method=cv2.TM_CCOEFF):
+    # res = cv2.matchTemplate(np.float32(img), np.float32(template), cv2.TM_CCORR_NORMED)
+    # img_eq = rank.equalize(img, selem=disk(40))
     res = cross_filter(img, template)
     i_off = int((img.shape[0] - res.shape[0])/2)
     j_off = int((img.shape[1] - res.shape[1])/2)
     minval, _, minloc, _ = cv2.minMaxLoc(res)
-    #maxj, maxi = maxloc
+    # maxj, maxi = maxloc
     minj, mini = minloc
-    #sp_delx, sp_dely = get_subpixel(res)
+    # sp_delx, sp_dely = get_subpixel(res)
     sp_delx, sp_dely = 0, 0
     return res, mini + i_off + sp_dely, minj + j_off + sp_delx
 
@@ -147,6 +150,7 @@ def get_subpixel(res):
         sp_delx = 0.0
         sp_dely = 0.0
     return sp_delx, sp_dely
+
 
 ######################################################################################################################
 
