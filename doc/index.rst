@@ -5,9 +5,14 @@ Welcome to pybob's documentation!
    :maxdepth: 2
    :caption: modules:
    
-   pybob.GeoImg
    pybob.coreg_tools
    pybob.bob_tools
+   pybob.hexagon_tools
+   pybob.image_tools
+   pybob.ddem_tools
+   pybob.GeoImg
+   pybob.VelField
+   pybob.ICESat
 
 Indices and tables
 ==================
