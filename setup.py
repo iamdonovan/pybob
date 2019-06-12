@@ -9,7 +9,7 @@ setup(name='pybob',
       license='MIT',
       packages=['pybob'],
       install_requires=[
-                        'numpy', 'scipy', 'matplotlib', 'fiona',
+                        'numpy', 'scipy', 'matplotlib', 'fiona', 'pyvips',
                         'shapely', 'opencv-python', 'pandas', 'geopandas',
                         'scikit-image', 'gdal', 'h5py', 'pyproj', 'descartes'
                          ],
