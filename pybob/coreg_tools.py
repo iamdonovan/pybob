@@ -18,11 +18,25 @@ from pybob.plot_tools import plot_shaded_dem
 
 
 def get_slope(geoimg):
+    """
+    Wrapper function to calculate DEM slope using gdal.DEMProcessing.
+
+    :param geoimg: GeoImg object of DEM to calculate slope
+    :type geoimg: pybob.GeoImg
+    :returns geo_slope: new GeoImg object with slope raster
+    """
     slope_ = gdal.DEMProcessing('', geoimg.gd, 'slope', format='MEM')
     return GeoImg(slope_)
 
 
 def get_aspect(geoimg):
+    """
+    Wrapper function to calculate DEM aspect using gdal.DEMProcessing.
+
+    :param geoimg: GeoImg object of DEM to calculate aspect
+    :type geoimg: pybob.GeoImg
+    :returns geo_aspect: new GeoImg object with aspect raster
+    """
     aspect_ = gdal.DEMProcessing('', geoimg.gd, 'aspect', format='MEM')
     return GeoImg(aspect_)
 
@@ -64,6 +78,18 @@ def false_hillshade(dH, title, pp, clim=(-20,20)):
 
 
 def create_stable_mask(img, mask1, mask2):
+    """
+    Create mask representing stable terrain, given exclusion (i.e., glacier) and inclusion (i.e., land) masks.
+
+    :param img: GeoImg to pull extents from
+    :param mask1: filename for shapefile representing pixels to exclude from stable terrain (i.e., glaciers)
+    :param mask2: filename for shapefile representing pixels to include in stable terrain (i.e., land)
+    :type img: pybob.GeoImg
+    :type mask1: str
+    :type mask2: str
+
+    :returns stable_mask: boolean array representing stable terrain
+    """
     # if we have no masks, just return an array of true values
     if mask1 is None and mask2 is None:
         return np.ones(img.img.shape) == 0  # all false, so nothing will get masked.
@@ -260,7 +286,13 @@ def final_histogram(dH0, dHfinal, pp=None):
     return stats_fin, stats0
     
 def RMSE(indata): 
-    """ Return root mean square of indata."""
+    """ Return root mean square of indata.
+
+    :param indata: differences to calculate root mean square of
+    :type indata: array-like
+
+    :returns myrmse: RMSE of indata.
+    """
     myrmse = np.sqrt(np.nanmean(np.asarray(indata)**2))
     return myrmse
     
@@ -277,29 +309,36 @@ def get_geoimg(indata):
 def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.',
                        pts=False, full_ext=False, return_var=True):
     """
-    Iteratively co-register elevation data, based on routines described in Nuth and Kaeaeb, 2011.
+    Iteratively co-register elevation data.
 
-    Parameters
-    ----------
-    masterDEM : string or GeoImg
-        Path to filename or GeoImg dataset representing "master" DEM.
-    slaveDEM : string or GeoImg
-        Path to filename or GeoImg dataset representing "slave" DEM.
-    glaciermask : string, optional
-        Path to shapefile representing points to exclude from co-registration
+    :param masterDEM: Path to filename or GeoImg dataset representing "master" DEM.
+    :param slaveDEM: Path to filename or GeoImg dataset representing "slave" DEM.
+    :param glaciermask: Path to shapefile representing points to exclude from co-registration
         consideration (i.e., glaciers).
-    landmask : string, optional
-        Path to shapefile representing points to include in co-registration
+    :param landmask: Path to shapefile representing points to include in co-registration
         consideration (i.e., stable ground/land).
-    outdir : string, optional
-        Location to save co-registration outputs.
-    pts : bool, optional
-        If True, program assumes that masterDEM represents point data (i.e., ICESat),
+    :param outdir: Location to save co-registration outputs.
+    :param pts: If True, program assumes that masterDEM represents point data (i.e., ICESat),
         as opposed to raster data. Slope/aspect are then calculated from slaveDEM.
         masterDEM should be a string representing an HDF5 file continaing ICESat data.
-    full_ext : bool, optional
-        If True, program writes full extents of input DEMs. If False, program writes
+    :param full_ext: If True, program writes full extents of input DEMs. If False, program writes
         input DEMs cropped to their common extent. Default is False.
+    :param return_var: return variables representing co-regsitered DEMs and offsets (default).
+
+    :type masterDEM: str, pybob.GeoImg
+    :type slaveDEM: str, pybob.GeoImg
+    :type glaciermask: str
+    :type landmask: str
+    :type outdir: str
+    :type pts: bool
+    :type full_ext: bool
+    :type return_var: bool
+
+    :returns masterDEM, outslave, out_offs: if return_var=True, returns master DEM, co-registered slave DEM, and x,y,z
+        shifts removed from slave DEM.
+
+        If co-registration fails (i.e., there are too few acceptable points to perform co-registration), then returns
+        original master and slave DEMs, with offsets set to -1.
     """
     
     # if the output directory does not exist, create it.
