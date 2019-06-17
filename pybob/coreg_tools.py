@@ -489,7 +489,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             this_slave = this_slave.reproject(masterDEM)
             this_slave.mask(stable_mask)
 
-        print("Percent-improvement threshold and Magnitute threshold:")
+        print("Percent-improvement threshold and Magnitude threshold:")
         print(mythresh, magnthresh)
         
         # slaves[-1].display()
