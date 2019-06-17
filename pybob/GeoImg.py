@@ -215,7 +215,7 @@ class GeoImg(object):
             self.datetime = dt.datetime.strptime(bname.split('_')[2], '%Y%m%d')
             self.date = self.datetime.date()
         else:
-            print("No date information read from filename.")
+            # print("No date information read from filename.")
             self.sensor_name = None
             self.satellite = None
             self.tile = None
@@ -821,6 +821,12 @@ class GeoImg(object):
         dest.SetProjection(self.proj)
         newgt = (xmin, dx, 0.0, ymax, 0.0, dy)
         dest.SetGeoTransform(newgt)
+        if self.NDV is not None:
+            dest.GetRasterBand(1).SetNoDataValue(self.NDV)
+            dest.GetRasterBand(1).Fill(self.NDV)
+        else:
+            dest.GetRasterBand(1).Fill(0)
+
         gdal.ReprojectImage(self.gd, dest, self.proj, self.proj, gdal.GRA_Bilinear)
 
         if self.NDV is not None:
@@ -921,7 +927,7 @@ class GeoImg(object):
             else:
                 goodinds = indices[np.logical_and(np.invert(self.img.mask).reshape(-1),
                                    np.isfinite(self.img.data.reshape(-1)))]
-            return np.array([np.array(np.unravel_index(x, self.img.shape)) for x in random.sample(goodinds, Npts)])
+            return np.array([np.array(np.unravel_index(x, self.img.shape)) for x in random.sample(list(goodinds), Npts)])
         elif edge_buffer is not None:
             tmp_img = self.img.data[edge_buffer:-edge_buffer, edge_buffer:-edge_buffer]
             indices = np.arange(tmp_img.size)
@@ -931,7 +937,7 @@ class GeoImg(object):
             else:
                 goodinds = indices[np.isfinite(tmp_img.reshape(-1))]
             # return a random list as above, but remember to shift everything by the edge buffer.
-            return np.array([np.array(np.unravel_index(x, tmp_img.shape))+edge_buffer for x in random.sample(goodinds, Npts)])
+            return np.array([np.array(np.unravel_index(x, tmp_img.shape))+edge_buffer for x in random.sample(list(goodinds), Npts)])
 
     def raster_points(self, pts, nsize=1, mode='linear'):
         """Interpolate raster values at a given point, or sets of points. 
