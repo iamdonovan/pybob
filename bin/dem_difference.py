@@ -6,7 +6,7 @@ import numpy as np
 import datetime as dt
 from pybob.GeoImg import GeoImg
 from pybob.image_tools import create_mask_from_shapefile
-
+from operator import itemgetter
 
 def parse_filename(fname):
     splitname = fname.split('_')
@@ -29,7 +29,7 @@ def parse_filename(fname):
 def sort_chronologically(dates, data):
     datedict = list(zip(dates, data))
     if all(dates):
-        datedict.sort(reverse=True)
+        datedict.sort(reverse=True, key=itemgetter(0))
     return datedict
 
 
