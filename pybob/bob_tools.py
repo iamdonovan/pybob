@@ -2,11 +2,28 @@
 pybob.bob_tools is a collection of the tools that didn't really fit other places.
 """
 from __future__ import print_function
+import os
 import random
+import errno
 import datetime as dt
 from osgeo import ogr, osr
 import numpy as np
 from shapely.geometry import Point
+
+
+def mkdir_p(out_dir):
+    """
+    Add bash mkdir -p functionality to os.makedirs.
+
+    :param out_dir: directory to create.
+    """
+    try:
+        os.makedirs(out_dir)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(out_dir):
+            pass
+        else:
+            raise
 
 
 def standard_landsat(instring):
