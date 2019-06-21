@@ -380,6 +380,9 @@ class GeoImg(object):
 
         if self.NDV is not None:
             self.img[nanmask] = self.NDV
+        else:
+            self.img[nanmask] = -9999
+            self.NDV = -9999
 
         if bands is None:
             if nband == 1:
