@@ -59,22 +59,22 @@ def standard_landsat(instring):
 
 
 def doy2mmdd(year, doy, string_out=True, outform='%Y/%m/%d'):
-    """Return a string or a datetime object given a year and a day of year.
+    """
+    Return a string or a datetime object given a year and a day of year.
 
-    Parameters
-    ----------
-    year : int
-        Year of the input date, e.g., ``2018``.
-    doy : int
-        Day of the year of the input date, e.g., ``1`` for 1 Jan.
-    string_out : bool
-        Return a string (True) or a datetime object (False). Default is True.
-    outform : str
-        Format for string to return. Default is `%Y/%m/%d`, or 2018/01/01 for
+    :param year: Year of the input date, e.g., ``2018``.
+    :param doy: Day of the year of the input date, e.g., ``1`` for 1 Jan.
+    :param string_out: Return a string (True) or a datetime object (False). Default is True.
+    :param outform: Format for string to return. Default is `%Y/%m/%d`, or 2018/01/01 for
         1 January 2018.
 
-    Examples
-    --------
+    :type year: int
+    :type doy: int
+    :type string_out: bool
+    :type outform: str
+
+    :returns date: datetime.datetime or string representation of the input date.
+
     >>> bt.doy2mmdd(2018, 1, string_out=True)
     `2018/01/01`
 
@@ -162,29 +162,24 @@ def parse_lsat_scene(scenename, string_out=True):
 
 
 def bin_data(bins, data2bin, bindata, mode='mean', nbinned=False):
-    """ Place data into bins based on a secondary dataset, calculate statistics on them.
-    
-    Parameters
-    ----------
-    bins : array-like
-        array-like structure indicating the bins into which data should be placed.
-    data2bin : array-like
-        data that should be binned.
-    bindata : array-like
-        secondary dataset that decides how data2bin should be binned. Should have same size/shape
+    """
+    Place data into bins based on a secondary dataset, and calculate statistics on them.
+
+    :param bins: array-like structure indicating the bins into which data should be placed.
+    :param data2bin: data that should be binned.
+    :param bindata: secondary dataset that decides how data2bin should be binned. Should have same size/shape
         as data2bin.
-    mode : str, optional
-        How to calculate statistics of binned data. One of 'mean', 'median', 'std', 'max', or 'min'.
-    nbinned : bool, optional
-        If True, returns a second array, nbinned, with number of data points that fit into each bin.
+    :param mode: How to calculate statistics of binned data. One of 'mean', 'median', 'std', 'max', or 'min'.
+    :param nbinned: Return a second array, nbinned, with number of data points that fit into each bin.
         Default is False.
-        
-    Returns
-    -------
-    binned : array-like
-        calculated and binned data with same size as bins.
-    nbinned : array-like
-        number of data points that went into each bin.
+    :type bins: array-like
+    :type data2bin: array-like
+    :type bindata: array-like
+    :type mode: str
+    :type nbinned: bool
+
+    :returns binned, nbinned: calculated, binned data with same size as bins input. If nbinned is True, returns a second
+        array with the number of inputs for each bin.
     """
     assert mode in ['mean', 'median', 'std', 'max', 'min'], "mode not recognized: {}".format(mode)
     digitized = np.digitize(bindata, bins)
