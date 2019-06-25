@@ -4,14 +4,16 @@ import errno
 import gdal
 import numpy as np
 import matplotlib.pylab as plt
-#plt.switch_backend('agg')
+# plt.switch_backend('agg')
 import scipy.optimize as optimize
 from matplotlib.backends.backend_pdf import PdfPages
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pybob.GeoImg import GeoImg
 from pybob.ICESat import ICESat
 from pybob.image_tools import create_mask_from_shapefile
-from IPython import embed
+# from IPython import embed
+
+
 
 def get_slope(geoimg):
 
@@ -29,11 +31,8 @@ def get_aspect(geoimg):
 def false_hillshade(dH, title, pp):
     niceext = np.array([dH.xmin, dH.xmax, dH.ymin, dH.ymax])/1000.
     
-    
     mykeep = np.logical_and.reduce((np.isfinite(dH.img), (np.abs(dH.img) < np.nanstd(dH.img) * 3)))
     dH_vec = dH.img[mykeep]
-    
-
     
     fig = plt.figure(figsize=(7, 5))
     ax = plt.gca()
@@ -132,10 +131,9 @@ def create_stable_mask(img, mask1, mask2):
 
 
 def preprocess(stable_mask, slope, aspect, master, slave):
-
     if isinstance(master, GeoImg):
         stan = np.tan(np.radians(slope)).astype(np.float32)
-        dH = master.copy(new_raster=(master.img-slave.img))
+        dH = master.copy(new_raster=(master.img - slave.img))
         dH.img[stable_mask] = np.nan
         master_mask = isinstance(master.img, np.ma.masked_array)
         slave_mask = isinstance(slave.img, np.ma.masked_array)
@@ -146,7 +144,7 @@ def preprocess(stable_mask, slope, aspect, master, slave):
             dH.mask(master.img.mask)
         elif slave_mask:
             dH.mask(slave.img.mask)
-        
+
         if dH.isfloat:
             dH.img[stable_mask] = np.nan
 
@@ -161,25 +159,24 @@ def preprocess(stable_mask, slope, aspect, master, slave):
     elif isinstance(master, ICESat):
         slave_pts = slave.raster_points(master.xy)
         dH = master.elev - slave_pts
-        
+
         slope_pts = slope.raster_points(master.xy)
         stan = np.tan(np.radians(slope_pts))
-        
+
         aspect_pts = aspect.raster_points(master.xy)
         smask = stable_mask.raster_points(master.xy) > 0
-        
+
         dH[smask] = np.nan
 
         dHtan = dH / stan
 
         mykeep = ((np.absolute(dH) < 200.0) & np.isfinite(dH) &
                   (slope_pts > 3.0) & (dH != 0.0) & (aspect_pts >= 0))
-        
+
         dH[np.invert(mykeep)] = np.nan
         xdata = aspect_pts[mykeep]
         ydata = dHtan[mykeep]
         sdata = stan[mykeep]
-
 
     return dH, xdata, ydata, sdata
 
@@ -188,28 +185,31 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     xdata = xdata.astype(np.float64)  # float64 truly necessary?
     ydata = ydata.astype(np.float64)
     sdata = sdata.astype(np.float64)
+
     # fit using equation 3 of Nuth and Kaeaeb, 2011
 
-    def fitfun(p, x): return p[0] * np.cos(np.radians(p[1] - x)) + p[2]
+    def fitfun(p, x):
+        return p[0] * np.cos(np.radians(p[1] - x)) + p[2]
 
-    def errfun(p, x, y): return fitfun(p, x) - y
-    
+    def errfun(p, x, y):
+        return fitfun(p, x) - y
+
     if xdata.size > 20000:
         mysamp = np.random.randint(0, xdata.size, 20000)
     else:
         mysamp = np.arange(0, xdata.size)
-    mysamp=mysamp.astype(np.int64)
-    
-    
-    #embed()
-    #print("soft_l1")
+    mysamp = mysamp.astype(np.int64)
+
+    # embed()
+    # print("soft_l1")
     lb = [-200, 0, -300]
     ub = [200, 180, 300]
     p0 = [1, 1, -1]
-    #p1, success, _ = optimize.least_squares(errfun, p0[:], args=([xdata], [ydata]), method='trf', bounds=([lb],[ub]), loss='soft_l1', f_scale=0.1)
-    #myresults = optimize.least_squares(errfun, p0, args=(xdata, ydata), method='trf', loss='soft_l1', f_scale=0.5)    
-    myresults = optimize.least_squares(errfun, p0, args=(xdata[mysamp], ydata[mysamp]), method='trf', loss='soft_l1', f_scale=0.1,ftol=1E-4,xtol=1E-4)    
-    #myresults = optimize.least_squares(errfun, p0, args=(xdata[mysamp], ydata[mysamp]), method='trf', bounds=([lb,ub]), loss='soft_l1', f_scale=0.1,ftol=1E-8,xtol=1E-8)    
+    # p1, success, _ = optimize.least_squares(errfun, p0[:], args=([xdata], [ydata]), method='trf', bounds=([lb],[ub]), loss='soft_l1', f_scale=0.1)
+    # myresults = optimize.least_squares(errfun, p0, args=(xdata, ydata), method='trf', loss='soft_l1', f_scale=0.5)
+    myresults = optimize.least_squares(errfun, p0, args=(xdata[mysamp], ydata[mysamp]), method='trf', loss='soft_l1',
+                                       f_scale=0.1, ftol=1E-4, xtol=1E-4)
+    # myresults = optimize.least_squares(errfun, p0, args=(xdata[mysamp], ydata[mysamp]), method='trf', bounds=([lb,ub]), loss='soft_l1', f_scale=0.1,ftol=1E-8,xtol=1E-8)
     p1 = myresults.x
     # success = myresults.success # commented because it wasn't actually being used.
     # print success
@@ -222,8 +222,6 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     xp = np.linspace(0, 360, 361)
     yp = fitfun(p1, xp)
 
-
-    
     fig = plt.figure(figsize=(7, 5), dpi=600)
     fig.suptitle(title, fontsize=14)
     plt.plot(xdata[mysamp], ydata[mysamp], '^', ms=0.5, color='0.5', rasterized=True, fillstyle='full')
@@ -231,9 +229,9 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     plt.plot(xp, yp, 'r-', ms=2)
 
     plt.xlim(0, 360)
-    #plt.ylim(-200,200)
-    ymin, ymax = plt.ylim((np.nanmean(ydata[mysamp]))-2*np.nanstd(ydata[mysamp]),
-                          (np.nanmean(ydata[mysamp]))+2*np.nanstd(ydata[mysamp]))
+    # plt.ylim(-200,200)
+    ymin, ymax = plt.ylim((np.nanmean(ydata[mysamp])) - 2 * np.nanstd(ydata[mysamp]),
+                          (np.nanmean(ydata[mysamp])) + 2 * np.nanstd(ydata[mysamp]))
     # plt.axis([0, 360, -200, 200])
     plt.xlabel('Aspect [degrees]')
     plt.ylabel('dH / tan(slope)')
@@ -248,28 +246,28 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
 
     return xadj, yadj, zadj
 
+
 def final_histogram(dH0, dHfinal, pp):
     fig = plt.figure(figsize=(7, 5), dpi=600)
     plt.title('Elevation difference histograms', fontsize=14)
     
     dH0 = np.squeeze(np.asarray(dH0[ np.logical_and.reduce((np.isfinite(dH0), (np.abs(dH0) < np.nanstd(dH0) * 3)))]))
     dHfinal = np.squeeze(np.asarray(dHfinal[ np.logical_and.reduce((np.isfinite(dHfinal), (np.abs(dHfinal) < np.nanstd(dHfinal) * 3)))]))
-    
     j1, j2 = np.histogram(dH0[np.isfinite(dH0)], bins=100, range=(-60, 60))
     k1, k2 = np.histogram(dHfinal[np.isfinite(dHfinal)], bins=100, range=(-60, 60))
-    
+
     stats0 = [np.nanmean(dH0), np.nanmedian(dH0), np.nanstd(dH0), RMSE(dH0)]
-    stats_fin = [np.nanmean(dHfinal), np.nanmedian(dHfinal), np.nanstd(dHfinal), RMSE(dHfinal)]    
-    
-    plt.plot(j2[1:], j1,'k-', linewidth=2)
-    plt.plot(k2[1:], k1,'r-', linewidth=2)
-    #plt.legend(['Original', 'Coregistered'])
-    
+    stats_fin = [np.nanmean(dHfinal), np.nanmedian(dHfinal), np.nanstd(dHfinal), RMSE(dHfinal)]
+
+    plt.plot(j2[1:], j1, 'k-', linewidth=2)
+    plt.plot(k2[1:], k1, 'r-', linewidth=2)
+    # plt.legend(['Original', 'Coregistered'])
+
     plt.xlabel('Elevation difference [meters]')
     plt.ylabel('Number of samples')
-    plt.xlim(-50,50)
-    
-    #numwidth = max([len('{:.1f} m'.format(xadj)), len('{:.1f} m'.format(yadj)), len('{:.1f} m'.format(zadj))])
+    plt.xlim(-50, 50)
+
+    # numwidth = max([len('{:.1f} m'.format(xadj)), len('{:.1f} m'.format(yadj)), len('{:.1f} m'.format(zadj))])
     plt.text(0.05, 0.90, 'Mean: ' + ('{:.1f} m'.format(stats0[0])),
              fontsize=12, fontweight='bold', color='black', family='monospace', transform=plt.gca().transAxes)
     plt.text(0.05, 0.85, 'Median: ' + ('{:.1f} m'.format(stats0[1])),
@@ -278,7 +276,6 @@ def final_histogram(dH0, dHfinal, pp):
              fontsize=12, fontweight='bold', color='black', family='monospace', transform=plt.gca().transAxes)
     plt.text(0.05, 0.75, 'RMSE: ' + ('{:.1f} m'.format(stats0[3])),
              fontsize=12, fontweight='bold', color='black', family='monospace', transform=plt.gca().transAxes)
-
 
     plt.text(0.4, 0.90, 'Mean: ' + ('{:.1f} m'.format(stats_fin[0])),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
@@ -289,14 +286,14 @@ def final_histogram(dH0, dHfinal, pp):
     plt.text(0.4, 0.75, 'RMSE: ' + ('{:.1f} m'.format(stats_fin[3])),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
     pp.savefig(fig, bbox_inches='tight', dpi=200)
-    
-    
-def RMSE(indata): 
+
+
+def RMSE(indata):
     """ Return root mean square of indata."""
     myrmse = np.sqrt(np.nanmean(np.asarray(indata)**2))
     return myrmse
-    
-    
+
+
 def get_geoimg(indata):
     if type(indata) is str or type(indata) is gdal.Dataset:
         return GeoImg(indata)
@@ -306,7 +303,7 @@ def get_geoimg(indata):
         raise TypeError('input data must be a string pointing to a gdal dataset, or a GeoImg object.')
 
 
-def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.', pts=False, full_ext=False, plot_out=False):
+def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.', pts=False, full_ext=False, plot_out=False, magnlimit=1):
     """
     Iteratively co-register elevation data, based on routines described in Nuth and Kaeaeb, 2011.
 
@@ -370,7 +367,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     if pts:
         masterDEM = ICESat(masterDEM)
         masterDEM.project('epsg:{}'.format(slaveDEM.epsg))
-        mybounds=[slaveDEM.xmin, slaveDEM.xmax, slaveDEM.ymin, slaveDEM.ymax]
+        mybounds = [slaveDEM.xmin, slaveDEM.xmax, slaveDEM.ymin, slaveDEM.ymax]
         masterDEM.clip(mybounds)
         masterDEM.clean()
         slope_geo = get_slope(slaveDEM)
@@ -384,9 +381,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         stable_mask = slaveDEM.copy(new_raster=smask)  # make the mask a geoimg
     else:
         orig_masterDEM = get_geoimg(masterDEM)
-        
+
         masterDEM = orig_masterDEM.reproject(slaveDEM)  # need to resample masterDEM to cell size of slave.
-        #masterDEM.img[masterDEM.img<1]=np.nan
+        # masterDEM.img[masterDEM.img<1]=np.nan
         stable_mask = create_stable_mask(masterDEM, glaciermask, landmask)
 
         slope_geo = get_slope(masterDEM)
@@ -405,7 +402,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     tot_dy = np.float64(0)
     tot_dz = np.float64(0)
     magnthresh = 200
-    magnlimit=.1
+
     mytitle = 'DEM difference: pre-coregistration'
     if pts:
         this_slave = slaveDEM
@@ -422,7 +419,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         mycount += 1
         print("Running iteration #{}".format(mycount))
         print("Running iteration #{}".format(mycount), file=paramf)
-        
+
         # if we don't have two DEMs, showing the false hillshade doesn't work.
         if not pts:
             dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, this_slave)
@@ -436,10 +433,10 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             dH0 = dH_img
 
         # calculate threshold, standard deviation of dH
-        #mythresh = 100 * (mystd-np.nanstd(dH_img))/mystd
-        #mystd = np.nanstd(dH_img)
+        # mythresh = 100 * (mystd-np.nanstd(dH_img))/mystd
+        # mystd = np.nanstd(dH_img)
         # USE RMSE instead ( this is to make su that there is improvement in the spread)
-        mythresh = 100 * (mystd-RMSE(dH_img))/mystd
+        mythresh = 100 * (mystd - RMSE(dH_img)) / mystd
         mystd = RMSE(dH_img)
 
         mytitle2 = "Co-registration: Iteration {}".format(mycount)
@@ -447,7 +444,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         tot_dx += dx
         tot_dy += dy
         tot_dz += dz
-        magnthresh = np.sqrt(np.square(dx)+np.square(dy)+np.square(dz))
+        magnthresh = np.sqrt(np.square(dx) + np.square(dy) + np.square(dz))
         print(tot_dx, tot_dy, tot_dz)
         print(tot_dx, tot_dy, tot_dz, file=paramf)
         # print np.nanmean(slaves[-1].img)
@@ -471,7 +468,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
         print("Percent-improvement threshold and Magnitute threshold:")
         print(mythresh, magnthresh)
-        
+
         # slaves[-1].display()
         if mythresh > 2 and magnthresh > magnlimit:
             dH = None
@@ -485,12 +482,12 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             if not pts:
                 dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, this_slave)
                 mytitle = "DEM difference: After Iteration {}".format(mycount)
-                #adjust final dH
-                #myfadj=np.nanmean([np.nanmean(dH.img),np.nanmedian(dH.img)])
-                #myfadj=np.nanmedian(dH.img)
-                #tot_dz += myfadj
-                #dH.img = dH.img-myfadj
-                
+                # adjust final dH
+                # myfadj=np.nanmean([np.nanmean(dH.img),np.nanmedian(dH.img)])
+                # myfadj=np.nanmedian(dH.img)
+                # tot_dz += myfadj
+                # dH.img = dH.img-myfadj
+
                 false_hillshade(dH, mytitle, pp)
                 dHfinal = dH.img
             else:
@@ -498,7 +495,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
                 dH, xdata, ydata, sdata = preprocess(stable_mask, slope_geo, aspect_geo, masterDEM, this_slave)
                 dx, dy, dz = coreg_fitting(xdata, ydata, sdata, mytitle2, pp)
                 dHfinal = dH
- 
+
     # Create final histograms pre and post coregistration
     # shift = [tot_dx, tot_dy, tot_dz]  # commented because it wasn't actually used.
     final_histogram(dH0, dHfinal, pp)
@@ -513,20 +510,20 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         slaveoutfile = '.'.join(sfilename.split('.')[0:-1]) + '_adj.tif'
     else:
         slaveoutfile = 'slave_adj.tif'
-    
+
     if pts:
         outslave = slaveDEM.copy()
-    else:        
+    else:
         if full_ext:
             outslave = get_geoimg(slaveDEM)
         else:
             outslave = slaveDEM.reproject(masterDEM)
-    
+
     outslave.shift(tot_dx, tot_dy)
     outslave.img = outslave.img + tot_dz
     outslave.write(slaveoutfile, out_folder=outdir)
-    outslave.filename=slaveoutfile
-   
+    outslave.filename = slaveoutfile
+
     if pts:
         slope_geo.write('tmp_slope.tif', out_folder=outdir)
         aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
