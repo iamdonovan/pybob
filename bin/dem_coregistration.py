@@ -21,6 +21,8 @@ def _argparser():
                         help="Process assuming that master DEM is ICESat data [False].")
     parser.add_argument('-f', '--full_ext', action='store_true', default=False,
                         help="Write full extent of master DEM and shifted slave DEM. [False].")
+    parse.add_algorithm('-g', '--alg', type=str, default='Horn',
+                        help="Algorithm to calculate slope, aspect. One of 'ZevenbergenThorne' or 'Horn'. [Horn]")
     return parser
 
 
