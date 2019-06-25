@@ -19,27 +19,33 @@ from pybob.image_tools import create_mask_from_shapefile
 from pybob.plot_tools import plot_shaded_dem
 
 
-def get_slope(geoimg):
+def get_slope(geoimg, alg='Horn'):
     """
     Wrapper function to calculate DEM slope using gdal.DEMProcessing.
 
     :param geoimg: GeoImg object of DEM to calculate slope
+    :param alg: Algorithm for calculating Slope. One of 'ZevenbergenThorne' or 'Horn'
     :type geoimg: pybob.GeoImg
+    :type alg: str
     :returns geo_slope: new GeoImg object with slope raster
     """
-    slope_ = gdal.DEMProcessing('', geoimg.gd, 'slope', format='MEM')
+    assert alg in ['ZevenbergenThorne', 'Horn'], "alg not recognized: {}".format(alg)
+    slope_ = gdal.DEMProcessing('', geoimg.gd, 'slope', format='MEM', alg=alg)
     return GeoImg(slope_)
 
 
-def get_aspect(geoimg):
+def get_aspect(geoimg, alg='Horn'):
     """
     Wrapper function to calculate DEM aspect using gdal.DEMProcessing.
 
     :param geoimg: GeoImg object of DEM to calculate aspect
+    :param alg: Algorithm for calculating Aspect. One of 'ZevenbergenThorne' or 'Horn'
     :type geoimg: pybob.GeoImg
+    :type alg: str
     :returns geo_aspect: new GeoImg object with aspect raster
     """
-    aspect_ = gdal.DEMProcessing('', geoimg.gd, 'aspect', format='MEM')
+    assert alg in ['ZevenbergenThorne', 'Horn'],  "alg not recognized: {}".format(alg)
+    aspect_ = gdal.DEMProcessing('', geoimg.gd, 'aspect', format='MEM', alg=alg)
     return GeoImg(aspect_)
 
 
