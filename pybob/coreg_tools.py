@@ -24,7 +24,7 @@ def get_slope(geoimg, alg='Horn'):
     Wrapper function to calculate DEM slope using gdal.DEMProcessing.
 
     :param geoimg: GeoImg object of DEM to calculate slope
-    :param alg: Algorithm for calculating Slope. One of 'ZevenbergenThorne' or 'Horn'
+    :param alg: Algorithm for calculating Slope. One of 'ZevenbergenThorne' or 'Horn'. Default is 'Horn'.
     :type geoimg: pybob.GeoImg
     :type alg: str
     :returns geo_slope: new GeoImg object with slope raster
@@ -39,7 +39,7 @@ def get_aspect(geoimg, alg='Horn'):
     Wrapper function to calculate DEM aspect using gdal.DEMProcessing.
 
     :param geoimg: GeoImg object of DEM to calculate aspect
-    :param alg: Algorithm for calculating Aspect. One of 'ZevenbergenThorne' or 'Horn'
+    :param alg: Algorithm for calculating Aspect. One of 'ZevenbergenThorne' or 'Horn'. Default is 'Horn'.
     :type geoimg: pybob.GeoImg
     :type alg: str
     :returns geo_aspect: new GeoImg object with aspect raster
@@ -315,7 +315,7 @@ def get_geoimg(indata):
 
 
 def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.',
-                       pts=False, full_ext=False, return_var=True):
+                       pts=False, full_ext=False, return_var=True, alg='Horn'):
     """
     Iteratively co-register elevation data.
 
@@ -331,7 +331,8 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         masterDEM should be a string representing an HDF5 file continaing ICESat data.
     :param full_ext: If True, program writes full extents of input DEMs. If False, program writes
         input DEMs cropped to their common extent. Default is False.
-    :param return_var: return variables representing co-regsitered DEMs and offsets (default).
+    :param return_var: return variables representing co-registered DEMs and offsets (default).
+    :param alg: Algorithm for calculating Slope, Aspect. One of 'ZevenbergenThorne' or 'Horn'. Default is 'Horn'.
 
     :type masterDEM: str, pybob.GeoImg
     :type slaveDEM: str, pybob.GeoImg
@@ -341,6 +342,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     :type pts: bool
     :type full_ext: bool
     :type return_var: bool
+    :type alg: str
 
     :returns masterDEM, outslave, out_offs: if return_var=True, returns master DEM, co-registered slave DEM, and x,y,z
         shifts removed from slave DEM.
@@ -400,8 +402,8 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         mybounds=[slaveDEM.xmin, slaveDEM.xmax, slaveDEM.ymin, slaveDEM.ymax]
         masterDEM.clip(mybounds)
         masterDEM.clean()
-        slope_geo = get_slope(slaveDEM)
-        aspect_geo = get_aspect(slaveDEM)
+        slope_geo = get_slope(slaveDEM, alg)
+        aspect_geo = get_aspect(slaveDEM, alg)
 
         slope_geo.write('tmp_slope.tif', out_folder=outdir)
         aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
@@ -410,7 +412,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         slaveDEM.mask(smask)
         stable_mask = slaveDEM.copy(new_raster=smask)  # make the mask a geoimg
         
-        ### Create initial plot of where stable terrain is, including ICESat pts
+        # Create initial plot of where stable terrain is, including ICESat pts
         fig1, _ = plot_shaded_dem(slaveDEM)
         plt.plot(masterDEM.x[~np.isnan(masterDEM.elev)], masterDEM.y[~np.isnan(masterDEM.elev)], 'k.')
         pp.savefig(fig1, bbox_inches='tight', dpi=200)
@@ -423,12 +425,11 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         masterDEM = orig_masterDEM.reproject(slaveDEM)  # need to resample masterDEM to cell size, extent of slave.
         stable_mask = create_stable_mask(masterDEM, glaciermask, landmask)
 
-        slope_geo = get_slope(masterDEM)
-        aspect_geo = get_aspect(masterDEM)
+        slope_geo = get_slope(masterDEM, alg)
+        aspect_geo = get_aspect(masterDEM, alg)
         slope_geo.write('tmp_slope.tif', out_folder=outdir)
         aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
         masterDEM.mask(stable_mask)
-        
 
     slope = slope_geo.img
     aspect = aspect_geo.img
@@ -465,7 +466,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         # if we don't have two DEMs, showing the false hillshade doesn't work.
         if not pts:
             dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, this_slave)
-            #if np.logical_or(np.sum(np.isfinite(xdata.flatten()))<100, np.sum(np.isfinite(ydata.flatten()))<100):
+            # if np.logical_or(np.sum(np.isfinite(xdata.flatten()))<100, np.sum(np.isfinite(ydata.flatten()))<100):
             if np.logical_or.reduce((np.sum(np.isfinite(xdata.flatten()))<100, 
                                      np.sum(np.isfinite(ydata.flatten()))<100, 
                                      np.sum(np.isfinite(sdata.flatten()))<100)):
@@ -488,7 +489,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         else:
             dH, xdata, ydata, sdata = preprocess(stable_mask, slope_geo, aspect_geo, masterDEM, this_slave)
             dH_img = dH
-            #if np.logical_or(np.sum(np.isfinite(dH.flatten()))<100, np.sum(np.isfinite(ydata.flatten()))<100):
+            # if np.logical_or(np.sum(np.isfinite(dH.flatten()))<100, np.sum(np.isfinite(ydata.flatten()))<100):
             if np.logical_or.reduce((np.sum(np.isfinite(xdata.flatten()))<100,
                                      np.sum(np.isfinite(ydata.flatten()))<100,
                                      np.sum(np.isfinite(sdata.flatten()))<100)):
@@ -504,8 +505,8 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
                 dH_img -= dH0mean
                 
         # calculate threshold, standard deviation of dH
-        #mythresh = 100 * (mystd-np.nanstd(dH_img))/mystd
-        #mystd = np.nanstd(dH_img)
+        # mythresh = 100 * (mystd-np.nanstd(dH_img))/mystd
+        # mystd = np.nanstd(dH_img)
         # USE RMSE instead ( this is to make su that there is improvement in the spread)
         mythresh = 100 * (mystd-RMSE(dH_img))/mystd
         mystd = RMSE(dH_img)
