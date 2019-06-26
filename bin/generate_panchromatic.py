@@ -1,16 +1,22 @@
 #!/usr/bin/env python
-import gdal, sys, os, argparse, numpy as np
+import argparse
 from pybob.GeoImg import GeoImg
-from pybob.image_tools import generate_panchrome
 
-def main():
+
+def _argparser():
     parser = argparse.ArgumentParser(description = "Generate simulated panchromatic image for Landsat TM data.")
     parser.add_argument("inputscene", type=str, help="Base Landsat scene name (do not specify bands) to be read in.")
-    parser.add_argument("-o", "--outputscene", type=str, help="Output scene name (if unspecified, defaults to inputscenename_B8.TIF)")
+    parser.add_argument("-o", "--outputscene", type=str,
+                        help="Output scene name (if unspecified, defaults to inputscenename_B8.TIF)")
+    return parser
+
+
+def main():
+    parser = _argparser()
     args = parser.parse_args()
 
     if args.outputscene is None:
-	    args.outputscene = args.inputscene
+        args.outputscene = args.inputscene
 
     outfilename = args.outputscene + "_B8.TIF"
 
@@ -25,6 +31,7 @@ def main():
     B8 = B4.copy(new_raster=B8sim)
 
     B8.write(outfilename)
+
 
 if __name__ == "__main__":
     main()

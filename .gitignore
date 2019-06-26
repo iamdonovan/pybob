@@ -1,8 +1,12 @@
+<<<<<<< HEAD
 # Created by https://www.gitignore.io/api/python
 # Edit at https://www.gitignore.io/?templates=python
 
 # pycharm
 .idea/
+
+# sphinx documentation
+doc/_build/
 
 ### Python ###
 # Byte-compiled / optimized / DLL files

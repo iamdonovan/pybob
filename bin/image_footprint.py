@@ -37,8 +37,7 @@ def lhand_chop(footprint, chop):
     new_coords = [coords[0], (new_ur.x, new_ur.y), (new_lr.x, new_lr.y), coords[3]]
     return Polygon(new_coords)
 
-
-def main():
+def _argparser():
     parser = argparse.ArgumentParser(description="Create footprint of valid image area for one (or more) images.")
     parser.add_argument('image', action='store', type=str, nargs='+', help="Image(s) to read in")
     parser.add_argument('-o', '--outshape', action='store', type=str, default='Footprints.shp',
@@ -46,6 +45,10 @@ def main():
     parser.add_argument('-b', '--buffer', action='store', type=float, default=0, help="buffer size to use [0]")
     parser.add_argument('--chop', action='store', type=float, nargs='?', const=1000.0,
                         help="Amount of image to crop in m [default 1000]")
+    return parser
+
+def main():
+    parser = _argparser()
     args = parser.parse_args()
 
     img1 = GeoImg(args.image[0])

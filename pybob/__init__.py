@@ -1,3 +1,6 @@
+"""
+pybob is a python package of geospatial and other tools that I find useful.
+"""
 import pybob.bob_tools
 import pybob.image_tools
 import pybob.continuity_tools
