@@ -1,0 +1,528 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pybob.image_tools &mdash; pybob  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> pybob
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/index.html">modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../scripts/index.html">scripts</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pybob</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>pybob.image_tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pybob.image_tools</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">pybob.image_tools is a collection of tools related to working with images.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">osgeo</span> <span class="k">import</span> <span class="n">gdal</span><span class="p">,</span> <span class="n">ogr</span>
+<span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="k">as</span> <span class="nn">mp</span>
+<span class="kn">from</span> <span class="nn">llc</span> <span class="k">import</span> <span class="n">jit_filter_function</span>
+<span class="kn">import</span> <span class="nn">scipy.ndimage</span> <span class="k">as</span> <span class="nn">ndimage</span>
+<span class="kn">import</span> <span class="nn">scipy.ndimage.filters</span> <span class="k">as</span> <span class="nn">filters</span>
+<span class="kn">from</span> <span class="nn">skimage.feature</span> <span class="k">import</span> <span class="n">greycomatrix</span><span class="p">,</span> <span class="n">greycoprops</span>
+<span class="kn">from</span> <span class="nn">pybob.bob_tools</span> <span class="k">import</span> <span class="n">parse_lsat_scene</span><span class="p">,</span> <span class="n">round_down</span>
+<span class="kn">from</span> <span class="nn">pybob.GeoImg</span> <span class="k">import</span> <span class="n">GeoImg</span>
+
+
+<div class="viewcode-block" id="hillshade"><a class="viewcode-back" href="../../modules/pybob.image_tools.html#pybob.image_tools.hillshade">[docs]</a><span class="k">def</span> <span class="nf">hillshade</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">azimuth</span><span class="o">=</span><span class="mi">315</span><span class="p">,</span> <span class="n">altitude</span><span class="o">=</span><span class="mi">45</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a hillshade image of a DEM, given the azimuth and altitude.</span>
+
+<span class="sd">    :param dem: GeoImg representing a DEM.</span>
+<span class="sd">    :param azimuth: Solar azimuth angle, in degress from North. Default 315.</span>
+<span class="sd">    :param altitude: Solar altitude angle, in degrees from horizon. Default 45.</span>
+
+<span class="sd">    :type dem: pybob.GeoImg</span>
+<span class="sd">    :type azimuth: float</span>
+<span class="sd">    :type altitude: float</span>
+
+<span class="sd">    :returns shade: numpy array of the same size as dem.img, representing the hillshade image.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">dem</span><span class="o">.</span><span class="n">img</span><span class="p">,</span> <span class="n">dem</span><span class="o">.</span><span class="n">dx</span><span class="p">,</span> <span class="n">dem</span><span class="o">.</span><span class="n">dy</span><span class="p">)</span>
+    <span class="n">slope</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">y</span><span class="p">))</span>
+    <span class="n">aspect</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="o">-</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">azimuthrad</span> <span class="o">=</span> <span class="n">azimuth</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span>
+    <span class="n">altituderad</span> <span class="o">=</span> <span class="n">altitude</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span>
+    <span class="n">shaded</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">altituderad</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">slope</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">altituderad</span><span class="p">)</span> <span class="o">*</span>\
+             <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">slope</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">azimuthrad</span> <span class="o">-</span> <span class="n">aspect</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">shaded</span></div>
+
+
+<div class="viewcode-block" id="nanmedian_filter"><a class="viewcode-back" href="../../modules/pybob.image_tools.html#pybob.image_tools.nanmedian_filter">[docs]</a><span class="k">def</span> <span class="nf">nanmedian_filter</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate a multi-dimensional median filter that respects NaN values</span>
+<span class="sd">    and masked arrays.</span>
+
+<span class="sd">    :param img: image on which to calculate the median filter</span>
+<span class="sd">    :param kwargs: additional arguments to ndimage.generic_filter</span>
+<span class="sd">        Note that either size or footprint must be defined. size gives the shape</span>
+<span class="sd">        that is taken from the input array, at every element position, to define</span>
+<span class="sd">        the input to the filter function. footprint is a boolean array that</span>
+<span class="sd">        specifies (implicitly) a shape, but also which of the elements within</span>
+<span class="sd">        this shape will get passed to the filter function. Thus size=(n,m) is</span>
+<span class="sd">        equivalent to footprint=np.ones((n,m)). We adjust size to the number</span>
+<span class="sd">        of dimensions of the input array, so that, if the input array is</span>
+<span class="sd">        shape (10,10,10), and size is 2, then the actual size used is (2,2,2).</span>
+<span class="sd">    :type img: array-like</span>
+
+<span class="sd">    :returns filtered: Filtered array of same shape as input.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># set up the wrapper function to call generic filter</span>
+    <span class="nd">@jit_filter_function</span>
+    <span class="k">def</span> <span class="nf">nanmed</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">generic_filter</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">nanmed</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+    
+
+<span class="k">def</span> <span class="nf">generate_panchrome</span><span class="p">(</span><span class="n">imgname</span><span class="p">,</span> <span class="n">outname</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">outname</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">outname</span> <span class="o">=</span> <span class="n">imgname</span> <span class="o">+</span> <span class="s1">&#39;_B8.TIF&#39;</span>
+
+    <span class="n">B5</span> <span class="o">=</span> <span class="n">GeoImg</span><span class="p">(</span><span class="n">imgname</span> <span class="o">+</span> <span class="s1">&#39;_B5.TIF&#39;</span><span class="p">)</span>
+    <span class="n">B4</span> <span class="o">=</span> <span class="n">GeoImg</span><span class="p">(</span><span class="n">imgname</span> <span class="o">+</span> <span class="s1">&#39;_B4.TIF&#39;</span><span class="p">)</span>
+    <span class="n">B3</span> <span class="o">=</span> <span class="n">GeoImg</span><span class="p">(</span><span class="n">imgname</span> <span class="o">+</span> <span class="s1">&#39;_B3.TIF&#39;</span><span class="p">)</span>
+    <span class="n">B2</span> <span class="o">=</span> <span class="n">GeoImg</span><span class="p">(</span><span class="n">imgname</span> <span class="o">+</span> <span class="s1">&#39;_B2.TIF&#39;</span><span class="p">)</span>
+
+    <span class="n">B8sim</span> <span class="o">=</span> <span class="mf">0.45</span> <span class="o">*</span> <span class="n">B4</span><span class="o">.</span><span class="n">img</span> <span class="o">+</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">B3</span><span class="o">.</span><span class="n">img</span> <span class="o">+</span> <span class="mf">0.25</span> <span class="o">*</span> <span class="n">B2</span><span class="o">.</span><span class="n">img</span> <span class="o">+</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">B5</span><span class="o">.</span><span class="n">img</span>
+    <span class="n">B8</span> <span class="o">=</span> <span class="n">B4</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">new_raster</span><span class="o">=</span><span class="n">B8sim</span><span class="p">)</span>
+    <span class="n">B8</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">outname</span><span class="p">,</span> <span class="n">out_folder</span><span class="o">=</span><span class="n">out_dir</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">B8</span>
+
+
+<span class="k">def</span> <span class="nf">composite_raster</span><span class="p">(</span><span class="n">band1name</span><span class="p">,</span> <span class="n">band2name</span><span class="p">,</span> <span class="n">band3name</span><span class="p">,</span> <span class="n">outname</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">in_dir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="s1">&#39;GTiff&#39;</span><span class="p">):</span>
+    <span class="n">band1</span> <span class="o">=</span> <span class="n">GeoImg</span><span class="p">(</span><span class="n">band1name</span><span class="p">,</span> <span class="n">in_dir</span><span class="o">=</span><span class="n">in_dir</span><span class="p">)</span>
+    <span class="n">band2</span> <span class="o">=</span> <span class="n">GeoImg</span><span class="p">(</span><span class="n">band2name</span><span class="p">,</span> <span class="n">in_dir</span><span class="o">=</span><span class="n">in_dir</span><span class="p">)</span>
+    <span class="n">band3</span> <span class="o">=</span> <span class="n">GeoImg</span><span class="p">(</span><span class="n">band3name</span><span class="p">,</span> <span class="n">in_dir</span><span class="o">=</span><span class="n">in_dir</span><span class="p">)</span>
+
+    <span class="n">driver</span> <span class="o">=</span> <span class="n">gdal</span><span class="o">.</span><span class="n">GetDriverByName</span><span class="p">(</span><span class="n">driver</span><span class="p">)</span>
+
+    <span class="n">ncols</span> <span class="o">=</span> <span class="n">band1</span><span class="o">.</span><span class="n">npix_x</span>
+    <span class="n">nrows</span> <span class="o">=</span> <span class="n">band1</span><span class="o">.</span><span class="n">npix_y</span>
+    <span class="n">nband</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">datatype</span> <span class="o">=</span> <span class="n">band1</span><span class="o">.</span><span class="n">gd</span><span class="o">.</span><span class="n">GetRasterBand</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">DataType</span>
+
+    <span class="n">out</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="n">out_dir</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span> <span class="o">+</span> <span class="n">outname</span><span class="p">,</span> <span class="n">ncols</span><span class="p">,</span> <span class="n">nrows</span><span class="p">,</span> <span class="n">nband</span><span class="p">,</span> <span class="n">datatype</span><span class="p">)</span>
+
+    <span class="n">out</span><span class="o">.</span><span class="n">SetGeoTransform</span><span class="p">(</span><span class="n">band1</span><span class="o">.</span><span class="n">gt</span><span class="p">)</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">SetProjection</span><span class="p">(</span><span class="n">band1</span><span class="o">.</span><span class="n">proj</span><span class="p">)</span>
+
+    <span class="n">out</span><span class="o">.</span><span class="n">GetRasterBand</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">WriteArray</span><span class="p">(</span><span class="n">band1</span><span class="o">.</span><span class="n">gd</span><span class="o">.</span><span class="n">ReadAsArray</span><span class="p">())</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">GetRasterBand</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">WriteArray</span><span class="p">(</span><span class="n">band2</span><span class="o">.</span><span class="n">gd</span><span class="o">.</span><span class="n">ReadAsArray</span><span class="p">())</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">GetRasterBand</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">WriteArray</span><span class="p">(</span><span class="n">band3</span><span class="o">.</span><span class="n">gd</span><span class="o">.</span><span class="n">ReadAsArray</span><span class="p">())</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">GetRasterBand</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">FlushCache</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">write_landsat_rgb</span><span class="p">(</span><span class="n">scenename</span><span class="p">,</span> <span class="n">outname</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">in_dir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="s1">&#39;GTiff&#39;</span><span class="p">):</span>
+    <span class="c1"># takes the scenename, finds bands 1-3 (tm, etm), or 2-4 (oli), then writes outfilename.TIF, the RGB composite.</span>
+    <span class="n">sensor</span> <span class="o">=</span> <span class="n">parse_lsat_scene</span><span class="p">(</span><span class="n">scenename</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">sensor</span> <span class="o">==</span> <span class="s1">&#39;LC8&#39;</span> <span class="ow">or</span> <span class="n">sensor</span> <span class="o">==</span> <span class="s1">&#39;LO8&#39;</span><span class="p">):</span>
+        <span class="n">band1name</span> <span class="o">=</span> <span class="n">scenename</span> <span class="o">+</span> <span class="s1">&#39;_B4.TIF&#39;</span>
+        <span class="n">band2name</span> <span class="o">=</span> <span class="n">scenename</span> <span class="o">+</span> <span class="s1">&#39;_B3.TIF&#39;</span>
+        <span class="n">band3name</span> <span class="o">=</span> <span class="n">scenename</span> <span class="o">+</span> <span class="s1">&#39;_B2.TIF&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">band1name</span> <span class="o">=</span> <span class="n">scenename</span> <span class="o">+</span> <span class="s1">&#39;_B3.TIF&#39;</span>
+        <span class="n">band2name</span> <span class="o">=</span> <span class="n">scenename</span> <span class="o">+</span> <span class="s1">&#39;_B2.TIF&#39;</span>
+        <span class="n">band3name</span> <span class="o">=</span> <span class="n">scenename</span> <span class="o">+</span> <span class="s1">&#39;_B1.TIF&#39;</span>
+
+    <span class="n">composite_raster</span><span class="p">(</span><span class="n">band1name</span><span class="p">,</span> <span class="n">band2name</span><span class="p">,</span> <span class="n">band3name</span><span class="p">,</span> <span class="n">outname</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">,</span> <span class="n">in_dir</span><span class="p">,</span> <span class="n">driver</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">find_peaks</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">neighborhood_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">1500</span><span class="p">):</span>
+    <span class="n">data_max</span> <span class="o">=</span> <span class="n">filters</span><span class="o">.</span><span class="n">maximum_filter</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">neighborhood_size</span><span class="p">)</span>
+    <span class="n">maxima</span> <span class="o">=</span> <span class="p">(</span><span class="n">image</span> <span class="o">==</span> <span class="n">data_max</span><span class="p">)</span>
+    <span class="n">data_min</span> <span class="o">=</span> <span class="n">filters</span><span class="o">.</span><span class="n">minimum_filter</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">neighborhood_size</span><span class="p">)</span>
+    <span class="n">diff</span> <span class="o">=</span> <span class="p">((</span><span class="n">data_max</span> <span class="o">-</span> <span class="n">data_min</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">)</span>
+    <span class="n">maxima</span><span class="p">[</span><span class="n">diff</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">labeled</span><span class="p">,</span> <span class="n">num_objects</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="n">maxima</span><span class="p">)</span>
+    <span class="n">ij</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ndimage</span><span class="o">.</span><span class="n">center_of_mass</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">labeled</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_objects</span><span class="o">+</span><span class="mi">1</span><span class="p">)))</span>
+
+    <span class="k">return</span> <span class="n">ij</span>
+
+
+<div class="viewcode-block" id="create_mask_from_shapefile"><a class="viewcode-back" href="../../modules/pybob.image_tools.html#pybob.image_tools.create_mask_from_shapefile">[docs]</a><span class="k">def</span> <span class="nf">create_mask_from_shapefile</span><span class="p">(</span><span class="n">geoimg</span><span class="p">,</span> <span class="n">shapefile</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a boolean mask representing the polygons in a shapefile.</span>
+
+<span class="sd">    :param geoimg: input GeoImg to pull spatial extents from</span>
+<span class="sd">    :param shapefile: path to polygon shapefile</span>
+<span class="sd">    :type geoimg: pybob.GeoImg</span>
+<span class="sd">    :type shapefile: str</span>
+
+<span class="sd">    :returns mask: boolean array corresponding to rasterized polygons, of same shape as geoimg.img</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># load shapefile, rasterize to raster&#39;s extent</span>
+    <span class="n">masksource</span> <span class="o">=</span> <span class="n">ogr</span><span class="o">.</span><span class="n">Open</span><span class="p">(</span><span class="n">shapefile</span><span class="p">)</span>
+    <span class="n">masklayer</span> <span class="o">=</span> <span class="n">masksource</span><span class="o">.</span><span class="n">GetLayer</span><span class="p">()</span>
+    <span class="c1"># masksrs = masklayer.GetSpatialRef()</span>
+
+    <span class="n">masktarget</span> <span class="o">=</span> <span class="n">gdal</span><span class="o">.</span><span class="n">GetDriverByName</span><span class="p">(</span><span class="s1">&#39;MEM&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">geoimg</span><span class="o">.</span><span class="n">npix_x</span><span class="p">,</span> <span class="n">geoimg</span><span class="o">.</span><span class="n">npix_y</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">gdal</span><span class="o">.</span><span class="n">GDT_Byte</span><span class="p">)</span>
+    <span class="n">masktarget</span><span class="o">.</span><span class="n">SetGeoTransform</span><span class="p">((</span><span class="n">geoimg</span><span class="o">.</span><span class="n">xmin</span><span class="p">,</span> <span class="n">geoimg</span><span class="o">.</span><span class="n">dx</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">geoimg</span><span class="o">.</span><span class="n">ymax</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">geoimg</span><span class="o">.</span><span class="n">dy</span><span class="p">))</span>
+    <span class="n">masktarget</span><span class="o">.</span><span class="n">SetProjection</span><span class="p">(</span><span class="n">geoimg</span><span class="o">.</span><span class="n">proj</span><span class="p">)</span>
+    <span class="n">masktarget</span><span class="o">.</span><span class="n">GetRasterBand</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">Fill</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">gdal</span><span class="o">.</span><span class="n">RasterizeLayer</span><span class="p">(</span><span class="n">masktarget</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">masklayer</span><span class="p">)</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">masktarget</span><span class="o">.</span><span class="n">GetRasterBand</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">ReadAsArray</span><span class="p">()</span>
+    <span class="n">mask</span><span class="p">[</span><span class="n">mask</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">mask</span> <span class="o">==</span> <span class="mi">1</span></div>
+
+
+<div class="viewcode-block" id="rasterize_polygons"><a class="viewcode-back" href="../../modules/pybob.image_tools.html#pybob.image_tools.rasterize_polygons">[docs]</a><span class="k">def</span> <span class="nf">rasterize_polygons</span><span class="p">(</span><span class="n">geoimg</span><span class="p">,</span> <span class="n">shapefile</span><span class="p">,</span> <span class="n">burn_handle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">gdal</span><span class="o">.</span><span class="n">GDT_Int16</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create rasterized polygons given a GeoImg and a shapefile. Useful for creating an index raster with corresponding</span>
+<span class="sd">    to polygon IDs.</span>
+
+<span class="sd">    :param geoimg: input GeoImg to pull spatial extents from.</span>
+<span class="sd">    :param shapefile: path to polygon shapefile</span>
+<span class="sd">    :param burn_handle: field to pull values to rasterize. Default looks for the FID field in the shapefile.</span>
+<span class="sd">    :param dtype: gdal datatype of rasterized layer. Default is gdal.GDT_Int16.</span>
+<span class="sd">    :type geoimg: pybob.GeoImg</span>
+<span class="sd">    :type shapefile: str</span>
+<span class="sd">    :type burn_handle: str</span>
+<span class="sd">    :type dtype: gdal.GDT</span>
+
+<span class="sd">    :returns rasterized, inds: rasterized polygon array and values corresponding to polygons that were rasterized.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">polysource</span> <span class="o">=</span> <span class="n">ogr</span><span class="o">.</span><span class="n">Open</span><span class="p">(</span><span class="n">shapefile</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># read-only</span>
+    <span class="n">polylayer</span> <span class="o">=</span> <span class="n">polysource</span><span class="o">.</span><span class="n">GetLayer</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">burn_handle</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">polylayer</span><span class="o">.</span><span class="n">GetFIDColumn</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+            <span class="n">polylayer</span> <span class="o">=</span> <span class="n">add_fid_column</span><span class="p">(</span><span class="n">polylayer</span><span class="p">)</span>
+            <span class="n">burn_handle</span> <span class="o">=</span> <span class="s1">&#39;TmpFID&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">burn_handle</span> <span class="o">=</span> <span class="n">polylayer</span><span class="o">.</span><span class="n">GetFIDColumn</span><span class="p">()</span>
+
+    <span class="n">target</span> <span class="o">=</span> <span class="n">gdal</span><span class="o">.</span><span class="n">GetDriverByName</span><span class="p">(</span><span class="s1">&#39;MEM&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">Create</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">geoimg</span><span class="o">.</span><span class="n">npix_x</span><span class="p">,</span> <span class="n">geoimg</span><span class="o">.</span><span class="n">npix_y</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span>
+    <span class="n">target</span><span class="o">.</span><span class="n">SetGeoTransform</span><span class="p">((</span><span class="n">geoimg</span><span class="o">.</span><span class="n">xmin</span><span class="p">,</span> <span class="n">geoimg</span><span class="o">.</span><span class="n">dx</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">geoimg</span><span class="o">.</span><span class="n">ymax</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">geoimg</span><span class="o">.</span><span class="n">dy</span><span class="p">))</span>
+    <span class="n">target</span><span class="o">.</span><span class="n">SetProjection</span><span class="p">(</span><span class="n">geoimg</span><span class="o">.</span><span class="n">proj</span><span class="p">)</span>
+    <span class="n">target</span><span class="o">.</span><span class="n">GetRasterBand</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">Fill</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">gdal</span><span class="o">.</span><span class="n">RasterizeLayer</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">polylayer</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Attribute=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">burn_handle</span><span class="p">)])</span>
+    <span class="n">thisrast</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">GetRasterBand</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">ReadAsArray</span><span class="p">()</span>
+
+    <span class="n">thesevals</span> <span class="o">=</span> <span class="p">[</span><span class="n">feat</span><span class="o">.</span><span class="n">GetField</span><span class="p">(</span><span class="n">burn_handle</span><span class="p">)</span> <span class="k">for</span> <span class="n">feat</span> <span class="ow">in</span> <span class="n">polylayer</span> <span class="k">if</span> <span class="n">feat</span><span class="o">.</span><span class="n">GetField</span><span class="p">(</span><span class="n">burn_handle</span><span class="p">)</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">thisrast</span><span class="p">)]</span>
+
+    <span class="k">return</span> <span class="n">thisrast</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">thesevals</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">add_fid_column</span><span class="p">(</span><span class="n">layer</span><span class="p">):</span>
+    <span class="n">tmpdrv</span> <span class="o">=</span> <span class="n">ogr</span><span class="o">.</span><span class="n">GetDriverByName</span><span class="p">(</span><span class="s1">&#39;MEMORY&#39;</span><span class="p">)</span>
+    <span class="n">tmpsrc</span> <span class="o">=</span> <span class="n">tmpdrv</span><span class="o">.</span><span class="n">CreateDataSource</span><span class="p">(</span><span class="s1">&#39;memData&#39;</span><span class="p">)</span>
+    <span class="n">tmpdrv</span><span class="o">.</span><span class="n">Open</span><span class="p">(</span><span class="s1">&#39;memData&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">newlayer</span> <span class="o">=</span> <span class="n">tmpsrc</span><span class="o">.</span><span class="n">CopyLayer</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;OVERWRITE=YES&#39;</span><span class="p">])</span>
+
+    <span class="n">fid_column</span> <span class="o">=</span> <span class="n">ogr</span><span class="o">.</span><span class="n">FieldDefn</span><span class="p">(</span><span class="s1">&#39;TmpFID&#39;</span><span class="p">,</span> <span class="n">ogr</span><span class="o">.</span><span class="n">OFTInteger</span><span class="p">)</span>
+    <span class="n">newlayer</span><span class="o">.</span><span class="n">CreateField</span><span class="p">(</span><span class="n">fid_column</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">feat</span> <span class="ow">in</span> <span class="n">newlayer</span><span class="p">:</span>
+        <span class="n">feat</span><span class="o">.</span><span class="n">SetField</span><span class="p">(</span><span class="s1">&#39;TmpFID&#39;</span><span class="p">,</span> <span class="n">feat</span><span class="o">.</span><span class="n">GetFID</span><span class="p">())</span>
+
+    <span class="k">return</span> <span class="n">newlayer</span>
+
+
+<span class="k">def</span> <span class="nf">get_common_xy</span><span class="p">(</span><span class="n">bbox</span><span class="p">,</span> <span class="n">img1</span><span class="p">,</span> <span class="n">img2</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">bbox</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="c1">#     find common x,y (using original UTM or other geo cartesian coordinates) box between images</span>
+        <span class="n">max_x</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">img1</span><span class="o">.</span><span class="n">xmax</span><span class="p">,</span> <span class="n">img2</span><span class="o">.</span><span class="n">xmax</span><span class="p">])</span>
+        <span class="n">max_y</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">img1</span><span class="o">.</span><span class="n">ymax</span><span class="p">,</span> <span class="n">img2</span><span class="o">.</span><span class="n">ymax</span><span class="p">])</span>
+        <span class="n">min_x</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">img1</span><span class="o">.</span><span class="n">xmin</span><span class="p">,</span> <span class="n">img2</span><span class="o">.</span><span class="n">xmin</span><span class="p">])</span>
+        <span class="n">min_y</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">img1</span><span class="o">.</span><span class="n">ymin</span><span class="p">,</span> <span class="n">img2</span><span class="o">.</span><span class="n">ymin</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># read area from command line (still UTM etc.)</span>
+        <span class="n">max_x</span> <span class="o">=</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">max_y</span> <span class="o">=</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">min_x</span> <span class="o">=</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">min_y</span> <span class="o">=</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">max_x</span><span class="p">,</span> <span class="n">max_y</span><span class="p">,</span> <span class="n">min_x</span><span class="p">,</span> <span class="n">min_y</span>
+
+
+<span class="k">def</span> <span class="nf">calc_glcm_params</span><span class="p">(</span><span class="n">img</span><span class="p">):</span>
+    <span class="n">glcmcontr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">glcmdissim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">glcmhomog</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">glcmenergy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">glcmcorrel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">glcmASM</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="c1"># have to make sure that the raster is uint16 or uint8</span>
+    <span class="n">tmpimg</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">j</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">4</span><span class="p">))</span> <span class="ow">or</span> <span class="p">(</span><span class="n">j</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">4</span><span class="p">)):</span>
+                <span class="k">continue</span>
+            <span class="n">glcm_window</span> <span class="o">=</span> <span class="n">tmpimg</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">3</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="mi">4</span><span class="p">,</span> <span class="n">j</span><span class="o">-</span><span class="mi">3</span><span class="p">:</span><span class="n">j</span><span class="o">+</span><span class="mi">4</span><span class="p">]</span>
+            <span class="n">glcm</span> <span class="o">=</span> <span class="n">greycomatrix</span><span class="p">(</span><span class="n">glcm_window</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">symmetric</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">normed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="n">glcmcontr</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">greycoprops</span><span class="p">(</span><span class="n">glcm</span><span class="p">,</span> <span class="s1">&#39;contrast&#39;</span><span class="p">)</span>
+            <span class="n">glcmdissim</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">greycoprops</span><span class="p">(</span><span class="n">glcm</span><span class="p">,</span> <span class="s1">&#39;dissimilarity&#39;</span><span class="p">)</span>
+            <span class="n">glcmhomog</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">greycoprops</span><span class="p">(</span><span class="n">glcm</span><span class="p">,</span> <span class="s1">&#39;homogeneity&#39;</span><span class="p">)</span>
+            <span class="n">glcmenergy</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">greycoprops</span><span class="p">(</span><span class="n">glcm</span><span class="p">,</span> <span class="s1">&#39;energy&#39;</span><span class="p">)</span>
+            <span class="n">glcmcorrel</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">greycoprops</span><span class="p">(</span><span class="n">glcm</span><span class="p">,</span> <span class="s1">&#39;correlation&#39;</span><span class="p">)</span>
+            <span class="n">glcmASM</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">greycoprops</span><span class="p">(</span><span class="n">glcm</span><span class="p">,</span> <span class="s1">&#39;ASM&#39;</span><span class="p">)</span>
+            <span class="n">glcm</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">glcm_window</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">return</span> <span class="n">glcmcontr</span><span class="p">,</span> <span class="n">glcmdissim</span><span class="p">,</span> <span class="n">glcmhomog</span><span class="p">,</span> <span class="n">glcmenergy</span><span class="p">,</span> <span class="n">glcmcorrel</span><span class="p">,</span> <span class="n">glcmASM</span>
+
+
+<span class="k">def</span> <span class="nf">get_nicely_shaped_img</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">overlap</span><span class="p">):</span>
+    <span class="c1"># get the new shape of the image</span>
+    <span class="n">new_cols</span> <span class="o">=</span> <span class="n">round_down</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">overlap</span><span class="p">)</span>
+    <span class="n">new_rows</span> <span class="o">=</span> <span class="n">round_down</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">overlap</span><span class="p">)</span>
+
+    <span class="n">new_img</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">img</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">new_rows</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">new_cols</span><span class="p">]</span>
+    <span class="n">new_exts</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">ij2xy</span><span class="p">((</span><span class="n">new_rows</span><span class="p">,</span> <span class="n">new_cols</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">img</span><span class="o">.</span><span class="n">dy</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">new_ext</span> <span class="o">=</span> <span class="p">[</span><span class="n">img</span><span class="o">.</span><span class="n">xmin</span><span class="p">,</span> <span class="n">new_exts</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">new_exts</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">img</span><span class="o">.</span><span class="n">ymax</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">new_ext</span> <span class="o">=</span> <span class="p">[</span><span class="n">img</span><span class="o">.</span><span class="n">xmin</span><span class="p">,</span> <span class="n">new_exts</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">img</span><span class="o">.</span><span class="n">ymin</span><span class="p">,</span> <span class="n">new_exts</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+
+    <span class="k">return</span> <span class="n">img</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">new_raster</span><span class="o">=</span><span class="n">new_img</span><span class="p">,</span> <span class="n">new_extent</span><span class="o">=</span><span class="n">new_ext</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">splitter</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">nblocks</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="n">blocks</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">nblocks</span><span class="p">)</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">nblocks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">nblocks</span><span class="p">,</span> <span class="n">nblocks</span><span class="p">])</span>
+    <span class="n">new_width</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">nblocks</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">new_height</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">nblocks</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nblocks</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nblocks</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">lind</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">j</span><span class="o">*</span><span class="n">new_width</span> <span class="o">-</span> <span class="n">overlap</span><span class="p">)</span>
+            <span class="n">rind</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">(</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">new_width</span> <span class="o">+</span> <span class="n">overlap</span><span class="p">)</span>
+
+            <span class="n">tind</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="o">*</span><span class="n">new_height</span> <span class="o">-</span> <span class="n">overlap</span><span class="p">)</span>
+            <span class="n">bind</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">new_height</span> <span class="o">+</span> <span class="n">overlap</span><span class="p">)</span>
+
+            <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">img</span><span class="p">[</span><span class="n">tind</span><span class="p">:</span><span class="n">bind</span><span class="p">,</span> <span class="n">lind</span><span class="p">:</span><span class="n">rind</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">blocks</span>
+
+
+<span class="k">def</span> <span class="nf">stitcher</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">nblocks</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="n">stitched_arrays</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># create an empty list to put our stitched results in</span>
+    <span class="n">outarrays</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># same</span>
+
+    <span class="c1"># check if nblocks is a scalar or not.</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">nblocks</span><span class="p">)</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">nblocks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">nblocks</span><span class="p">,</span> <span class="n">nblocks</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">out</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+        <span class="n">stitched_arrays</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+        <span class="n">outarrays</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nblocks</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">stitched_arrays</span><span class="p">[</span><span class="n">out</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="n">j</span><span class="o">*</span><span class="n">nblocks</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">out</span><span class="p">][</span><span class="n">overlap</span><span class="p">:</span><span class="o">-</span><span class="n">overlap</span><span class="p">,</span> <span class="n">overlap</span><span class="p">:</span><span class="o">-</span><span class="n">overlap</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">nblocks</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="n">outind</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="n">j</span><span class="o">*</span><span class="n">nblocks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">stitched_arrays</span><span class="p">[</span><span class="n">out</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">stitched_arrays</span><span class="p">[</span><span class="n">out</span><span class="p">][</span><span class="n">j</span><span class="p">],</span>
+                                                     <span class="n">outputs</span><span class="p">[</span><span class="n">outind</span><span class="p">][</span><span class="n">out</span><span class="p">][</span><span class="n">overlap</span><span class="p">:</span><span class="o">-</span><span class="n">overlap</span><span class="p">,</span> <span class="n">overlap</span><span class="p">:</span><span class="o">-</span><span class="n">overlap</span><span class="p">]))</span>
+        <span class="n">stitched_arrays</span><span class="p">[</span><span class="n">out</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span><span class="n">stitched_arrays</span><span class="p">[</span><span class="n">out</span><span class="p">])</span>
+        <span class="n">outarrays</span><span class="p">[</span><span class="n">out</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">stitched_arrays</span><span class="p">[</span><span class="n">out</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">2</span><span class="o">*</span><span class="n">overlap</span><span class="p">,</span> <span class="n">stitched_arrays</span><span class="p">[</span><span class="n">out</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">2</span><span class="o">*</span><span class="n">overlap</span><span class="p">))</span>
+        <span class="n">outarrays</span><span class="p">[</span><span class="n">out</span><span class="p">][</span><span class="n">overlap</span><span class="p">:</span><span class="o">-</span><span class="n">overlap</span><span class="p">,</span> <span class="n">overlap</span><span class="p">:</span><span class="o">-</span><span class="n">overlap</span><span class="p">]</span> <span class="o">=</span> <span class="n">stitched_arrays</span><span class="p">[</span><span class="n">out</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">outarrays</span>
+
+
+<span class="k">def</span> <span class="nf">parallel_img_proc</span><span class="p">(</span><span class="n">fun</span><span class="p">,</span> <span class="n">funargs</span><span class="p">,</span> <span class="n">nproc</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">nproc</span> <span class="o">&gt;</span> <span class="n">mp</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> cores specified, but I can only find </span><span class="se">\</span>
+<span class="s2">               </span><span class="si">{}</span><span class="s2"> cores on this machine. I&#39;ll use those.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nproc</span><span class="p">,</span> <span class="n">mp</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()))</span>
+
+    <span class="n">pool</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span><span class="n">nproc</span><span class="p">)</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">fun</span><span class="p">,</span> <span class="n">funargs</span><span class="p">)</span>
+    <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">outputs</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Robert McNabb
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

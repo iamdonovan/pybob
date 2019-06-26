@@ -1,0 +1,337 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pybob.coreg_tools &mdash; pybob  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pybob.ddem_tools" href="pybob.ddem_tools.html" />
+    <link rel="prev" title="pybob.bob_tools" href="pybob.bob_tools.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pybob
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pybob.GeoImg.html">pybob.GeoImg</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.ICESat.html">pybob.ICESat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.VelField.html">pybob.VelField</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.bob_tools.html">pybob.bob_tools</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">pybob.coreg_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.ddem_tools.html">pybob.ddem_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.hexagon_tools.html">pybob.hexagon_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.image_tools.html">pybob.image_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.plot_tools.html">pybob.plot_tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../scripts/index.html">scripts</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pybob</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">modules</a> &raquo;</li>
+        
+      <li>pybob.coreg_tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/modules/pybob.coreg_tools.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pybob.coreg_tools">
+<span id="pybob-coreg-tools"></span><h1>pybob.coreg_tools<a class="headerlink" href="#module-pybob.coreg_tools" title="Permalink to this headline">¶</a></h1>
+<p>pybob.coreg_tools provides a toolset for coregistering DEMs, based on the method presented by <a class="reference external" href="https://www.the-cryosphere.net/5/271/2011/tc-5-271-2011.html">Nuth and Kääb (2011)</a>.</p>
+<dl class="function">
+<dt id="pybob.coreg_tools.RMSE">
+<code class="descclassname">pybob.coreg_tools.</code><code class="descname">RMSE</code><span class="sig-paren">(</span><em>indata</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/coreg_tools.html#RMSE"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.coreg_tools.RMSE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return root mean square of indata.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>indata</strong> (<em>array-like</em>) – differences to calculate root mean square of</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns myrmse:</th><td class="field-body">RMSE of indata.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.coreg_tools.create_stable_mask">
+<code class="descclassname">pybob.coreg_tools.</code><code class="descname">create_stable_mask</code><span class="sig-paren">(</span><em>img</em>, <em>mask1</em>, <em>mask2</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/coreg_tools.html#create_stable_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.coreg_tools.create_stable_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create mask representing stable terrain, given exclusion (i.e., glacier) and inclusion (i.e., land) masks.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>img</strong> (<em>pybob.GeoImg</em>) – GeoImg to pull extents from</li>
+<li><strong>mask1</strong> (<em>str</em>) – filename for shapefile representing pixels to exclude from stable terrain (i.e., glaciers)</li>
+<li><strong>mask2</strong> (<em>str</em>) – filename for shapefile representing pixels to include in stable terrain (i.e., land)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Returns stable_mask:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><p class="first last">boolean array representing stable terrain</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.coreg_tools.dem_coregistration">
+<code class="descclassname">pybob.coreg_tools.</code><code class="descname">dem_coregistration</code><span class="sig-paren">(</span><em>masterDEM</em>, <em>slaveDEM</em>, <em>glaciermask=None</em>, <em>landmask=None</em>, <em>outdir='.'</em>, <em>pts=False</em>, <em>full_ext=False</em>, <em>return_var=True</em>, <em>alg='Horn'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/coreg_tools.html#dem_coregistration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.coreg_tools.dem_coregistration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iteratively co-register elevation data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>masterDEM</strong> (<em>str</em><em>, </em><em>pybob.GeoImg</em>) – Path to filename or GeoImg dataset representing “master” DEM.</li>
+<li><strong>slaveDEM</strong> (<em>str</em><em>, </em><em>pybob.GeoImg</em>) – Path to filename or GeoImg dataset representing “slave” DEM.</li>
+<li><strong>glaciermask</strong> (<em>str</em>) – Path to shapefile representing points to exclude from co-registration
+consideration (i.e., glaciers).</li>
+<li><strong>landmask</strong> (<em>str</em>) – Path to shapefile representing points to include in co-registration
+consideration (i.e., stable ground/land).</li>
+<li><strong>outdir</strong> (<em>str</em>) – Location to save co-registration outputs.</li>
+<li><strong>pts</strong> (<em>bool</em>) – If True, program assumes that masterDEM represents point data (i.e., ICESat),
+as opposed to raster data. Slope/aspect are then calculated from slaveDEM.
+masterDEM should be a string representing an HDF5 file continaing ICESat data.</li>
+<li><strong>full_ext</strong> (<em>bool</em>) – If True, program writes full extents of input DEMs. If False, program writes
+input DEMs cropped to their common extent. Default is False.</li>
+<li><strong>return_var</strong> (<em>bool</em>) – return variables representing co-registered DEMs and offsets (default).</li>
+<li><strong>alg</strong> (<em>str</em>) – Algorithm for calculating Slope, Aspect. One of ‘ZevenbergenThorne’ or ‘Horn’. Default is ‘Horn’.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Returns masterDEM, outslave, out_offs:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><p class="first">if return_var=True, returns master DEM, co-registered slave DEM, and x,y,z
+shifts removed from slave DEM.</p>
+<p class="last">If co-registration fails (i.e., there are too few acceptable points to perform co-registration), then returns
+original master and slave DEMs, with offsets set to -1.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.coreg_tools.get_aspect">
+<code class="descclassname">pybob.coreg_tools.</code><code class="descname">get_aspect</code><span class="sig-paren">(</span><em>geoimg</em>, <em>alg='Horn'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/coreg_tools.html#get_aspect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.coreg_tools.get_aspect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper function to calculate DEM aspect using gdal.DEMProcessing.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>geoimg</strong> (<em>pybob.GeoImg</em>) – GeoImg object of DEM to calculate aspect</li>
+<li><strong>alg</strong> (<em>str</em>) – Algorithm for calculating Aspect. One of ‘ZevenbergenThorne’ or ‘Horn’. Default is ‘Horn’.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Returns geo_aspect:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><p class="first last">new GeoImg object with aspect raster</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.coreg_tools.get_slope">
+<code class="descclassname">pybob.coreg_tools.</code><code class="descname">get_slope</code><span class="sig-paren">(</span><em>geoimg</em>, <em>alg='Horn'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/coreg_tools.html#get_slope"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.coreg_tools.get_slope" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper function to calculate DEM slope using gdal.DEMProcessing.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>geoimg</strong> (<em>pybob.GeoImg</em>) – GeoImg object of DEM to calculate slope</li>
+<li><strong>alg</strong> (<em>str</em>) – Algorithm for calculating Slope. One of ‘ZevenbergenThorne’ or ‘Horn’. Default is ‘Horn’.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Returns geo_slope:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><p class="first last">new GeoImg object with slope raster</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pybob.ddem_tools.html" class="btn btn-neutral float-right" title="pybob.ddem_tools" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pybob.bob_tools.html" class="btn btn-neutral float-left" title="pybob.bob_tools" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Robert McNabb
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

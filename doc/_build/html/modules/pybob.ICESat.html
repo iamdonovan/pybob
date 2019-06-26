@@ -1,0 +1,452 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pybob.ICESat &mdash; pybob  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pybob.VelField" href="pybob.VelField.html" />
+    <link rel="prev" title="pybob.GeoImg" href="pybob.GeoImg.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pybob
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pybob.GeoImg.html">pybob.GeoImg</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">pybob.ICESat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.VelField.html">pybob.VelField</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.bob_tools.html">pybob.bob_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.coreg_tools.html">pybob.coreg_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.ddem_tools.html">pybob.ddem_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.hexagon_tools.html">pybob.hexagon_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.image_tools.html">pybob.image_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.plot_tools.html">pybob.plot_tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../scripts/index.html">scripts</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pybob</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">modules</a> &raquo;</li>
+        
+      <li>pybob.ICESat</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/modules/pybob.ICESat.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pybob.ICESat">
+<span id="pybob-icesat"></span><h1>pybob.ICESat<a class="headerlink" href="#module-pybob.ICESat" title="Permalink to this headline">¶</a></h1>
+<p>pybob.ICESat provides an interface to extracted ICESat(-1) data stored in HDF5 format.</p>
+<dl class="class">
+<dt id="pybob.ICESat.ICESat">
+<em class="property">class </em><code class="descclassname">pybob.ICESat.</code><code class="descname">ICESat</code><span class="sig-paren">(</span><em>in_filename, in_dir=None, cols=['lat', 'lon', 'd_elev', 'd_UTCTime'], ellipse_hts=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/ICESat.html#ICESat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.ICESat.ICESat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an ICESat dataset from an HDF5 file containing ICESat data.</p>
+<dl class="method">
+<dt id="pybob.ICESat.ICESat.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>in_filename, in_dir=None, cols=['lat', 'lon', 'd_elev', 'd_UTCTime'], ellipse_hts=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/ICESat.html#ICESat.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.ICESat.ICESat.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>in_filename</strong> (<em>str</em>) – Filename (optionally with path) of HDF5 file to be read in.</li>
+<li><strong>in_dir</strong> (<em>str</em>) – Directory where in_filename is located. If not given, the directory
+will be determined from the input filename.</li>
+<li><strong>cols</strong> (<em>array-like</em>) – Columns to read in and set as attributes in the ICESat object.
+Default values are [‘lat’, ‘lon’, ‘d_elev’, ‘d_UTCTime’], and will
+be added if not specified.</li>
+<li><strong>ellipse_hts</strong> (<em>bool</em>) – Convert elevations to ellipsoid heights. Default is True.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The following example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ICESat</span><span class="p">(</span><span class="s1">&#39;donjek_icesat.h5&#39;</span><span class="p">,</span> <span class="n">ellipse_hts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>will return an ICESat object with lat, lon, elevation, and UTCTime attributes, with elevations given as height
+above WGS84 ellipsoid.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.ICESat.ICESat.clean">
+<code class="descname">clean</code><span class="sig-paren">(</span><em>el_limit=-500</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/ICESat.html#ICESat.clean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.ICESat.ICESat.clean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove all elevation points below a given elevation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>el_limit</strong> (<em>float</em>) – minimum elevation to accept</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.ICESat.ICESat.clip">
+<code class="descname">clip</code><span class="sig-paren">(</span><em>bounds</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/ICESat.html#ICESat.clip"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.ICESat.ICESat.clip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove ICEsat data that falls outside of a given bounding box.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>bounds</strong> (<em>array-like</em>) – bounding box to clip to, given as xmin, xmax, ymin, ymax</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.ICESat.ICESat.display">
+<code class="descname">display</code><span class="sig-paren">(</span><em>fig=None</em>, <em>extent=None</em>, <em>sfact=1</em>, <em>showfig=True</em>, <em>geo=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/ICESat.html#ICESat.display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.ICESat.ICESat.display" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot ICESat tracks in a figure.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fig</strong> (<em>matplotlib.figure.Figure</em>) – Figure to plot tracks in. If not set, creates a new figure.</li>
+<li><strong>extent</strong> (<em>array-like</em>) – Spatial extent to limit the figure to, given as xmin, xmax, ymin, ymax.</li>
+<li><strong>sfact</strong> (<em>int</em>) – Factor by which to reduce the number of points plotted.
+Default is 1 (i.e., all points are plotted).</li>
+<li><strong>showfig</strong> (<em>bool</em>) – Open the figure window. Default is True.</li>
+<li><strong>geo</strong> (<em>bool</em>) – Plot tracks in lat/lon coordinates, rather than projected coordinates.
+Default is False.</li>
+<li><strong>kwargs</strong> – Optional keyword arguments to pass to matplotlib.pyplot.plot</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns fig:</th><td class="field-body"><p class="first last">Handle pointing to the matplotlib Figure created (or passed to display).</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.ICESat.ICESat.from_ellipse">
+<code class="descname">from_ellipse</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/ICESat.html#ICESat.from_ellipse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.ICESat.ICESat.from_ellipse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert ICESat elevations from ellipsoid heights, based on the data stored in the HDF5 file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.ICESat.ICESat.get_bounds">
+<code class="descname">get_bounds</code><span class="sig-paren">(</span><em>geo=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/ICESat.html#ICESat.get_bounds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.ICESat.ICESat.get_bounds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return bounding coordinates of the dataset.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>geo</strong> (<em>bool</em>) – Return geographic (lat/lon) coordinates (default is False)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns bounds:</th><td class="field-body">xmin, xmax, ymin, ymax values of dataset.</td>
+</tr>
+</tbody>
+</table>
+<p>Example:
+&gt;&gt;&gt; xmin, xmax, ymin, ymax = my_icesat.get_bounds()</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.ICESat.ICESat.mask">
+<code class="descname">mask</code><span class="sig-paren">(</span><em>mask</em>, <em>mask_value=True</em>, <em>drop=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/ICESat.html#ICESat.mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.ICESat.ICESat.mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mask values</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>mask</strong> (<em>array-like</em>) – Array of same size as self.img corresponding to values that should be masked.</li>
+<li><strong>mask_value</strong> (<em>bool</em><em> or </em><em>numeric</em>) – Value within mask to mask. If True, masks image where mask is True. If numeric, masks image
+where mask == mask_value.</li>
+<li><strong>drop</strong> (<em>bool</em>) – remove values from dataset (True), or mask using numpy.masked_array (False). Default is False.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.ICESat.ICESat.project">
+<code class="descname">project</code><span class="sig-paren">(</span><em>dest_proj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/ICESat.html#ICESat.project"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.ICESat.ICESat.project" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project the ICESat dataset to a given coordinate system, using pyproj.transform.
+ICESat.project does not overwrite the lat/lon coordinates, so calling
+ICESat.project will only update self.x,self.y for the dataset, self.xy, and self.proj.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dest_proj</strong> (<em>str</em><em> or </em><em>pyproj.Proj</em>) – Coordinate system to project the dataset into. If dest_proj is a string,
+ICESat.project() will create a pyproj.Proj instance with it.</td>
+</tr>
+</tbody>
+</table>
+<p>Example:
+Project icesat_data to Alaska Albers (NAD83) using epsg code:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">icesat_data</span><span class="o">.</span><span class="n">project</span><span class="p">(</span><span class="s1">&#39;epsg:3338&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.ICESat.ICESat.to_csv">
+<code class="descname">to_csv</code><span class="sig-paren">(</span><em>out_filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/ICESat.html#ICESat.to_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.ICESat.ICESat.to_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write ICESat data to csv format using pandas.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>out_filename</strong> (<em>str</em>) – Filename (optionally with path) of file to read out.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.ICESat.ICESat.to_ellipse">
+<code class="descname">to_ellipse</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/ICESat.html#ICESat.to_ellipse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.ICESat.ICESat.to_ellipse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert ICESat elevations to ellipsoid heights, based on the data stored in the HDF5 file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.ICESat.ICESat.to_shp">
+<code class="descname">to_shp</code><span class="sig-paren">(</span><em>out_filename</em>, <em>driver='ESRI Shapefile'</em>, <em>epsg=4326</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/ICESat.html#ICESat.to_shp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.ICESat.ICESat.to_shp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write ICESat data to shapefile.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>out_filename</strong> (<em>str</em>) – Filename (optionally with path) of file to read out.</li>
+<li><strong>driver</strong> (<em>str</em>) – Name of driver fiona should use to create the outpufile. Default is ‘ESRI Shapefile’.</li>
+<li><strong>epsg</strong> (<em>int</em>) – EPSG code to project data to. Default is 4326, WGS84 Lat/Lon.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">donjek_icesat</span><span class="o">.</span><span class="n">to_shp</span><span class="p">(</span><span class="s1">&#39;donjek_icesat.shp&#39;</span><span class="p">,</span> <span class="n">epsg</span><span class="o">=</span><span class="mi">3338</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>will write donjek_icesat to a shapefile in Alaska Albers projection (EPSG:3338)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.ICESat.ICESat.unmask">
+<code class="descname">unmask</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/ICESat.html#ICESat.unmask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.ICESat.ICESat.unmask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a mask if it has been applied.
+<strong>Not implemented yet!</strong></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.ICESat.extract_ICESat">
+<code class="descclassname">pybob.ICESat.</code><code class="descname">extract_ICESat</code><span class="sig-paren">(</span><em>in_filename</em>, <em>workdir=None</em>, <em>outfile=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/ICESat.html#extract_ICESat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.ICESat.extract_ICESat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract ICESat data given the extent of a GeoImg.</p>
+<p><strong>Note - currently not supported outside of UiO working environment.</strong></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>in_filename</strong> (<em>str</em>) – Filename (optionally with path) of DEM to be opened using GeoImg.</li>
+<li><strong>workdir</strong> (<em>str</em>) – Directory where in_filename is located. If not given, the directory
+will be determined from the input filename.</li>
+<li><strong>outfile</strong> (<em>str</em>) – name of the output file [default=’ICESat_DEM.h5’]</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pybob.VelField.html" class="btn btn-neutral float-right" title="pybob.VelField" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pybob.GeoImg.html" class="btn btn-neutral float-left" title="pybob.GeoImg" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Robert McNabb
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

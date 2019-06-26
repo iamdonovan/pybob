@@ -1,0 +1,272 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>dem_difference.py &mdash; pybob  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="extract_ICESat.py" href="extract_ICESat.html" />
+    <link rel="prev" title="dem_coregistration_grid.py" href="dem_coregistration_grid.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pybob
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../modules/index.html">modules</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">scripts</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="calculate_mmaster_dh_curves.html">calculate_mmaster_dh_curves.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dem_coregistration.html">dem_coregistration.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dem_coregistration_grid.html">dem_coregistration_grid.py</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">dem_difference.py</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="extract_ICESat.html">extract_ICESat.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="find_aster_dem_pairs.html">find_aster_dem_pairs.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generate_panchromatic.html">generate_panchromatic.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image_footprint.html">image_footprint.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image_footprint_from_met.html">image_footprint_from_met.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="write_qgis_meta.html">write_qgis_meta.py</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pybob</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">scripts</a> &raquo;</li>
+        
+      <li>dem_difference.py</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/scripts/dem_difference.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="dem-difference-py">
+<h1>dem_difference.py<a class="headerlink" href="#dem-difference-py" title="Permalink to this headline">¶</a></h1>
+<p>Difference co-registered DEM pairs,                                                   write metadata file with information.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">dem_difference</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">folder</span> <span class="n">FOLDER</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">mask</span> <span class="n">MASK</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">slope</span> <span class="n">SLOPE</span><span class="p">]</span>
+                         <span class="p">[</span><span class="o">-</span><span class="n">s_outlier</span> <span class="n">S_OUTLIER</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">outlier</span> <span class="n">OUTLIER</span><span class="p">]</span>
+                         <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="n">OUTFILE</span><span class="p">]</span>
+                         <span class="n">DEM1</span> <span class="n">DEM2</span>
+</pre></div>
+</div>
+<div class="section" id="Positional Arguments">
+<h2>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this headline">¶</a></h2>
+<table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd>DEM1</kbd></td>
+<td>Path to DEM 1</td></tr>
+<tr><td class="option-group">
+<kbd>DEM2</kbd></td>
+<td>Path to DEM 2</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="Named Arguments">
+<h2>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h2>
+<table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd>--folder</kbd></td>
+<td>Folder with two co-registered DEMs.</td></tr>
+<tr><td class="option-group">
+<kbd>-mask</kbd></td>
+<td>Glacier mask (optional)</td></tr>
+<tr><td class="option-group">
+<kbd>-slope</kbd></td>
+<td>Terrain slope (optional)</td></tr>
+<tr><td class="option-group">
+<kbd>-s_outlier</kbd></td>
+<td><p class="first">Set differences above/below to NaN to calculate statistics only.</p>
+<p class="last">Default: 100</p>
+</td></tr>
+<tr><td class="option-group">
+<kbd>-outlier</kbd></td>
+<td>Set differences above/below to NaN</td></tr>
+<tr><td class="option-group">
+<kbd>-o, --outfile</kbd></td>
+<td>Specify output filename</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="extract_ICESat.html" class="btn btn-neutral float-right" title="extract_ICESat.py" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="dem_coregistration_grid.html" class="btn btn-neutral float-left" title="dem_coregistration_grid.py" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Robert McNabb
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

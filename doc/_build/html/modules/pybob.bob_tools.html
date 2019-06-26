@@ -1,0 +1,324 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pybob.bob_tools &mdash; pybob  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pybob.coreg_tools" href="pybob.coreg_tools.html" />
+    <link rel="prev" title="pybob.VelField" href="pybob.VelField.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pybob
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pybob.GeoImg.html">pybob.GeoImg</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.ICESat.html">pybob.ICESat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.VelField.html">pybob.VelField</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">pybob.bob_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.coreg_tools.html">pybob.coreg_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.ddem_tools.html">pybob.ddem_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.hexagon_tools.html">pybob.hexagon_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.image_tools.html">pybob.image_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.plot_tools.html">pybob.plot_tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../scripts/index.html">scripts</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pybob</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">modules</a> &raquo;</li>
+        
+      <li>pybob.bob_tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/modules/pybob.bob_tools.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pybob.bob_tools">
+<span id="pybob-bob-tools"></span><h1>pybob.bob_tools<a class="headerlink" href="#module-pybob.bob_tools" title="Permalink to this headline">¶</a></h1>
+<p>pybob.bob_tools is a collection of the tools that didn’t really fit other places.</p>
+<dl class="function">
+<dt id="pybob.bob_tools.bin_data">
+<code class="descclassname">pybob.bob_tools.</code><code class="descname">bin_data</code><span class="sig-paren">(</span><em>bins</em>, <em>data2bin</em>, <em>bindata</em>, <em>mode='mean'</em>, <em>nbinned=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/bob_tools.html#bin_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.bob_tools.bin_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Place data into bins based on a secondary dataset, and calculate statistics on them.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>bins</strong> (<em>array-like</em>) – array-like structure indicating the bins into which data should be placed.</li>
+<li><strong>data2bin</strong> (<em>array-like</em>) – data that should be binned.</li>
+<li><strong>bindata</strong> (<em>array-like</em>) – secondary dataset that decides how data2bin should be binned. Should have same size/shape
+as data2bin.</li>
+<li><strong>mode</strong> (<em>str</em>) – How to calculate statistics of binned data. One of ‘mean’, ‘median’, ‘std’, ‘max’, or ‘min’.</li>
+<li><strong>nbinned</strong> (<em>bool</em>) – Return a second array, nbinned, with number of data points that fit into each bin.
+Default is False.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Returns binned, nbinned:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><p class="first last">calculated, binned data with same size as bins input. If nbinned is True, returns a second
+array with the number of inputs for each bin.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.bob_tools.doy2mmdd">
+<code class="descclassname">pybob.bob_tools.</code><code class="descname">doy2mmdd</code><span class="sig-paren">(</span><em>year</em>, <em>doy</em>, <em>string_out=True</em>, <em>outform='%Y/%m/%d'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/bob_tools.html#doy2mmdd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.bob_tools.doy2mmdd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a string or a datetime object given a year and a day of year.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>year</strong> (<em>int</em>) – Year of the input date, e.g., <code class="docutils literal notranslate"><span class="pre">2018</span></code>.</li>
+<li><strong>doy</strong> (<em>int</em>) – Day of the year of the input date, e.g., <code class="docutils literal notranslate"><span class="pre">1</span></code> for 1 Jan.</li>
+<li><strong>string_out</strong> (<em>bool</em>) – Return a string (True) or a datetime object (False). Default is True.</li>
+<li><strong>outform</strong> (<em>str</em>) – Format for string to return. Default is <cite>%Y/%m/%d</cite>, or 2018/01/01 for
+1 January 2018.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns date:</th><td class="field-body"><p class="first last">datetime.datetime or string representation of the input date.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bt</span><span class="o">.</span><span class="n">doy2mmdd</span><span class="p">(</span><span class="mi">2018</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">string_out</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">`2018/01/01`</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bt</span><span class="o">.</span><span class="n">doy2mmdd</span><span class="p">(</span><span class="mi">2018</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">string_out</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="go">datetime.datetime(2018, 1, 1, 0, 0)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.bob_tools.mkdir_p">
+<code class="descclassname">pybob.bob_tools.</code><code class="descname">mkdir_p</code><span class="sig-paren">(</span><em>out_dir</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/bob_tools.html#mkdir_p"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.bob_tools.mkdir_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add bash mkdir -p functionality to os.makedirs.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>out_dir</strong> – directory to create.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.bob_tools.mmdd2doy">
+<code class="descclassname">pybob.bob_tools.</code><code class="descname">mmdd2doy</code><span class="sig-paren">(</span><em>year</em>, <em>month</em>, <em>day</em>, <em>string_out=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/bob_tools.html#mmdd2doy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.bob_tools.mmdd2doy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a string or an int representing a day of year, given a date.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>year</strong> (<em>int</em>) – Year of the input date, e.g., <code class="docutils literal notranslate"><span class="pre">2018</span></code>.</li>
+<li><strong>mm</strong> (<em>int</em>) – Month of the year of the input date, e.g., <code class="docutils literal notranslate"><span class="pre">1</span></code> for Jan.</li>
+<li><strong>dd</strong> (<em>int</em>) – Day of the month of the input date.</li>
+<li><strong>string_out</strong> (<em>bool</em>) – Return a string (True) or an int (False). Default is True.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns doy:</th><td class="field-body"><p class="first last">day of year representation of year, month, day</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bt</span><span class="o">.</span><span class="n">mmdd2doy</span><span class="p">(</span><span class="mi">2018</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">string_out</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">`1`</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.bob_tools.standard_landsat">
+<code class="descclassname">pybob.bob_tools.</code><code class="descname">standard_landsat</code><span class="sig-paren">(</span><em>instring</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/bob_tools.html#standard_landsat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.bob_tools.standard_landsat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a string of a landsat scenename, make a standard (pre-Collection) filename, of the form LSSPPPRRRYYYYDDDXXX01.</p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pybob.coreg_tools.html" class="btn btn-neutral float-right" title="pybob.coreg_tools" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pybob.VelField.html" class="btn btn-neutral float-left" title="pybob.VelField" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Robert McNabb
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

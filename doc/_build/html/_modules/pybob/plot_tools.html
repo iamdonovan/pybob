@@ -1,0 +1,528 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pybob.plot_tools &mdash; pybob  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> pybob
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/index.html">modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../scripts/index.html">scripts</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pybob</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>pybob.plot_tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pybob.plot_tools</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">cv2</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
+<span class="kn">from</span> <span class="nn">descartes</span> <span class="k">import</span> <span class="n">PolygonPatch</span>
+<span class="kn">from</span> <span class="nn">matplotlib.figure</span> <span class="k">import</span> <span class="n">Figure</span>
+<span class="kn">from</span> <span class="nn">matplotlib.pyplot</span> <span class="k">import</span> <span class="n">savefig</span>
+<span class="kn">from</span> <span class="nn">matplotlib.collections</span> <span class="k">import</span> <span class="n">PatchCollection</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.axes_grid1</span> <span class="k">import</span> <span class="n">make_axes_locatable</span>
+<span class="kn">from</span> <span class="nn">numpy.polynomial.polynomial</span> <span class="k">import</span> <span class="n">polyval</span><span class="p">,</span> <span class="n">polyfit</span>
+<span class="kn">from</span> <span class="nn">pybob.bob_tools</span> <span class="k">import</span> <span class="n">bin_data</span>
+<span class="kn">from</span> <span class="nn">pybob.image_tools</span> <span class="k">import</span> <span class="n">hillshade</span>
+
+
+<div class="viewcode-block" id="set_pretty_fonts"><a class="viewcode-back" href="../../modules/pybob.plot_tools.html#pybob.plot_tools.set_pretty_fonts">[docs]</a><span class="k">def</span> <span class="nf">set_pretty_fonts</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    sets matplotlib fonts to be nice and pretty for graphs that don&#39;t completely suck.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">font</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;family&#39;</span><span class="p">:</span> <span class="s1">&#39;sans&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;weight&#39;</span><span class="p">:</span> <span class="s1">&#39;normal&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="mi">24</span><span class="p">}</span>
+    <span class="n">legend_font</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;family&#39;</span><span class="p">:</span> <span class="s1">&#39;sans&#39;</span><span class="p">,</span>
+                   <span class="s1">&#39;weight&#39;</span><span class="p">:</span> <span class="s1">&#39;normal&#39;</span><span class="p">,</span>
+                   <span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="s1">&#39;16&#39;</span><span class="p">}</span>
+    <span class="n">matplotlib</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;font&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">font</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="truncate_colormap"><a class="viewcode-back" href="../../modules/pybob.plot_tools.html#pybob.plot_tools.truncate_colormap">[docs]</a><span class="k">def</span> <span class="nf">truncate_colormap</span><span class="p">(</span><span class="n">cmap</span><span class="p">,</span> <span class="n">minval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxval</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    :param cmap:</span>
+<span class="sd">    :param minval:</span>
+<span class="sd">    :param maxval:</span>
+<span class="sd">    :param n:</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">new_cmap</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">LinearSegmentedColormap</span><span class="o">.</span><span class="n">from_list</span><span class="p">(</span><span class="s1">&#39;trunc(</span><span class="si">{n}</span><span class="s1">, </span><span class="si">{a:.2f}</span><span class="s1">, </span><span class="si">{b:.2f}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">cmap</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="n">minval</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">maxval</span><span class="p">),</span> <span class="n">cmap</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">minval</span><span class="p">,</span> <span class="n">maxval</span><span class="p">,</span> <span class="n">n</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">new_cmap</span></div>
+
+
+<div class="viewcode-block" id="save_results_quicklook"><a class="viewcode-back" href="../../modules/pybob.plot_tools.html#pybob.plot_tools.save_results_quicklook">[docs]</a><span class="k">def</span> <span class="nf">save_results_quicklook</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">raster</span><span class="p">,</span> <span class="n">com_ext</span><span class="p">,</span> <span class="n">outfilename</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">sfact</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">output_directory</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    :param img:</span>
+<span class="sd">    :param raster:</span>
+<span class="sd">    :param com_ext:</span>
+<span class="sd">    :param outfilename:</span>
+<span class="sd">    :param vmin:</span>
+<span class="sd">    :param vmax:</span>
+<span class="sd">    :param sfact:</span>
+<span class="sd">    :param output_directory:</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">com_ext</span>
+    <span class="n">ext</span> <span class="o">=</span> <span class="p">[</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span><span class="p">]</span>
+
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">overlay</span><span class="p">(</span><span class="n">raster</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">ext</span><span class="p">,</span> <span class="n">sfact</span><span class="o">=</span><span class="n">sfact</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span> <span class="n">showfig</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_directory</span><span class="p">,</span> <span class="n">outfilename</span> <span class="o">+</span> <span class="s1">&#39;.png&#39;</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fig</span></div>
+
+
+<div class="viewcode-block" id="plot_geoimg_sidebyside"><a class="viewcode-back" href="../../modules/pybob.plot_tools.html#pybob.plot_tools.plot_geoimg_sidebyside">[docs]</a><span class="k">def</span> <span class="nf">plot_geoimg_sidebyside</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">img2</span><span class="p">,</span> <span class="n">com_extent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">output_directory</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    :param img1:</span>
+<span class="sd">    :param img2:</span>
+<span class="sd">    :param com_extent:</span>
+<span class="sd">    :param fig:</span>
+<span class="sd">    :param cmap:</span>
+<span class="sd">    :param output_directory:</span>
+<span class="sd">    :param filename:</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">16.5</span><span class="p">,</span> <span class="mf">16.5</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">Figure</span><span class="p">):</span>
+        <span class="n">fig</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+    <span class="n">ax1</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">121</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">com_extent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">com_extent</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span>
+
+    <span class="n">ax2</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">122</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">com_extent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">img2</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">com_extent</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">img2</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_directory</span><span class="p">,</span> <span class="n">filename</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span></div>
+
+
+<div class="viewcode-block" id="plot_nice_histogram"><a class="viewcode-back" href="../../modules/pybob.plot_tools.html#pybob.plot_tools.plot_nice_histogram">[docs]</a><span class="k">def</span> <span class="nf">plot_nice_histogram</span><span class="p">(</span><span class="n">data_values</span><span class="p">,</span> <span class="n">outfilename</span><span class="p">,</span> <span class="n">output_directory</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    :param data_values:</span>
+<span class="sd">    :param outfilename:</span>
+<span class="sd">    :param output_directory:</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">16.5</span><span class="p">,</span> <span class="mf">16.5</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+
+    <span class="n">outputs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">data_values</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">normed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">ylim</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+    <span class="n">mu</span> <span class="o">=</span> <span class="n">data_values</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">data_values</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">mu</span><span class="p">,</span> <span class="n">mu</span><span class="p">],</span> <span class="n">ylim</span><span class="p">,</span> <span class="s1">&#39;k--&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">mu</span><span class="o">+</span><span class="n">sigma</span><span class="p">,</span> <span class="n">mu</span><span class="o">+</span><span class="n">sigma</span><span class="p">],</span> <span class="n">ylim</span><span class="p">,</span> <span class="s1">&#39;r--&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">mu</span><span class="o">+</span><span class="mi">2</span><span class="o">*</span><span class="n">sigma</span><span class="p">,</span> <span class="n">mu</span><span class="o">+</span><span class="mi">2</span><span class="o">*</span><span class="n">sigma</span><span class="p">],</span> <span class="n">ylim</span><span class="p">,</span> <span class="s1">&#39;r--&#39;</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ylim</span><span class="p">),</span> <span class="sa">r</span><span class="s1">&#39;$\mu$&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">mu</span><span class="o">+</span><span class="n">sigma</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ylim</span><span class="p">),</span> <span class="sa">r</span><span class="s1">&#39;$\mu + \sigma$&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">mu</span><span class="o">+</span><span class="mi">2</span><span class="o">*</span><span class="n">sigma</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ylim</span><span class="p">),</span> <span class="sa">r</span><span class="s1">&#39;$\mu + 2\sigma$&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+    <span class="c1"># just to be sure</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim</span><span class="p">)</span>
+
+    <span class="n">savefig</span><span class="p">(</span><span class="n">output_directory</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span> <span class="o">+</span> <span class="n">outfilename</span> <span class="o">+</span> <span class="s1">&#39;_vdist.png&#39;</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">outputs</span></div>
+
+
+<div class="viewcode-block" id="plot_chips_corr_matrix"><a class="viewcode-back" href="../../modules/pybob.plot_tools.html#pybob.plot_tools.plot_chips_corr_matrix">[docs]</a><span class="k">def</span> <span class="nf">plot_chips_corr_matrix</span><span class="p">(</span><span class="n">srcimg</span><span class="p">,</span> <span class="n">destimg</span><span class="p">,</span> <span class="n">corrmat</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    :param srcimg:</span>
+<span class="sd">    :param destimg:</span>
+<span class="sd">    :param corrmat:</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
+
+    <span class="n">ax1</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">131</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">srcimg</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;source image&#39;</span><span class="p">)</span>
+
+    <span class="n">ax2</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">132</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">destimg</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
+    <span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;dest. image&#39;</span><span class="p">)</span>
+
+    <span class="n">peak1_loc</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">minMaxLoc</span><span class="p">(</span><span class="n">corrmat</span><span class="p">)[</span><span class="mi">3</span><span class="p">]</span>
+
+    <span class="n">ax3</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">133</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">corrmat</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;jet&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">peak1_loc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">peak1_loc</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;w+&#39;</span><span class="p">)</span>
+    <span class="n">ax3</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;correlation&#39;</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">fig</span></div>
+
+
+<div class="viewcode-block" id="plot_ddem_results"><a class="viewcode-back" href="../../modules/pybob.plot_tools.html#pybob.plot_tools.plot_ddem_results">[docs]</a><span class="k">def</span> <span class="nf">plot_ddem_results</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">colormap</span><span class="o">=</span><span class="s1">&#39;seismic&#39;</span><span class="p">,</span> <span class="n">caxsize</span><span class="o">=</span><span class="s2">&quot;2.5%&quot;</span><span class="p">,</span> <span class="n">clim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sfact</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    :param img:</span>
+<span class="sd">    :param colormap:</span>
+<span class="sd">    :param caxsize:</span>
+<span class="sd">    :param clim:</span>
+<span class="sd">    :param sfact:</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">sfact</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="n">colormap</span><span class="p">,</span> <span class="n">sfact</span><span class="o">=</span><span class="n">sfact</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="n">colormap</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">clim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">clim</span><span class="p">(</span><span class="n">clim</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">clim</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+
+    <span class="n">divider</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+    <span class="n">cax</span> <span class="o">=</span> <span class="n">divider</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s2">&quot;right&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">caxsize</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">cax</span></div>
+
+
+<div class="viewcode-block" id="plot_dh_elevation"><a class="viewcode-back" href="../../modules/pybob.plot_tools.html#pybob.plot_tools.plot_dh_elevation">[docs]</a><span class="k">def</span> <span class="nf">plot_dh_elevation</span><span class="p">(</span><span class="n">dDEM</span><span class="p">,</span> <span class="n">DEM</span><span class="p">,</span> <span class="n">glacier_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">binning</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bin_width</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">polyorder</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    :param dDEM:</span>
+<span class="sd">    :param DEM:</span>
+<span class="sd">    :param glacier_mask:</span>
+<span class="sd">    :param binning:</span>
+<span class="sd">    :param bin_width:</span>
+<span class="sd">    :param polyorder:</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">glacier_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ddem_data</span> <span class="o">=</span> <span class="n">dDEM</span><span class="o">.</span><span class="n">img</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">dDEM</span><span class="o">.</span><span class="n">img</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">DEM</span><span class="o">.</span><span class="n">img</span><span class="p">)),</span> <span class="n">glacier_mask</span><span class="p">)]</span>
+        <span class="n">dem_data</span> <span class="o">=</span> <span class="n">DEM</span><span class="o">.</span><span class="n">img</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">dDEM</span><span class="o">.</span><span class="n">img</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">DEM</span><span class="o">.</span><span class="n">img</span><span class="p">)),</span> <span class="n">glacier_mask</span><span class="p">)]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ddem_data</span> <span class="o">=</span> <span class="n">dDEM</span><span class="o">.</span><span class="n">img</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">dDEM</span><span class="o">.</span><span class="n">img</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">DEM</span><span class="o">.</span><span class="n">img</span><span class="p">))]</span>
+        <span class="n">dem_data</span> <span class="o">=</span> <span class="n">DEM</span><span class="o">.</span><span class="n">img</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">dDEM</span><span class="o">.</span><span class="n">img</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">DEM</span><span class="o">.</span><span class="n">img</span><span class="p">))]</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">dem_data</span><span class="p">,</span> <span class="n">ddem_data</span><span class="p">,</span> <span class="s1">&#39;+&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">binning</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">binning</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span> <span class="s1">&#39;median&#39;</span><span class="p">,</span> <span class="s1">&#39;poly&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;binning must be one of mean, median, polyfit&#39;</span><span class="p">)</span>
+        <span class="n">min_el</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">dem_data</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">dem_data</span><span class="p">)</span> <span class="o">%</span> <span class="n">bin_width</span><span class="p">)</span>
+        <span class="n">max_el</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">dem_data</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">bin_width</span> <span class="o">-</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">dem_data</span><span class="p">)</span> <span class="o">%</span> <span class="n">bin_width</span><span class="p">))</span>
+        <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">min_el</span><span class="p">,</span> <span class="n">max_el</span><span class="p">,</span> <span class="n">bin_width</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">binning</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span> <span class="s1">&#39;median&#39;</span><span class="p">]:</span>
+            <span class="n">binned_data</span> <span class="o">=</span> <span class="n">bin_data</span><span class="p">(</span><span class="n">bins</span><span class="p">,</span> <span class="n">ddem_data</span><span class="p">,</span> <span class="n">dem_data</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">binning</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">bins</span><span class="p">,</span> <span class="n">binned_data</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">polyorder</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;polyorder must be defined to use polynomial fitting.&#39;</span><span class="p">)</span>
+            <span class="n">pfit</span> <span class="o">=</span> <span class="n">polyfit</span><span class="p">(</span><span class="n">dem_data</span><span class="p">,</span> <span class="n">ddem_data</span><span class="p">,</span> <span class="n">polyorder</span><span class="p">)</span>
+            <span class="n">interp_points</span> <span class="o">=</span> <span class="n">polyval</span><span class="p">(</span><span class="n">bins</span><span class="p">,</span> <span class="n">pfit</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">bins</span><span class="p">,</span> <span class="n">interp_points</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fig</span></div>
+
+
+<div class="viewcode-block" id="plot_polygon_df"><a class="viewcode-back" href="../../modules/pybob.plot_tools.html#pybob.plot_tools.plot_polygon_df">[docs]</a><span class="k">def</span> <span class="nf">plot_polygon_df</span><span class="p">(</span><span class="n">polygon_df</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mpl</span><span class="o">=</span><span class="s1">&#39;mpl_polygon&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot a GeoDataFrame of polygons to figure.</span>
+
+<span class="sd">    :param polygon_df: GeoDataFrame of polygon(s) to plot.</span>
+<span class="sd">    :param fig: Optional existing figure to plot polygons to. If unset, creates a new figure.</span>
+<span class="sd">    :param ax: Optional axis handle to plot polygons to. If unset, uses fig.gca()</span>
+<span class="sd">    :param mpl: GeoDataFrame column name containing multipolygon indices. Default is mpl_polygon.</span>
+<span class="sd">    :param kwargs: Keyword options to pass to matplotlib.collections.PatchCollection.</span>
+
+<span class="sd">    :type polygon_df: geopandas.GeoDataFrame</span>
+<span class="sd">    :type fig: matplotlib.pyplot.Figure</span>
+<span class="sd">    :type ax: matplotlib.axes</span>
+<span class="sd">    :type mpl: str</span>
+
+<span class="sd">    :returns fig, polygon_df: Figure handle of the plot created, and updated geodataframe with plot geometries.</span>
+
+<span class="sd">    Examples:</span>
+
+<span class="sd">    &gt;&gt;&gt; rgi = gpd.read_file(&#39;07_rgi60_Svalbard.shp&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; f, rgi = plot_polygon_df(rgi, color=&#39;w&#39;, edgecolor=&#39;k&#39;, lw=.2, alpha=0.5)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">polygon_df</span><span class="p">,</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;polygon_df must be a GeoDataFrame.&#39;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+    
+    <span class="k">if</span> <span class="n">mpl</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">polygon_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">polygon_df</span><span class="p">[</span><span class="n">mpl</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">polygon_df</span><span class="p">[</span><span class="n">mpl</span><span class="p">]</span> <span class="o">=</span> <span class="n">polygon_df</span><span class="p">[</span><span class="n">mpl</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+        
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">polygon_df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">m_poly</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">]</span>
+            <span class="n">poly</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="n">m_poly</span><span class="o">.</span><span class="n">geom_type</span> <span class="o">==</span> <span class="s1">&#39;MultiPolygon&#39;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">pol</span> <span class="ow">in</span> <span class="n">m_poly</span><span class="p">:</span>
+                    <span class="n">poly</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">PolygonPatch</span><span class="p">(</span><span class="n">pol</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">poly</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">PolygonPatch</span><span class="p">(</span><span class="n">m_poly</span><span class="p">))</span>
+            <span class="n">polygon_df</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">mpl</span><span class="p">,</span> <span class="n">poly</span><span class="p">)</span>
+        
+    <span class="n">mapindex</span> <span class="o">=</span> <span class="n">polygon_df</span><span class="p">[</span><span class="n">mpl</span><span class="p">]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">mapindex</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">PatchCollection</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+    
+    <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">polygon_df</span></div>
+    
+
+<div class="viewcode-block" id="plot_shaded_dem"><a class="viewcode-back" href="../../modules/pybob.plot_tools.html#pybob.plot_tools.plot_shaded_dem">[docs]</a><span class="k">def</span> <span class="nf">plot_shaded_dem</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">azimuth</span><span class="o">=</span><span class="mi">315</span><span class="p">,</span> <span class="n">altitude</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.35</span><span class="p">,</span> <span class="n">colormap</span><span class="o">=</span><span class="s1">&#39;terrain&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot a shaded relief image of a DEM.</span>
+
+<span class="sd">    :param dem: GeoImg representing a DEM.</span>
+<span class="sd">    :param azimuth: Solar azimuth angle, in degress from North. Default 315.</span>
+<span class="sd">    :param altitude: Solar altitude angle, in degrees from horizon. Default 45.</span>
+<span class="sd">    :param fig: Figure to show image in. If not set, creates a new figure.</span>
+<span class="sd">    :param extent: Spatial extent to limit the figure to, given as xmin, xmax, ymin, ymax.</span>
+<span class="sd">    :param alpha: Alpha value to set DEM to. Default is 0.35.</span>
+<span class="sd">    :param colormap: colormap style for matplotlib</span>
+<span class="sd">    :param kwargs: Optional keyword arguments to pass to plt.imshow</span>
+
+<span class="sd">    :type dem: pybob.GeoImg</span>
+<span class="sd">    :type azimuth: float</span>
+<span class="sd">    :type altitude: float</span>
+<span class="sd">    :type fig: matplotlib.figure.Figure</span>
+<span class="sd">    :type extent: array-like</span>
+<span class="sd">    :type alpha: float</span>
+<span class="sd">    :type colormap: str</span>
+
+<span class="sd">    :returns fig: Handle pointing to the matplotlib Figure created (or passed to display).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+
+    <span class="n">cmap</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">colormap</span><span class="p">)</span>
+    <span class="n">new_cmap</span> <span class="o">=</span> <span class="n">truncate_colormap</span><span class="p">(</span><span class="n">cmap</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">)</span>
+
+    <span class="n">shaded</span> <span class="o">=</span> <span class="n">hillshade</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">azimuth</span><span class="o">=</span><span class="n">azimuth</span><span class="p">,</span> <span class="n">altitude</span><span class="o">=</span><span class="n">altitude</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">extent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">extent</span> <span class="o">=</span> <span class="p">[</span><span class="n">dem</span><span class="o">.</span><span class="n">xmin</span><span class="p">,</span> <span class="n">dem</span><span class="o">.</span><span class="n">xmax</span><span class="p">,</span> <span class="n">dem</span><span class="o">.</span><span class="n">ymin</span><span class="p">,</span> <span class="n">dem</span><span class="o">.</span><span class="n">ymax</span><span class="p">]</span>
+
+        <span class="n">mini</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">maxi</span> <span class="o">=</span> <span class="n">dem</span><span class="o">.</span><span class="n">npix_y</span>
+        <span class="n">minj</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">maxj</span> <span class="o">=</span> <span class="n">dem</span><span class="o">.</span><span class="n">npix_x</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">extent</span>
+        <span class="n">mini</span><span class="p">,</span> <span class="n">minj</span> <span class="o">=</span> <span class="n">dem</span><span class="o">.</span><span class="n">xy2ij</span><span class="p">((</span><span class="n">xmin</span><span class="p">,</span> <span class="n">ymax</span><span class="p">))</span>
+        <span class="n">maxi</span><span class="p">,</span> <span class="n">maxj</span> <span class="o">=</span> <span class="n">dem</span><span class="o">.</span><span class="n">xy2ij</span><span class="p">((</span><span class="n">xmax</span><span class="p">,</span> <span class="n">ymin</span><span class="p">))</span>
+
+        <span class="n">mini</span> <span class="o">+=</span> <span class="mf">0.5</span>
+        <span class="n">minj</span> <span class="o">+=</span> <span class="mf">0.5</span>
+
+        <span class="n">maxi</span> <span class="o">-=</span> <span class="mf">0.5</span>
+        <span class="n">maxj</span> <span class="o">-=</span> <span class="mf">0.5</span>  <span class="c1"># subtract the .5 for half a pixel, add 1 for slice</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="mi">255</span> <span class="o">*</span> <span class="p">(</span><span class="n">shaded</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">mini</span><span class="p">):</span><span class="nb">int</span><span class="p">(</span><span class="n">maxi</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">minj</span><span class="p">):</span><span class="nb">int</span><span class="p">(</span><span class="n">maxj</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
+    <span class="n">cimg</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">dem</span><span class="o">.</span><span class="n">img</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">mini</span><span class="p">):</span><span class="nb">int</span><span class="p">(</span><span class="n">maxi</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">minj</span><span class="p">):</span><span class="nb">int</span><span class="p">(</span><span class="n">maxj</span><span class="o">+</span><span class="mi">1</span><span class="p">)],</span>
+                      <span class="n">cmap</span><span class="o">=</span><span class="n">new_cmap</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">cimg</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Robert McNabb
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
