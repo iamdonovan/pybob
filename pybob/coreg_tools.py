@@ -603,7 +603,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             this_slave = this_slave.reproject(masterDEM)
             this_slave.mask(stable_mask)
 
-        print("Percent-improvement threshold and Magnitute threshold:")
+        print("Percent-improvement threshold and Magnitude threshold:")
         print(mythresh, magnthresh)
 
         # slaves[-1].display()
@@ -676,6 +676,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         print("FinalCHECK")
         # outslave = outslave.reproject(masterDEM)
         masterDEM = orig_masterDEM.reproject(outslave)
+
         dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, outslave)
         false_hillshade(dH, 'FINAL CHECK', pp)
         # dx, dy, dz = coreg_fitting(xdata, ydata, sdata, "Final Check", pp)
@@ -687,8 +688,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
         if full_ext:
             masterDEM = orig_masterDEM
+            outslave = outslave.reproject(masterDEM)
         masterDEM.write(mastoutfile, out_folder=outdir)
-
+    outslave.write(slaveoutfile, out_folder=outdir)
     pp.close()
     print("Fin.")
     print("Fin.", file=paramf)

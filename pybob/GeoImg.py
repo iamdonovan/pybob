@@ -791,11 +791,13 @@ class GeoImg(object):
         dest.SetProjection(self.proj)
         newgt = (xmin, dx, 0.0, ymax, 0.0, dy)
         dest.SetGeoTransform(newgt)
-        
         if self.NDV is not None:
             for i in range(len(bands)):
                 dest.GetRasterBand(i+1).SetNoDataValue(self.NDV)
                 dest.GetRasterBand(i+1).Fill(self.NDV)
+        else:
+            for i in range(len(bands)):
+                dest.GetRasterBand(i+1).Fill(0)
 
         gdal.ReprojectImage(self.gd, dest, self.proj, self.proj, gdal.GRA_Bilinear)
         out = GeoImg(dest, attrs=self)
@@ -846,7 +848,7 @@ class GeoImg(object):
 
         plt.colorbar(oimg, cax=cax)
 
-#        plt.show()
+        # plt.show()
 
         return fig
 
