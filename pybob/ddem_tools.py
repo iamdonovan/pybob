@@ -1,3 +1,7 @@
+"""
+pybob.ddem_tools provides a number of tools for working with DEM differencing and calculating volume changes. Primarily
+    designed for glaciers, but could be useful for calculating other volume changes as well.
+"""
 from __future__ import print_function
 # import multiprocessing as mp
 import numpy as np
@@ -7,6 +11,9 @@ import pybob.coreg_tools as ct
 import pybob.image_tools as it
 from pybob.bob_tools import bin_data
 from pybob.GeoImg import GeoImg
+
+
+sensor_names = ['AST', 'SETSM', 'Map', 'SPOT', 'SDMI', 'HMA']
 
 
 def difference(dem1, dem2, glaciermask=None, landmask=None, outdir='.'):
@@ -362,4 +369,29 @@ def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=None):
 
     return bins, aads
 
+
+def get_elev_curve():
+    pass
+
+
+def outlier_removal():
+    pass
+
+
+def calculate_dV():
+    pass
+
+
+def name_parser():
+    pass
+
+
+def nice_split(fname):
+    sname = fname.rsplit('.tif', 1)[0].split('_')
+    sname.remove('dH')
+    splitloc = [i+1 for i, x in enumerate(sname[1:]) if x in sensor_names][0]
+
+    name1 = '_'.join(sname[0:splitloc])
+    name2 = '_'.join(sname[splitloc:])
+    return name1, name2
 

@@ -283,3 +283,7 @@ def plot_shaded_dem(dem, azimuth=315, altitude=45, fig=None, extent=None, alpha=
                       cmap=new_cmap, extent=extent, alpha=alpha, **kwargs)
 
     return fig, cimg
+
+
+def plot_aad_diagram():
+    pass
