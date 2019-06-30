@@ -1,3 +1,6 @@
+"""
+pybob.ICESat provides an interface to extracted ICESat(-1) data stored in HDF5 format.
+"""
 from __future__ import print_function
 #from future_builtins import zip
 from collections import OrderedDict
@@ -33,16 +36,19 @@ def find_keyname(keys, subkey, mode='first'):
         return out_keys
 
 def extract_ICESat(in_filename,workdir=None,outfile=None):
-    """Extract ICESat data given the extent of a GeoImg.
+    """
+    Extract ICESat data given the extent of a GeoImg.
 
-    Parameters
-    ----------
-    in_filename : string
-        Filename (optionally with path) of geotiff file to be read in using GeoImg.
-    workdir : string, optional
-        Directory where in_filename is located. If not given, the directory
+    **Note - currently not supported outside of UiO working environment.**
+
+    :param in_filename: Filename (optionally with path) of DEM to be opened using GeoImg.
+    :param workdir: Directory where in_filename is located. If not given, the directory
         will be determined from the input filename.
-    outfile : name of the output file, optional [default='ICESat_DEM.h5']
+    :param outfile: name of the output file [default='ICESat_DEM.h5']
+
+    :type in_filename: str
+    :type workdir: str
+    :type outfile: str
     """
 
     def getExtent(in_filename):
@@ -116,27 +122,29 @@ def extract_ICESat(in_filename,workdir=None,outfile=None):
     pass
 
 class ICESat(object):
-    """Create an ICESat dataset from an HDF5 file containing ICESat data.
+    """Create an ICESat dataset from an HDF5 file containing ICESat data."""
 
-    Parameters
-    ----------
-    in_filename : string
-        Filename (optionally with path) of HDF5 file to be read in.
-    in_dir : string, optional
-        Directory where in_filename is located. If not given, the directory
-        will be determined from the input filename.
-    cols : list of strings, optional
-        Columns to read in and set as attributes in the ICESat object.
-        Default values are ['lat', 'lon', 'd_elev', 'd_UTCTime'], and will
-        be added if not specified.
-    ellipse_hts : bool, optional
-        Convert elevations to ellipsoid heights. Default is True.
-
-    Examples
-    --------
-    >>> ICESat('donjek_icesat.h5', ellipse_hts=True)
-    """
     def __init__(self, in_filename, in_dir=None, cols=['lat', 'lon', 'd_elev', 'd_UTCTime'], ellipse_hts=True):
+        """
+        :param in_filename: Filename (optionally with path) of HDF5 file to be read in.
+        :param in_dir: Directory where in_filename is located. If not given, the directory
+            will be determined from the input filename.
+        :param cols: Columns to read in and set as attributes in the ICESat object.
+            Default values are ['lat', 'lon', 'd_elev', 'd_UTCTime'], and will
+            be added if not specified.
+        :param ellipse_hts: Convert elevations to ellipsoid heights. Default is True.
+        :type in_filename: str
+        :type in_dir: str
+        :type cols: array-like
+        :type ellipse_hts: bool
+
+        The following example:
+
+        >>> ICESat('donjek_icesat.h5', ellipse_hts=True)
+
+        will return an ICESat object with lat, lon, elevation, and UTCTime attributes, with elevations given as height
+        above WGS84 ellipsoid.
+        """
         if in_dir is None:
             in_filename, in_dir = get_file_info(in_filename)
         self.filename = in_filename
@@ -172,7 +180,9 @@ class ICESat(object):
             self.to_ellipse()
 
     def to_ellipse(self):
-        """ Convert ICESat elevations to ellipsoid heights, based on the data read in."""
+        """
+        Convert ICESat elevations to ellipsoid heights, based on the data stored in the HDF5 file.
+        """
         # fgdh = find_keyname(self.data_names, 'd_gdHt')
         fde, _ = find_keyname(self.data_names, 'd_deltaEllip')
         de = self.h5data[fde, :]
@@ -180,27 +190,30 @@ class ICESat(object):
         self.elev = self.elev + de
 
     def from_ellipse(self):
-        """ Convert ICESat elevations from ellipsoid heights, based on the data read in."""
+        """
+        Convert ICESat elevations from ellipsoid heights, based on the data stored in the HDF5 file.
+        """
         fde, _ = find_keyname(self.data_names, 'd_deltaEllip')
         de = self.h5data[fde, :]
         self.ellipse_hts = False
         self.elev = self.elev - de
 
     def to_shp(self, out_filename, driver='ESRI Shapefile', epsg=4326):
-        """ Write ICESat data to shapefile.
-        
-        Parameters
-        ----------
-        out_filename : string
-            Filename (optionally with path) of file to read out.
-        driver : string, optional
-            Name of driver fiona should use to create the outpufile. Default is 'ESRI Shapefile'.
-        epsg : int, optional
-            EPSG code to project data to. Default is 4326, WGS84 Lat/Lon.
-    
-        Examples
-        --------
+        """
+        Write ICESat data to shapefile.
+
+        :param out_filename: Filename (optionally with path) of file to read out.
+        :param driver: Name of driver fiona should use to create the outpufile. Default is 'ESRI Shapefile'.
+        :param epsg: EPSG code to project data to. Default is 4326, WGS84 Lat/Lon.
+        :type out_filename: str
+        :type driver: str
+        :type epsg: int
+
+        Example:
+
         >>> donjek_icesat.to_shp('donjek_icesat.shp', epsg=3338)
+
+        will write donjek_icesat to a shapefile in Alaska Albers projection (EPSG:3338)
         """
         # skip the lat, lon columns in the h5data
         # get the columns we're writing out
@@ -244,10 +257,8 @@ class ICESat(object):
         """
         Write ICESat data to csv format using pandas.
         
-        Parameters
-        ----------
-        out_filename : string
-            Filename (optionally with path) of file to read out.
+        :param out_filename: Filename (optionally with path) of file to read out.
+        :type out_filename: str
         """
         darr = np.transpose(np.array(self.h5data))
         data_names = [d.split('/')[-1] for d in self.data_names]
@@ -268,7 +279,11 @@ class ICESat(object):
         df.to_csv(out_filename, index=False)
         
     def clean(self, el_limit=-500):
-        """ Remove all elevation points below a given elevation.
+        """
+        Remove all elevation points below a given elevation.
+
+        :param el_limit: minimum elevation to accept
+        :type el_limit: float
         """
         mykeep = self.elev > el_limit
         self.x = self.x[mykeep]
@@ -276,21 +291,54 @@ class ICESat(object):
         self.elev = self.elev[mykeep]
         self.xy = list(zip(self.x,self.y))
 
-    def mask(self, mykeep):
-        """ Masks out points not True in boolean array mykeep
+    def mask(self, mask, mask_value=True, drop=False):
         """
-        self.x = self.x[mykeep]
-        self.y = self.y[mykeep]
-        self.elev = self.elev[mykeep]
-        self.xy = list(zip(self.x,self.y))
-        
+        Mask values
+
+        :param mask: Array of same size as self.img corresponding to values that should be masked.
+        :param mask_value: Value within mask to mask. If True, masks image where mask is True. If numeric, masks image
+            where mask == mask_value.
+        :param drop: remove values from dataset (True), or mask using numpy.masked_array (False). Default is False.
+        :type mask: array-like
+        :type mask_value: bool or numeric
+        :type drop: bool
+        """
+        if mask_value is not bool:
+            mask = mask == mask_value
+
+        if not drop:
+            self.x = np.ma.masked_where(mask, self.x)
+            self.y = np.ma.masked_where(mask, self.y)
+
+            for c in self.column_names:
+                this_attr = getarr(self, c.split('d_', 1)[-1])
+                masked_attr = np.ma.masked_where(mask, this_attr)
+                setattr(self, c.split('d_', 1)[-1], masked_attr)
+        else:
+            self.x = self.x[mask]
+            self.y = self.y[mask]
+            for c in self.column_names:
+                this_attr = getarr(self, c.split('d_', 1)[-1])
+                masked_attr = this_attr[mask]
+                setattr(self, c.split('d_', 1)[-1], masked_attr)
+
+        self.xy = list(zip(self.x, self.y))
+
+    def unmask(self):
+        """
+        Remove a mask if it has been applied.
+        **Not implemented yet!**
+
+        :return:
+        """
+        pass
+
     def clip(self, bounds):
-        """ Remove ICEsat data that falls outside of a given bounding box.
-        
-        Parameters
-        ----------
-        bounds: array-like
-            bounding box to clip to, given as xmin, xmax, ymin, ymax
+        """
+        Remove ICEsat data that falls outside of a given bounding box.
+
+        :param bounds: bounding box to clip to, given as xmin, xmax, ymin, ymax
+        :type bounds: array-like
         """
         xmin, xmax, ymin, ymax = bounds
         mykeep_x = np.logical_and(self.x > xmin, self.x < xmax)
@@ -304,15 +352,15 @@ class ICESat(object):
         pass
     
     def get_bounds(self, geo=False):
-        """Return bounding coordinates of the dataset.
+        """
+        Return bounding coordinates of the dataset.
 
-        Parameters
-        ----------
-        geo : bool, optional
-            Return geographic (lat/lon) coordinates (default is False)
-        
-        Example
-        -------
+        :param geo: Return geographic (lat/lon) coordinates (default is False)
+        :type geo: bool
+
+        :returns bounds: xmin, xmax, ymin, ymax values of dataset.
+
+        Example:
         >>> xmin, xmax, ymin, ymax = my_icesat.get_bounds()
         """
         if not geo:
@@ -321,19 +369,18 @@ class ICESat(object):
             return self.lon.min(), self.lon.max(), self.lat.min(), self.lat.max()
 
     def project(self, dest_proj):
-        """Project the ICESat dataset to a given coordinate system, using pyproj.transform.
+        """
+        Project the ICESat dataset to a given coordinate system, using pyproj.transform.
         ICESat.project does not overwrite the lat/lon coordinates, so calling
-        ICESat.project will only update self.x, self.y for the dataset, as well as self.proj.
+        ICESat.project will only update self.x,self.y for the dataset, self.xy, and self.proj.
 
-        Parameters
-        ----------
-        dest_proj : str or pyproj.Proj
-            Coordinate system to project the dataset into. If dest_proj is a string,
+        :param dest_proj: Coordinate system to project the dataset into. If dest_proj is a string,
             ICESat.project() will create a pyproj.Proj instance with it.
+        :type dest_proj: str or pyproj.Proj
 
-        Examples
-        --------
+        Example:
         Project icesat_data to Alaska Albers (NAD83) using epsg code:
+
         >>> icesat_data.project('epsg:3338')
         """
         if isinstance(dest_proj, str):
@@ -346,28 +393,23 @@ class ICESat(object):
     def display(self, fig=None, extent=None, sfact=1, showfig=True, geo=False, **kwargs):
         """
         Plot ICESat tracks in a figure.
-        
-        Parameters
-        ----------
-        fig : matplotlib.figure.Figure, optional
-            Figure to plot tracks in. If not set, creates a new figure.
-        extent : array-like, optional
-            Spatial extent to limit the figure to, given as xmin, xmax, ymin, ymax.
-        sfact : int, optional
-            Factor by which to reduce the number of points plotted.
+
+        :param fig: Figure to plot tracks in. If not set, creates a new figure.
+        :param extent: Spatial extent to limit the figure to, given as xmin, xmax, ymin, ymax.
+        :param sfact: Factor by which to reduce the number of points plotted.
             Default is 1 (i.e., all points are plotted).
-        showfig : bool, optional
-            Open the figure window. Default is True.
-        geo : bool, optional
-            Plot tracks in lat/lon coordinates, rather than projected coordinates.
+        :param showfig: Open the figure window. Default is True.
+        :param geo: Plot tracks in lat/lon coordinates, rather than projected coordinates.
             Default is False.
-        **kwargs :
-            Optional keyword arguments to pass to matplotlib.pyplot.plot
-            
-        Returns
-        -------
-        fig : matplotlib.figure.Figure
-            Handle pointing to the matplotlib Figure created (or passed to display).
+        :param kwargs: Optional keyword arguments to pass to matplotlib.pyplot.plot
+
+        :type fig: matplotlib.figure.Figure
+        :type extent: array-like
+        :type sfact: int
+        :type showfig: bool
+        :type geo: bool
+
+        :returns fig: Handle pointing to the matplotlib Figure created (or passed to display).
         """
         if fig is None:
             fig = plt.figure(facecolor='w')

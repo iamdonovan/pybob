@@ -11,16 +11,15 @@ from pybob.GeoImg import GeoImg
 from pybob.coreg_tools import dem_coregistration
 from scipy.interpolate import griddata
 
+
 def batch_wrapper(arg_dict):
     return (dem_coregistration(**arg_dict))
 
 
-def main():
-    np.seterr(all='ignore')
-    # add master, slave, masks to argparse
-    # can also add output directory
-    parser = argparse.ArgumentParser(description="Iteratively calculate co-registration \
-                                     parameters for two DEMs, as seen in Nuth and Kaeaeb (2011).")
+def _argparser():
+    parser = argparse.ArgumentParser(description="""Iteratively calculate co-registration parameters for sub-grids of two DEMs, as seen in `Nuth and Kääb (2011)`_.
+
+                .. _Nuth and Kääb (2011): https://www.the-cryosphere.net/5/271/2011/tc-5-271-2011.html""")
     parser.add_argument('masterdem', type=str, help='path to master DEM to be used for co-registration')
     parser.add_argument('slavedem', type=str, help='path to slave DEM to be co-registered')
     parser.add_argument('-a', '--mask1', type=str, default=None,
@@ -37,10 +36,16 @@ def main():
                         help="Process assuming that master DEM is ICESat data [False].")
     parser.add_argument('-f', '--full_ext', action='store_true', default=False,
                         help="Write full extent of master DEM and shifted slave DEM. [False].")
+    return parser
+
+
+def main():
+    np.seterr(all='ignore')
+    # add master, slave, masks to argparse
+    # can also add output directory
+    parser = _argparser()
     args = parser.parse_args()
 
-
-    
     def gen_outdir_name(tDEM):
         xname=np.array2string(np.asarray(np.floor_divide(tDEM.xmin + tDEM.xmax,2),dtype=np.int32))
         yname=np.array2string(np.asarray(np.floor_divide(tDEM.ymin + tDEM.ymax,2),dtype=np.int32))
@@ -55,7 +60,6 @@ def main():
 #        ty = np.asarray(np.floor_divide(mybounds[3]-mybounds[2],mysize),dtype=np.int32)
         tx = np.asarray(np.floor_divide(myDEM.xmax-myDEM.xmin,mysize),dtype=np.int32)
         ty = np.asarray(np.floor_divide(myDEM.ymax-myDEM.ymin,mysize),dtype=np.int32)
-
         
         # Divide the DEM into subimages for co-registration
         myDEMs = myDEM.subimages(tx,Ny=ty)
@@ -116,7 +120,6 @@ def main():
         del newGdal
         pass 
 
-
     # Divide SLAVE DEM into grid for co-registration
     myDEMs = collect_subimages(args.slavedem,args.mysize)
        
@@ -139,13 +142,14 @@ def main():
     # get projection information
     myproj = myDEMs[0].proj
     
-    ## DIDNT WORK ON WINDOWS; TRY AGAIN ON LINUX
-#    myDEMs=myDEMs[:15]
-#    mydirs=mydirs[:15]
+    # DIDNT WORK ON WINDOWS; TRY AGAIN ON LINUX
+    # myDEMs=myDEMs[:15]
+    # mydirs=mydirs[:15]
 
     # get a dictionary of arguments for each of the different DEMs,
     # starting with the common arguments (master dem, glacier mask, etc.)
-    #dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.', pts=False, full_ext=False, return_var=True):
+    # dem_coregistration(masterDEM, slaveDEM, glaciermask=None,
+    # landmask=None, outdir='.', pts=False, full_ext=False, return_var=True):
     arg_dict = {'masterDEM': args.masterdem, 
                 'glaciermask': args.mask1, 
                 'landmask': args.mask2, 
@@ -155,7 +159,6 @@ def main():
     u_args = [{'outdir': mydirs[ix], 'slaveDEM': mynames[ix]} for ix in np.arange(0,len(myDEMs))]
     for d in u_args:
         d.update(arg_dict)
-
 
     # Iterate lists using parallel processors
     pool = mp.Pool(processes=20)
@@ -167,8 +170,8 @@ def main():
         os.remove(ff)
     
 
-#def gather_results():
-#    fdsa
+    # def gather_results():
+    # fdsa
     dd = gather_results(outdir)
     np.savetxt(os.path.sep.join([outdir, 'Gridded_Coreg_Parameters.txt']),dd,fmt='%f',delimiter=',')
     
@@ -213,8 +216,6 @@ def main():
     write_geotiff(dm, myproj, myextent, mysize, os.path.sep.join([outdir, 'ShiftMagnitude.tif']))
     write_geotiff(drmse, myproj, myextent, mysize, os.path.sep.join([outdir, 'RMSE.tif']))
     write_geotiff(dcount, myproj, myextent, mysize, os.path.sep.join([outdir, 'NumberSamples.tif']))
-
-    
 
 
 if __name__ == "__main__":

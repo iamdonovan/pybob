@@ -1,26 +1,29 @@
+"""
+pybob.hexagon_tools is a collection of tools for working with KH-9 Hexagon imagery.
+"""
 from __future__ import print_function, division
 import os
-#import errno
-#import argparse
+# import errno
+# import argparse
 import cv2
-#import multiprocessing as mp
-#from functools import partial
-#from scipy.ndimage.filters import median_filter
-#from skimage.io import imsave
-#from skimage.morphology import disk
-#from skimage.filters import rank
+# import multiprocessing as mp
+# from functools import partial
+# from scipy.ndimage.filters import median_filter
+# from skimage.io import imsave
+# from skimage.morphology import disk
+# from skimage.filters import rank
 from scipy.interpolate import RectBivariateSpline as RBS
-#import skimage.transform as tf
+# import skimage.transform as tf
 from scipy import ndimage
 import numpy as np
-#import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import gdal
 import pyvips
-#from numba import jit
+# from numba import jit
 from llc import jit_filter_function
 import pandas as pd
-#import lxml.etree as etree
-#import lxml.builder as builder
+# import lxml.etree as etree
+# import lxml.builder as builder
 
 
 ######################################################################################################################
@@ -109,16 +112,16 @@ def make_template(img, pt, half_size):
 
 
 def find_match(img, template, half_size):
-#def find_match(chip, template, method=cv2.TM_CCOEFF):
-    #res = cv2.matchTemplate(np.float32(img), np.float32(template), cv2.TM_CCORR_NORMED)
-    #img_eq = rank.equalize(img, selem=disk(40))
+# def find_match(chip, template, method=cv2.TM_CCOEFF):
+    # res = cv2.matchTemplate(np.float32(img), np.float32(template), cv2.TM_CCORR_NORMED)
+    # img_eq = rank.equalize(img, selem=disk(40))
     res = cross_filter(img, template)
     i_off = int((img.shape[0] - res.shape[0])/2)
     j_off = int((img.shape[1] - res.shape[1])/2)
     minval, _, minloc, _ = cv2.minMaxLoc(res)
-    #maxj, maxi = maxloc
+    # maxj, maxi = maxloc
     minj, mini = minloc
-    #sp_delx, sp_dely = get_subpixel(res)
+    # sp_delx, sp_dely = get_subpixel(res)
     sp_delx, sp_dely = 0, 0
     return res, mini + i_off + sp_dely, minj + j_off + sp_delx
 
@@ -148,6 +151,7 @@ def get_subpixel(res):
         sp_dely = 0.0
     return sp_delx, sp_dely
 
+
 ######################################################################################################################
 
 ######################################################################################################################
@@ -155,20 +159,19 @@ def join_halves(img, overlap, indir='.', outdir='.', color_balance=True):
     """
     Join scanned halves of KH-9 image into one, given a common overlap point.
     
-    Parameters
-    ----------
-    img : str
-        KH-9 image name (i.e., DZB1215-500454L001001) to join. The function will look for open image halves
+    :param img: KH-9 image name (i.e., DZB1215-500454L001001) to join. The function will look for open image halves
         img_a.tif and img_b.tif, assuming 'a' is the left-hand image and 'b' is the right-hand image.
-    overlap : array-like
-        Image coordinates for a common overlap point, in the form [x1, y1, x2, y2]. Best results tend to be overlaps
-        toward the middle of the y range. YMMV.
-    indir : str
-        Directory containing images to join ['.']
-    outdir : str
-        Directory to write joined image to ['.']
-    color_balance : bool
-        Attempt to color balance the two image halves before joining [True].    
+    :param overlap: Image coordinates for a common overlap point, in the form [x1, y1, x2, y2]. Best results tend to be
+        overlaps toward the middle of the y range. YMMV.
+    :param indir: Directory containing images to join ['.']
+    :param outdir: Directory to write joined image to ['.']
+    :param color_balance: Attempt to color balance the two image halves before joining [True].
+
+    :type img: str
+    :type overlap: array-like
+    :type indir: str
+    :type outdir: str
+    :type color_balance: bool
     """
     x1, y1, x2, y2 = overlap
     left = pyvips.Image.new_from_file(os.path.sep.join([indir, '{}_a.tif'.format(img)]), memory=True)
