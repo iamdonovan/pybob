@@ -5,6 +5,7 @@ pybob.ddem_tools provides a number of tools for working with DEM differencing an
 from __future__ import print_function
 # import multiprocessing as mp
 import numpy as np
+import datetime as dt
 from scipy.interpolate import griddata, interp1d, Rbf, RectBivariateSpline as RBS
 from numpy.polynomial.polynomial import polyval, polyfit
 import pybob.coreg_tools as ct
@@ -333,14 +334,11 @@ def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=None):
         raise TypeError('DEM must be a GeoImg')
     if glacier_inds is None:
         dem_data = DEM.img[glacier_shapes]
-        if bin_width is None:
-            z_range = np.nanmax(dem_data) - np.nanmin(dem_data)
-            this_bin_width = min(50, int(z_range / 10))
-        else:
-            this_bin_width = bin_width
-        min_el = np.nanmin(dem_data) - (np.nanmin(dem_data) % this_bin_width)
-        max_el = np.nanmax(dem_data) + (this_bin_width - (np.nanmax(dem_data) % this_bin_width))
-        bins = np.arange(min_el, max_el+1, this_bin_width)
+
+        bins = get_bins(dem_data, bin_width=bin_width)
+        min_el = bins[0]
+        max_el = bins[-1]
+
         aads, _ = np.histogram(dem_data, bins=bins, range=(min_el, max_el))
         aads = aads * np.abs(DEM.dx) * np.abs(DEM.dy)
         bins = bins[:-1]  # remove the last element, because it's actually above the glacier range.
@@ -350,14 +348,11 @@ def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=None):
 
         for i in glacier_inds:
             dem_data = DEM.img[glacier_shapes == i]
-            if bin_width is None:
-                z_range = np.nanmax(dem_data) - np.nanmin(dem_data)
-                this_bin_width = min(50, int(z_range / 10))
-            else:
-                this_bin_width = bin_width
-            min_el = np.nanmin(dem_data) - (np.nanmin(dem_data) % this_bin_width)
-            max_el = np.nanmax(dem_data) + (this_bin_width - (np.nanmax(dem_data) % this_bin_width))
-            thisbin = np.arange(min_el, max_el+1, this_bin_width)
+            thisbin = get_bins(dem_data, bin_width=bin_width)
+
+            min_el = thisbin[0]
+            max_el = thisbin[-1]
+
             thisaad, _ = np.histogram(dem_data, bins=thisbin, range=(min_el, max_el))
 
             bins.append(thisbin[:-1])  # remove last element.
@@ -366,23 +361,230 @@ def area_alt_dist(DEM, glacier_shapes, glacier_inds=None, bin_width=None):
     return bins, aads
 
 
-def get_elev_curve():
-    pass
+def nmad(data, nfact=1.4826):
+    """
+    Calculate the normalized median absolute deviation (NMAD) of an array.
+
+    :param data: input data
+    :param nfact: normalization factor for the data; default is 1.4826
+
+    :type data: array-like
+    :type nfact: float
+    :returns nmad: (normalized) median absolute deviation of data.
+    """
+    m = np.nanmedian(data)
+    return nfact * np.nanmedian(np.abs(data - m))
 
 
-def outlier_removal():
-    pass
+def get_bins(DEM, glacier_mask=None, bin_width=None):
+    """
+    Get elevation bins for a DEM, given an optional glacier mask and an optional width. If unspecified,
+        bin_width is calculated as the minimum of 50 units, or 10% of the DEM (or glacier, if mask provided) elevation
+        range. Bin values represent the lower bound of the elevation band, and are rounded to be a multiple of the bin
+        width.
+
+    :param DEM: The DEM to get elevation bins for.
+    :param glacier_mask: mask representing glacier outline, or region of interest.
+    :param bin_width: width of bins to calculate.
+
+    :type DEM: array-like
+    :type glacier_mask: array-like
+    :type bin_width: float
+
+    :returns bins: the elevation bins.
+    """
+    if glacier_mask is not None:
+        dem_data = DEM[np.logical_and(np.isfinite(DEM), glacier_mask)]
+    else:
+        dem_data = DEM[np.isfinite(DEM)]
+
+    zmax = np.nanmax(dem_data)
+    zmin = np.nanmin(dem_data)
+
+    zrange = zmax - zmin
+
+    if bin_width is None:
+        bin_width = min(50, int(zrange / 10))
+
+    min_el = zmin - (zmin % bin_width)
+    max_el = zmax + (bin_width - (zmax % bin_width))
+    bins = np.arange(min_el, max_el+1, bin_width)
+
+    return bins
 
 
-def calculate_dV():
-    pass
+def get_elev_curve(DEM, dDEM, glacier_mask=None, bins=None, mode='mean', outlier=False, fill=False, poly_order=3):
+    """
+    Get a dh(z) curve for a glacier/region of interest, given a DEM and a difference DEM (dDEM). Available modes are
+        'mean'/'median', calculating the mean(median) of each elevation bin, or poly, fitting a polynomial (default
+        third-order) to the means of each elevation bin.
+
+    :param DEM: DEM to determine z in dh(z)
+    :param dDEM: difference DEM to determine dh in dh(z)
+    :param glacier_mask: mask representing glacier outline
+    :param bins: values representing the lower edge of elevation bins
+    :param mode: how to determine the dh(z) relationship
+    :param outlier: filter outliers using an iterative 3-sigma filter
+    :param fill: fill missing bins using a polynomial fit (default third order)
+    :param poly_order: order for any polynomial fitting
+
+    :type DEM: array-like
+    :type dDEM: array-like
+    :type glacier_mask: array-like
+    :type bins: array-like
+    :type mode: str
+    :type outlier: bool
+    :type fill: bool
+    :type poly_order: int
+
+    :returns bins, curve, bin_areas: elevation bins, dh(z) curve, and number of pixels per elevation bin.
+    """
+    assert mode in ['mean', 'median', 'poly'], "mode not recognized: {}".format(mode)
+    if glacier_mask is None:
+        valid = np.logical_and(np.isfinite(DEM), np.isfinite(dDEM))
+    else:
+        valid = np.logical_and(glacier_mask, np.logical_and(np.isfinite(DEM), np.isfinite(dDEM)))
+
+    dem_data = DEM[valid]
+    ddem_data = dDEM[valid]
+
+    if bins is None:
+        bins = get_bins(DEM, glacier_mask)
+
+    if outlier:
+        ddem_data = outlier_removal(bins, dem_data, ddem_data)
+
+    if mode in ['mean', 'median']:
+        curve, bin_areas = bin_data(bins, ddem_data, dem_data, mode=mode, nbinned=True)
+        if fill:
+            _bins = bins[np.isfinite(curve)]
+            _curve = bins[np.isfinite(curve)]
+            p = polyfit(bins, curve, poly_order)
+            fill_ = polyval(bins, p)
+            curve[np.isnan(curve)] = fill_[np.isnan(curve)]
+
+    else:
+        _mean, bin_areas = bin_data(bins, ddem_data, dem_data, mode='mean', nbinned=True)
+        p = polyfit(bins, _mean, poly_order)
+        curve = polyval(bins, p)
+
+    return bins, curve, bin_areas
 
 
-def name_parser():
-    pass
+def outlier_removal(bins, DEM, dDEM, nsig=3):
+    """
+    Iteratively remove outliers in an elevation bin using a 3-sigma filter.
+
+    :param bins: lower bound of elevation bins to use
+    :param DEM: DEM to determine grouping for outlier values
+    :param dDEM: elevation differences to filter outliers from
+    :param nsig: number of standard deviations before a value is considered an outlier.
+
+    :type bins: array-like
+    :type DEM: array-like
+    :type dDEM: array-like
+    :type nsig: float
+
+    :returns new_ddem: ddem with outliers removed (set to NaN)
+    """
+    new_ddem = np.zeros(dDEM.size)
+    digitized = np.digitize(DEM, bins)
+    for i, _ in enumerate(bins):
+        this_bindata = dDEM[digitized == i]
+        nout = 1
+        old_mean = np.nanmean(this_bindata)
+        old_std = np.nanstd(this_bindata)
+        while nout > 1:
+            thresh_up = old_mean + nsig * old_std
+            thresh_dn = old_mean - nsig * old_std
+
+            isout = np.logical_or(this_bindata > thresh_up, this_bindata < thresh_dn)
+            nout = np.count_nonzero(isout)
+            this_bindata[isout] = np.nan
+
+            old_mean = np.nanmean(this_bindata)
+            old_std = np.nanstd(this_bindata)
+        new_ddem[digitized == i] = this_bindata
+    return new_ddem
+
+
+def calculate_dV_map(dDEM, ind_glac_mask, ind_glac_vals):
+    """
+    Calculate glacier volume changes from a dDEM using a map of glacier outlines.
+
+    :param dDEM: difference DEM to get elevation changes from
+    :param ind_glac_mask: glacier mask with different values for each glacier
+    :param ind_glac_vals: list of unique index values in glacier mask for which to calculate volume changes.
+
+    :type dDEM: pybob.GeoImg
+    :type ind_glac_mask: array-like
+    :type ind_glac_vals: array-like
+    :returns ind_glac_vals, ind_vol_chgs: index and volume changes for the input indices.
+    """
+    ind_glac_vals = np.array(ind_glac_vals)
+    ind_vol_chgs = np.nan * np.zeros(ind_glac_vals.shape)
+
+    for i, ind in enumerate(ind_glac_vals):
+        glac_inds = np.where(ind_glac_mask == ind)
+        if glac_inds[0].size == 0:
+            continue
+        glac_chgs = dDEM.img[glac_inds]
+        # get the volume change by summing dh/dt, multiplying by cell
+        ind_vol_chgs[i] = np.nansum(glac_chgs) * np.abs(dDEM.dx) * np.abs(dDEM.dy)
+
+    return ind_glac_vals, ind_vol_chgs
+
+
+def calculate_dV_curve(aad, dh_curve):
+    """
+    Given a dh(z) curve and AAD values, calculate volume change.
+
+    :param aad: Area-Altitude Distribution/Hypsometry with which to calculate volume change.
+    :param dh_curve: dh(z) curve to use.
+
+    :type aad: np.array
+    :type dh_curve: np.array
+
+    :returns dV: glacier volume change given input curves.
+    """
+    assert aad.size == dh_curve.size, "AAD and dh(z) curve must have same size."
+
+    return np.nansum(aad * dh_curve)
+
+
+def name_parser(fname):
+    splitname = fname.split('_')
+    if splitname[0] == 'AST':
+        datestr = splitname[2][3:11]
+        yy = int(datestr[4:])
+        mm = int(datestr[0:2])
+        dd = int(datestr[2:4])
+    elif splitname[0] in ['SETSM', 'SDMI', 'SPOT', 'SRTM', 'Map']:
+        datestr = splitname[2]
+        yy = int(datestr[0:4])
+        mm = int(datestr[4:6])
+        dd = int(datestr[6:])
+    elif splitname[0] == 'HMA':
+        datestr = splitname[1]
+    else:
+        raise ValueError("Could not parse {} based on sensor name. {} is not one of \
+                          AST, SETSM, SDMI, SPOT, SRTM, Map, HMA.".format(fname, fname))
+    yy = int(datestr[0:4])
+    mm = int(datestr[4:6])
+    dd = int(datestr[6:])
+
+    return dt.date(yy, mm, dd)
 
 
 def nice_split(fname):
+    """
+    Given a filename of the form dH_DEM1_DEM2, return DEM1, DEM2.
+
+    :param fname: filename to split
+    :type fname: str
+
+    :returns name1, name2: DEM names parsed from input filename.
+    """
     sname = fname.rsplit('.tif', 1)[0].split('_')
     sname.remove('dH')
     splitloc = [i+1 for i, x in enumerate(sname[1:]) if x in sensor_names][0]
@@ -390,4 +592,3 @@ def nice_split(fname):
     name1 = '_'.join(sname[0:splitloc])
     name2 = '_'.join(sname[splitloc:])
     return name1, name2
-
