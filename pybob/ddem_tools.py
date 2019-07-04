@@ -123,7 +123,7 @@ def parse_elev_func_args(func_name, dDEM, **kwargs):
             bins = kwargs['bins']
         binned_dH = bin_data(bins, ddem_data, dem_data, mode=func_name)
         # now, we interpolate the missing DH values to the binned values.
-        f_elev = interp1d(bins, binned_dH)
+        f_elev = interp1d(bins, binned_dH, fill_value="extrapolate")
         # pull out missing values from dDEM
         if 'glacier_mask' in kwargs:
             hole_inds = np.where(np.logical_and(np.logical_and(np.isnan(dDEM.img),
