@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function, division
-from future_builtins import zip
+# from future_builtins import zip
 import argparse
 import os
 import numpy as np
@@ -179,7 +179,7 @@ def mmdd2dec(year, month, day):
     return year + datefrac
 
 
-def main():
+def _argparser():
     parser = argparse.ArgumentParser(description="Calculate dH curves from MMASTER dH images, based on \
     shapefiles of glacier outlines.")
     parser.add_argument('dH_folder', action='store', type=str, help="Path to folder with dH images.")
@@ -196,7 +196,11 @@ def main():
                         help="Path to write csv files [.]")
     parser.add_argument('--plot_curves', action='store_true', default='.',
                         help="Plot curves of dH(z) for each dDEM for each glacier [False]")
+    return parser
 
+
+def main():
+    parser = _argparser()
     args = parser.parse_args()
 
     if args.plot_curves:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
-from future_builtins import zip
+# from future_builtins import zip
 import argparse
 import datetime as dt
 import numpy as np
@@ -28,8 +28,8 @@ def parse_aster_date(img, imgdata, args):
         datestr = name[11:19]
         date = dt.datetime.strptime(datestr, '%Y%m%d')
     elif name[:3] == 'HMA':
-	datestr = name[4:12]
-	date = dt.datetime.strptime(datestr, '%Y%m%d')
+        datestr = name[4:12]
+        date = dt.datetime.strptime(datestr, '%Y%m%d')
     else:
         raise ValueError("I don't know how to parse date information from {}".format(name))
     return date, name
@@ -42,7 +42,7 @@ def sort_chronologically(dates, data):
     return datedict
 
 
-def main():
+def _argparser():
     parser = argparse.ArgumentParser(description="Find ASTER dDEM pairs based on area overlap, time separation.")
     parser.add_argument('footprints', action='store', type=str, help="Shapefile of image footprints to read in.")
     parser.add_argument('--overlap', action='store', type=float, default=0.75,
@@ -55,6 +55,11 @@ def main():
                         help="Name of the shapefile field that contains the DEM filenames")
     parser.add_argument('--datefield', action='store', type=str, default=None,
                         help="Name of the shapefield field that contains the date information [None]")
+    return parser
+
+
+def main():
+    parser = _argparser()
     args = parser.parse_args()
 
     footprint_data = gpd.read_file(args.footprints)

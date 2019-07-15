@@ -6,7 +6,7 @@ import numpy as np
 import datetime as dt
 from pybob.GeoImg import GeoImg
 from pybob.image_tools import create_mask_from_shapefile
-
+from operator import itemgetter
 
 def parse_filename(fname):
     splitname = fname.split('_')
@@ -29,17 +29,17 @@ def parse_filename(fname):
 def sort_chronologically(dates, data):
     datedict = list(zip(dates, data))
     if all(dates):
-        datedict.sort(reverse=True)
+        datedict.sort(reverse=True, key=itemgetter(0))
     return datedict
 
 
 def pretty_granules(fname):
-#    splitname = fname.split('_')
-#    if splitname[0] == 'AST':
-#        pname = '_'.join(splitname[0:3])
-#    elif splitname[0] == 'SETSM':
-#        pname = '_'.join(splitname[0:-2]).replace('30m', '2m')
-#    else:
+    # splitname = fname.split('_')
+    # if splitname[0] == 'AST':
+    #     pname = '_'.join(splitname[0:3])
+    # elif splitname[0] == 'SETSM':
+    #     pname = '_'.join(splitname[0:-2]).replace('30m', '2m')
+    # else:
     pname = os.path.splitext(fname)[0].rsplit('_adj', 1)[0]
     return pname
 
@@ -134,7 +134,7 @@ def write_meta_file(datedict, dDEM, gmask=None, slope=None, outlier=None, outfil
     f.close()
 
 
-def main():
+def _argparser():
     parser = argparse.ArgumentParser(description="Difference co-registered DEM pairs, \
                                                   write metadata file with information.")
     parser.add_argument('--folder', action='store', type=str, help="Folder with two co-registered DEMs.")
@@ -146,6 +146,11 @@ def main():
                         help="Set differences above/below to NaN to calculate statistics only.")
     parser.add_argument('-outlier', action='store', type=float, help="Set differences above/below to NaN")
     parser.add_argument('-o', '--outfile', action='store', type=str, help="Specify output filename")
+    return parser
+
+
+def main():
+    parser = _argparser()
     args = parser.parse_args()
 
     if args.folder is None:

@@ -19,8 +19,9 @@ def reproject_geometry(src_data, src_epsg, dst_epsg):
     return transform(project, src_data)
     
 
-def main():
-    parser = argparse.ArgumentParser(description="Create footprint of valid image area for one (or more) images.")
+def _argparser():
+    parser = argparse.ArgumentParser(description="Create footprint of valid image area for one (or more) images using \
+                                                 the .zip.met file downloaded from earthdata.nasa.gov")
     # parser.add_argument('--image', action='store', type=str, nargs='+', help="Image(s) to read in")
     parser.add_argument('-o', '--outshape', action='store', type=str, default='Footprints.shp',
                         help="Shapefile to be written. [default: Footprints.shp]")
@@ -31,6 +32,11 @@ def main():
                         help="Use if images have been processed (i.e., there are folders with met filesin them.)")
     parser.add_argument('-t_srs', '--out_srs', action='store', type=str, default=None,
                         help="EPSG code for output spatial reference system [defaults to WGS84 Lat/Lon]")
+    return parser
+
+
+def main():
+    parser = _argparser()
     args = parser.parse_args()
 
     schema = {'properties': [('filename', 'str'), ('path', 'str')], 'geometry': 'Polygon'}
@@ -44,7 +50,7 @@ def main():
                           driver='ESRI Shapefile', schema=schema)
 
     if args.processed:
-        flist = glob.glob('AST*/*.zip.met')
+        flist = glob.glob('AST*/*.zip.met') + glob.glob('AST*/zips/*.zip.met')
     else:
         flist = glob.glob('*.zip.met')
 
