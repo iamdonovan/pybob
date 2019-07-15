@@ -1,0 +1,456 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pybob.bob_tools &mdash; pybob  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> pybob
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/index.html">modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../scripts/index.html">scripts</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pybob</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>pybob.bob_tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pybob.bob_tools</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">pybob.bob_tools is a collection of the tools that didn&#39;t really fit other places.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">errno</span>
+<span class="kn">import</span> <span class="nn">datetime</span> <span class="k">as</span> <span class="nn">dt</span>
+<span class="kn">from</span> <span class="nn">osgeo</span> <span class="k">import</span> <span class="n">ogr</span><span class="p">,</span> <span class="n">osr</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="k">import</span> <span class="n">Point</span>
+
+
+<div class="viewcode-block" id="mkdir_p"><a class="viewcode-back" href="../../modules/pybob.bob_tools.html#pybob.bob_tools.mkdir_p">[docs]</a><span class="k">def</span> <span class="nf">mkdir_p</span><span class="p">(</span><span class="n">out_dir</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add bash mkdir -p functionality to os.makedirs.</span>
+
+<span class="sd">    :param out_dir: directory to create.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">out_dir</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># Python &gt;2.5</span>
+        <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="n">errno</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">EEXIST</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">out_dir</span><span class="p">):</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span></div>
+
+
+<div class="viewcode-block" id="standard_landsat"><a class="viewcode-back" href="../../modules/pybob.bob_tools.html#pybob.bob_tools.standard_landsat">[docs]</a><span class="k">def</span> <span class="nf">standard_landsat</span><span class="p">(</span><span class="n">instring</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given a string of a landsat scenename, make a standard (pre-Collection) filename, of the form LSSPPPRRRYYYYDDDXXX01.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">strsplit</span> <span class="o">=</span> <span class="n">instring</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">strsplit</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>  <span class="c1"># if we only have 1 (or fewer) underscores, it&#39;s already fine</span>
+        <span class="k">return</span> <span class="n">strsplit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">outstring</span> <span class="o">=</span> <span class="s1">&#39;L&#39;</span>
+        <span class="n">sensor</span> <span class="o">=</span> <span class="n">strsplit</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># figure out what sensor we&#39;re using, and generate the appropriate string</span>
+        <span class="k">if</span> <span class="n">sensor</span> <span class="o">==</span> <span class="s1">&#39;5&#39;</span><span class="p">:</span>
+            <span class="n">outstring</span> <span class="o">+=</span> <span class="s1">&#39;T5&#39;</span>
+        <span class="k">elif</span> <span class="n">sensor</span> <span class="o">==</span> <span class="s1">&#39;4&#39;</span><span class="p">:</span>
+            <span class="n">outstring</span> <span class="o">+=</span> <span class="s1">&#39;T4&#39;</span>
+        <span class="k">elif</span> <span class="n">sensor</span> <span class="o">==</span> <span class="s1">&#39;7&#39;</span><span class="p">:</span>
+            <span class="n">outstring</span> <span class="o">+=</span> <span class="s1">&#39;E7&#39;</span>
+        <span class="k">elif</span> <span class="n">sensor</span> <span class="o">==</span> <span class="s1">&#39;8&#39;</span><span class="p">:</span>  <span class="c1"># chances are, we won&#39;t ever see this one.</span>
+            <span class="n">outstring</span> <span class="o">+=</span> <span class="s1">&#39;C8&#39;</span>
+        <span class="n">outstring</span> <span class="o">+=</span> <span class="n">strsplit</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">:]</span>  <span class="c1"># this is the path/row information</span>
+        <span class="c1"># now it gets fun: getting the date right.</span>
+        <span class="n">year</span> <span class="o">=</span> <span class="n">strsplit</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">3</span><span class="p">:</span><span class="mi">7</span><span class="p">]</span>
+        <span class="n">month</span> <span class="o">=</span> <span class="n">strsplit</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">7</span><span class="p">:</span><span class="mi">9</span><span class="p">]</span>
+        <span class="n">day</span> <span class="o">=</span> <span class="n">strsplit</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">9</span><span class="p">:]</span>
+        <span class="c1"># make sure we have 3 digits here</span>
+        <span class="n">doy</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">year</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">month</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">day</span><span class="p">))</span><span class="o">.</span><span class="n">timetuple</span><span class="p">()</span><span class="o">.</span><span class="n">tm_yday</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+        <span class="n">outstring</span> <span class="o">+=</span> <span class="n">year</span> <span class="o">+</span> <span class="n">doy</span>
+        <span class="c1"># now, spoof the last bits so it&#39;s got the right size:</span>
+        <span class="n">outstring</span> <span class="o">+=</span> <span class="s1">&#39;XXX01&#39;</span>
+        <span class="k">return</span> <span class="n">outstring</span></div>
+
+
+<div class="viewcode-block" id="doy2mmdd"><a class="viewcode-back" href="../../modules/pybob.bob_tools.html#pybob.bob_tools.doy2mmdd">[docs]</a><span class="k">def</span> <span class="nf">doy2mmdd</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">doy</span><span class="p">,</span> <span class="n">string_out</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">outform</span><span class="o">=</span><span class="s1">&#39;%Y/%m/</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a string or a datetime object given a year and a day of year.</span>
+
+<span class="sd">    :param year: Year of the input date, e.g., ``2018``.</span>
+<span class="sd">    :param doy: Day of the year of the input date, e.g., ``1`` for 1 Jan.</span>
+<span class="sd">    :param string_out: Return a string (True) or a datetime object (False). Default is True.</span>
+<span class="sd">    :param outform: Format for string to return. Default is `%Y/%m/%d`, or 2018/01/01 for</span>
+<span class="sd">        1 January 2018.</span>
+
+<span class="sd">    :type year: int</span>
+<span class="sd">    :type doy: int</span>
+<span class="sd">    :type string_out: bool</span>
+<span class="sd">    :type outform: str</span>
+
+<span class="sd">    :returns date: datetime.datetime or string representation of the input date.</span>
+
+<span class="sd">    &gt;&gt;&gt; bt.doy2mmdd(2018, 1, string_out=True)</span>
+<span class="sd">    `2018/01/01`</span>
+
+<span class="sd">    &gt;&gt;&gt; bt.doy2mmdd(2018, 1, string_out=False)</span>
+<span class="sd">    datetime.datetime(2018, 1, 1, 0, 0)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">datestruct</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">doy</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">string_out</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">datestruct</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">outform</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">datestruct</span></div>
+
+
+<div class="viewcode-block" id="mmdd2doy"><a class="viewcode-back" href="../../modules/pybob.bob_tools.html#pybob.bob_tools.mmdd2doy">[docs]</a><span class="k">def</span> <span class="nf">mmdd2doy</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">string_out</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a string or an int representing a day of year, given a date.</span>
+
+<span class="sd">    :param year: Year of the input date, e.g., ``2018``.</span>
+<span class="sd">    :param mm: Month of the year of the input date, e.g., ``1`` for Jan.</span>
+<span class="sd">    :param dd: Day of the month of the input date.</span>
+<span class="sd">    :param string_out: Return a string (True) or an int (False). Default is True.</span>
+<span class="sd">    :type year: int</span>
+<span class="sd">    :type mm: int</span>
+<span class="sd">    :type dd: int</span>
+<span class="sd">    :type string_out: bool</span>
+<span class="sd">    :returns doy: day of year representation of year, month, day</span>
+
+<span class="sd">    &gt;&gt;&gt; bt.mmdd2doy(2018, 1, 1, string_out=True)</span>
+<span class="sd">    `1`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">doy</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">timetuple</span><span class="p">()</span><span class="o">.</span><span class="n">tm_yday</span>
+    <span class="k">if</span> <span class="n">string_out</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">doy</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">doy</span></div>
+
+
+<span class="k">def</span> <span class="nf">mmdd2dec</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">):</span>
+    <span class="n">yearstart</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">toordinal</span><span class="p">()</span>
+    <span class="n">nextyearstart</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">toordinal</span><span class="p">()</span>
+    <span class="n">datestruct</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
+    <span class="n">datefrac</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">datestruct</span><span class="o">.</span><span class="n">toordinal</span><span class="p">()</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">-</span> <span class="n">yearstart</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">nextyearstart</span> <span class="o">-</span> <span class="n">yearstart</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">year</span> <span class="o">+</span> <span class="n">datefrac</span>
+
+
+<span class="k">def</span> <span class="nf">doy2dec</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">doy</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">def</span> <span class="nf">dec2mmdd</span><span class="p">(</span><span class="n">decdate</span><span class="p">):</span>
+    <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">decdate</span><span class="p">))</span>
+    <span class="n">datefrac</span> <span class="o">=</span> <span class="n">decdate</span> <span class="o">-</span> <span class="n">year</span>
+    
+    <span class="n">yearstart</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">toordinal</span><span class="p">()</span>
+    <span class="n">nextyearstart</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">toordinal</span><span class="p">()</span>
+    
+    <span class="n">days</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">((</span><span class="n">nextyearstart</span> <span class="o">-</span> <span class="n">yearstart</span><span class="p">)</span> <span class="o">*</span> <span class="n">datefrac</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">dec2doy</span><span class="p">(</span><span class="n">decdate</span><span class="p">):</span>
+    <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">decdate</span><span class="p">))</span>
+    <span class="n">datefrac</span> <span class="o">=</span> <span class="n">decdate</span> <span class="o">-</span> <span class="n">year</span>
+    
+    <span class="n">yearstart</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">toordinal</span><span class="p">()</span>
+    <span class="n">nextyearstart</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">toordinal</span><span class="p">()</span>
+    
+    <span class="n">days</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">((</span><span class="n">nextyearstart</span> <span class="o">-</span> <span class="n">yearstart</span><span class="p">)</span> <span class="o">*</span> <span class="n">datefrac</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">year</span><span class="p">,</span> <span class="n">days</span><span class="o">+</span><span class="mi">1</span>
+
+    <span class="k">pass</span>
+
+
+<span class="k">def</span> <span class="nf">parse_lsat_scene</span><span class="p">(</span><span class="n">scenename</span><span class="p">,</span> <span class="n">string_out</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="n">sensor</span> <span class="o">=</span> <span class="n">scenename</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">scenename</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">])</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">scenename</span><span class="p">[</span><span class="mi">6</span><span class="p">:</span><span class="mi">9</span><span class="p">])</span>
+    <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">scenename</span><span class="p">[</span><span class="mi">9</span><span class="p">:</span><span class="mi">13</span><span class="p">])</span>
+    <span class="n">doy</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">scenename</span><span class="p">[</span><span class="mi">13</span><span class="p">:</span><span class="mi">16</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">string_out</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">sensor</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">year</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">doy</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">sensor</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">doy</span>
+
+
+<div class="viewcode-block" id="bin_data"><a class="viewcode-back" href="../../modules/pybob.bob_tools.html#pybob.bob_tools.bin_data">[docs]</a><span class="k">def</span> <span class="nf">bin_data</span><span class="p">(</span><span class="n">bins</span><span class="p">,</span> <span class="n">data2bin</span><span class="p">,</span> <span class="n">bindata</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span> <span class="n">nbinned</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Place data into bins based on a secondary dataset, and calculate statistics on them.</span>
+
+<span class="sd">    :param bins: array-like structure indicating the bins into which data should be placed.</span>
+<span class="sd">    :param data2bin: data that should be binned.</span>
+<span class="sd">    :param bindata: secondary dataset that decides how data2bin should be binned. Should have same size/shape</span>
+<span class="sd">        as data2bin.</span>
+<span class="sd">    :param mode: How to calculate statistics of binned data. One of &#39;mean&#39;, &#39;median&#39;, &#39;std&#39;, &#39;max&#39;, or &#39;min&#39;.</span>
+<span class="sd">    :param nbinned: Return a second array, nbinned, with number of data points that fit into each bin.</span>
+<span class="sd">        Default is False.</span>
+<span class="sd">    :type bins: array-like</span>
+<span class="sd">    :type data2bin: array-like</span>
+<span class="sd">    :type bindata: array-like</span>
+<span class="sd">    :type mode: str</span>
+<span class="sd">    :type nbinned: bool</span>
+
+<span class="sd">    :returns binned, nbinned: calculated, binned data with same size as bins input. If nbinned is True, returns a second</span>
+<span class="sd">        array with the number of inputs for each bin.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">mode</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span> <span class="s1">&#39;median&#39;</span><span class="p">,</span> <span class="s1">&#39;std&#39;</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">],</span> <span class="s2">&quot;mode not recognized: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
+    <span class="n">digitized</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">digitize</span><span class="p">(</span><span class="n">bindata</span><span class="p">,</span> <span class="n">bins</span><span class="p">)</span>
+    <span class="n">binned</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bins</span><span class="p">))</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="k">if</span> <span class="n">nbinned</span><span class="p">:</span>  
+        <span class="n">numbinned</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bins</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;mean&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bins</span><span class="p">):</span>
+            <span class="n">binned</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">data2bin</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">bindata</span><span class="p">),</span> <span class="n">digitized</span> <span class="o">==</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
+            <span class="k">if</span> <span class="n">nbinned</span><span class="p">:</span>
+                <span class="n">numbinned</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">data2bin</span><span class="p">),</span> <span class="n">digitized</span> <span class="o">==</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;median&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bins</span><span class="p">):</span>
+            <span class="n">binned</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">data2bin</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">bindata</span><span class="p">),</span> <span class="n">digitized</span> <span class="o">==</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
+            <span class="k">if</span> <span class="n">nbinned</span><span class="p">:</span>
+                <span class="n">numbinned</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">data2bin</span><span class="p">),</span> <span class="n">digitized</span> <span class="o">==</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;std&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bins</span><span class="p">):</span>
+            <span class="n">binned</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">data2bin</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">bindata</span><span class="p">),</span> <span class="n">digitized</span> <span class="o">==</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
+            <span class="k">if</span> <span class="n">nbinned</span><span class="p">:</span>
+                <span class="n">numbinned</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">data2bin</span><span class="p">),</span> <span class="n">digitized</span> <span class="o">==</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bins</span><span class="p">):</span>
+            <span class="n">binned</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">data2bin</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">bindata</span><span class="p">),</span> <span class="n">digitized</span> <span class="o">==</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
+            <span class="k">if</span> <span class="n">nbinned</span><span class="p">:</span>
+                <span class="n">numbinned</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">data2bin</span><span class="p">),</span> <span class="n">digitized</span> <span class="o">==</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bins</span><span class="p">):</span>
+            <span class="n">binned</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">data2bin</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">bindata</span><span class="p">),</span> <span class="n">digitized</span> <span class="o">==</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
+            <span class="k">if</span> <span class="n">nbinned</span><span class="p">:</span>
+                <span class="n">numbinned</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">data2bin</span><span class="p">),</span> <span class="n">digitized</span> <span class="o">==</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;mode must be mean, median, std, max, or min&#39;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">nbinned</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">binned</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">numbinned</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">binned</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">random_points_in_polygon</span><span class="p">(</span><span class="n">poly</span><span class="p">,</span> <span class="n">npts</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">poly</span><span class="o">.</span><span class="n">bounds</span>
+    <span class="n">rand_points</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">pt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">npts</span><span class="p">):</span>
+        <span class="n">thisptin</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="n">thisptin</span><span class="p">:</span>
+            <span class="n">rand_point</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="n">xmin</span> <span class="o">+</span> <span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">*</span> <span class="p">(</span><span class="n">xmax</span><span class="o">-</span><span class="n">xmin</span><span class="p">)),</span> <span class="n">ymin</span> <span class="o">+</span> <span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">*</span> <span class="p">(</span><span class="n">ymax</span><span class="o">-</span><span class="n">ymin</span><span class="p">)))</span>
+            <span class="n">thisptin</span> <span class="o">=</span> <span class="n">poly</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">rand_point</span><span class="p">)</span>
+        <span class="n">rand_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rand_point</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">rand_points</span>
+
+
+<span class="k">def</span> <span class="nf">reproject_layer</span><span class="p">(</span><span class="n">inLayer</span><span class="p">,</span> <span class="n">targetSRS</span><span class="p">):</span>
+    <span class="n">srcSRS</span> <span class="o">=</span> <span class="n">inLayer</span><span class="o">.</span><span class="n">GetSpatialRef</span><span class="p">()</span>
+    <span class="n">coordTrans</span> <span class="o">=</span> <span class="n">osr</span><span class="o">.</span><span class="n">CoordinateTransformation</span><span class="p">(</span><span class="n">srcSRS</span><span class="p">,</span> <span class="n">targetSRS</span><span class="p">)</span>
+
+    <span class="n">outLayer</span> <span class="o">=</span> <span class="n">ogr</span><span class="o">.</span><span class="n">GetDriverByName</span><span class="p">(</span><span class="s1">&#39;Memory&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">CreateDataSource</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">CreateLayer</span><span class="p">(</span><span class="n">inLayer</span><span class="o">.</span><span class="n">GetName</span><span class="p">(),</span>
+                                                                              <span class="n">geom_type</span><span class="o">=</span><span class="n">inLayer</span><span class="o">.</span><span class="n">GetGeomType</span><span class="p">())</span>
+    <span class="n">inLayerDefn</span> <span class="o">=</span> <span class="n">inLayer</span><span class="o">.</span><span class="n">GetLayerDefn</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">inLayerDefn</span><span class="o">.</span><span class="n">GetFieldCount</span><span class="p">()):</span>
+        <span class="n">fieldDefn</span> <span class="o">=</span> <span class="n">inLayerDefn</span><span class="o">.</span><span class="n">GetFieldDefn</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">outLayer</span><span class="o">.</span><span class="n">CreateField</span><span class="p">(</span><span class="n">fieldDefn</span><span class="p">)</span>
+
+    <span class="n">outLayerDefn</span> <span class="o">=</span> <span class="n">outLayer</span><span class="o">.</span><span class="n">GetLayerDefn</span><span class="p">()</span>
+    <span class="n">inFeature</span> <span class="o">=</span> <span class="n">inLayer</span><span class="o">.</span><span class="n">GetNextFeature</span><span class="p">()</span>
+    <span class="k">while</span> <span class="n">inFeature</span><span class="p">:</span>
+        <span class="n">geom</span> <span class="o">=</span> <span class="n">inFeature</span><span class="o">.</span><span class="n">GetGeometryRef</span><span class="p">()</span>
+        <span class="n">geom</span><span class="o">.</span><span class="n">Transform</span><span class="p">(</span><span class="n">coordTrans</span><span class="p">)</span>
+        <span class="n">outFeature</span> <span class="o">=</span> <span class="n">ogr</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">outLayerDefn</span><span class="p">)</span>
+        <span class="n">outFeature</span><span class="o">.</span><span class="n">SetGeometry</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">outLayerDefn</span><span class="o">.</span><span class="n">GetFieldCount</span><span class="p">()):</span>
+            <span class="n">outFeature</span><span class="o">.</span><span class="n">SetField</span><span class="p">(</span><span class="n">outLayerDefn</span><span class="o">.</span><span class="n">GetFieldDefn</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">GetNameRef</span><span class="p">(),</span> <span class="n">inFeature</span><span class="o">.</span><span class="n">GetField</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+
+        <span class="n">outLayer</span><span class="o">.</span><span class="n">CreateFeature</span><span class="p">(</span><span class="n">outFeature</span><span class="p">)</span>
+        <span class="n">outFeature</span><span class="o">.</span><span class="n">Destroy</span><span class="p">()</span>
+        <span class="n">inFeature</span><span class="o">.</span><span class="n">Destroy</span><span class="p">()</span>
+        <span class="n">inFeature</span> <span class="o">=</span> <span class="n">inLayer</span><span class="o">.</span><span class="n">GetNextFeature</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">outLayer</span>
+
+
+<span class="k">def</span> <span class="nf">round_down</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">divisor</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">num</span> <span class="o">-</span> <span class="p">(</span><span class="n">num</span> <span class="o">%</span> <span class="n">divisor</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Robert McNabb
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

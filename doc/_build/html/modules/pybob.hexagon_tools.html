@@ -1,0 +1,240 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pybob.hexagon_tools &mdash; pybob  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pybob.image_tools" href="pybob.image_tools.html" />
+    <link rel="prev" title="pybob.ddem_tools" href="pybob.ddem_tools.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pybob
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pybob.GeoImg.html">pybob.GeoImg</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.ICESat.html">pybob.ICESat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.VelField.html">pybob.VelField</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.bob_tools.html">pybob.bob_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.coreg_tools.html">pybob.coreg_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.ddem_tools.html">pybob.ddem_tools</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">pybob.hexagon_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.image_tools.html">pybob.image_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.plot_tools.html">pybob.plot_tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../scripts/index.html">scripts</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pybob</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">modules</a> &raquo;</li>
+        
+      <li>pybob.hexagon_tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/modules/pybob.hexagon_tools.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pybob.hexagon_tools">
+<span id="pybob-hexagon-tools"></span><h1>pybob.hexagon_tools<a class="headerlink" href="#module-pybob.hexagon_tools" title="Permalink to this headline">¶</a></h1>
+<p>pybob.hexagon_tools is a collection of tools for working with KH-9 Hexagon imagery.</p>
+<dl class="function">
+<dt id="pybob.hexagon_tools.join_halves">
+<code class="descclassname">pybob.hexagon_tools.</code><code class="descname">join_halves</code><span class="sig-paren">(</span><em>img</em>, <em>overlap</em>, <em>indir='.'</em>, <em>outdir='.'</em>, <em>color_balance=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/hexagon_tools.html#join_halves"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.hexagon_tools.join_halves" title="Permalink to this definition">¶</a></dt>
+<dd><p>Join scanned halves of KH-9 image into one, given a common overlap point.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>img</strong> (<em>str</em>) – KH-9 image name (i.e., DZB1215-500454L001001) to join. The function will look for open image halves
+img_a.tif and img_b.tif, assuming ‘a’ is the left-hand image and ‘b’ is the right-hand image.</li>
+<li><strong>overlap</strong> (<em>array-like</em>) – Image coordinates for a common overlap point, in the form [x1, y1, x2, y2]. Best results tend to be
+overlaps toward the middle of the y range. YMMV.</li>
+<li><strong>indir</strong> (<em>str</em>) – Directory containing images to join [‘.’]</li>
+<li><strong>outdir</strong> (<em>str</em>) – Directory to write joined image to [‘.’]</li>
+<li><strong>color_balance</strong> (<em>bool</em>) – Attempt to color balance the two image halves before joining [True].</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pybob.image_tools.html" class="btn btn-neutral float-right" title="pybob.image_tools" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pybob.ddem_tools.html" class="btn btn-neutral float-left" title="pybob.ddem_tools" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Robert McNabb
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

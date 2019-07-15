@@ -1,0 +1,634 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pybob.ICESat &mdash; pybob  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> pybob
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/index.html">modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../scripts/index.html">scripts</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pybob</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>pybob.ICESat</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pybob.ICESat</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">pybob.ICESat provides an interface to extracted ICESat(-1) data stored in HDF5 format.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="c1">#from future_builtins import zip</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">pyproj</span>
+<span class="kn">import</span> <span class="nn">fiona</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">from</span> <span class="nn">osgeo</span> <span class="k">import</span> <span class="n">ogr</span><span class="p">,</span> <span class="n">osr</span>
+<span class="kn">from</span> <span class="nn">pybob.GeoImg</span> <span class="k">import</span> <span class="n">GeoImg</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="k">import</span> <span class="n">Point</span><span class="p">,</span> <span class="n">mapping</span>
+<span class="c1">#import numpy as np</span>
+
+
+<span class="k">def</span> <span class="nf">get_file_info</span><span class="p">(</span><span class="n">in_filestring</span><span class="p">):</span>
+    <span class="n">in_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">in_filestring</span><span class="p">)</span>
+    <span class="n">in_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">in_filestring</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">in_dir</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+        <span class="n">in_dir</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span>
+    <span class="k">return</span> <span class="n">in_filename</span><span class="p">,</span> <span class="n">in_dir</span>
+
+
+<span class="k">def</span> <span class="nf">find_keyname</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">subkey</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;first&#39;</span><span class="p">):</span>
+    <span class="n">out_keys</span> <span class="o">=</span> <span class="p">[(</span><span class="n">i</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span> <span class="k">if</span> <span class="n">subkey</span> <span class="ow">in</span> <span class="n">k</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;first&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">out_keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;last&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">out_keys</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">out_keys</span>
+
+<div class="viewcode-block" id="extract_ICESat"><a class="viewcode-back" href="../../modules/pybob.ICESat.html#pybob.ICESat.extract_ICESat">[docs]</a><span class="k">def</span> <span class="nf">extract_ICESat</span><span class="p">(</span><span class="n">in_filename</span><span class="p">,</span><span class="n">workdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract ICESat data given the extent of a GeoImg.</span>
+
+<span class="sd">    **Note - currently not supported outside of UiO working environment.**</span>
+
+<span class="sd">    :param in_filename: Filename (optionally with path) of DEM to be opened using GeoImg.</span>
+<span class="sd">    :param workdir: Directory where in_filename is located. If not given, the directory</span>
+<span class="sd">        will be determined from the input filename.</span>
+<span class="sd">    :param outfile: name of the output file [default=&#39;ICESat_DEM.h5&#39;]</span>
+
+<span class="sd">    :type in_filename: str</span>
+<span class="sd">    :type workdir: str</span>
+<span class="sd">    :type outfile: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">getExtent</span><span class="p">(</span><span class="n">in_filename</span><span class="p">):</span>
+    <span class="c1">#This function uses GeoImg.find_valid_bbox to get the extent, then projects </span>
+    <span class="c1">#extent into the same reference system as in_filename</span>
+    <span class="c1">#in_filename - input filename (string). should be a geotiff</span>
+        <span class="n">myDEM</span> <span class="o">=</span> <span class="n">GeoImg</span><span class="p">(</span><span class="n">in_filename</span><span class="p">)</span>
+        <span class="n">mybbox</span> <span class="o">=</span> <span class="n">myDEM</span><span class="o">.</span><span class="n">find_valid_bbox</span><span class="p">()</span>
+        
+        <span class="c1"># Setup the source projection - you can also import from epsg, proj4...</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="n">osr</span><span class="o">.</span><span class="n">SpatialReference</span><span class="p">()</span>
+        <span class="n">source</span><span class="o">.</span><span class="n">ImportFromEPSG</span><span class="p">(</span><span class="n">myDEM</span><span class="o">.</span><span class="n">epsg</span><span class="p">)</span>
+    
+        <span class="c1"># The target projection</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">osr</span><span class="o">.</span><span class="n">SpatialReference</span><span class="p">()</span>
+        <span class="n">target</span><span class="o">.</span><span class="n">ImportFromEPSG</span><span class="p">(</span><span class="mi">4326</span><span class="p">)</span>
+    
+        <span class="c1"># Create the transform - this can be used repeatedly</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">osr</span><span class="o">.</span><span class="n">CoordinateTransformation</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+    
+        <span class="c1"># Transform the point. You can also create an ogr geometry and use the more generic `point.Transform()`</span>
+        <span class="n">J1</span> <span class="o">=</span> <span class="n">transform</span><span class="o">.</span><span class="n">TransformPoint</span><span class="p">(</span><span class="n">mybbox</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">mybbox</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">J2</span> <span class="o">=</span> <span class="n">transform</span><span class="o">.</span><span class="n">TransformPoint</span><span class="p">(</span><span class="n">mybbox</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">mybbox</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+        
+        <span class="n">minLat</span> <span class="o">=</span> <span class="n">J1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">maxLat</span> <span class="o">=</span> <span class="n">J2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        
+        <span class="n">minLon</span> <span class="o">=</span> <span class="n">J1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">maxLon</span> <span class="o">=</span> <span class="n">J2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        
+    <span class="c1">#    if minLon&lt;0:</span>
+    <span class="c1">#        minLon = 360 + minLon</span>
+    <span class="c1">#    if maxLon&lt;0:</span>
+    <span class="c1">#        maxLon = 360 + maxLon</span>
+    
+        <span class="k">return</span> <span class="n">minLat</span><span class="p">,</span> <span class="n">maxLat</span><span class="p">,</span> <span class="n">minLon</span><span class="p">,</span> <span class="n">maxLon</span>
+        
+    <span class="c1">#workdir = os.path.abspath(workdir)</span>
+    <span class="n">minLat</span><span class="p">,</span> <span class="n">maxLat</span><span class="p">,</span> <span class="n">minLon</span><span class="p">,</span> <span class="n">maxLon</span> <span class="o">=</span> <span class="n">getExtent</span><span class="p">(</span><span class="n">in_filename</span><span class="p">)</span>    
+    
+    <span class="c1"># Hard coded name of the input configuration file for ICESat extraction. Here we will </span>
+    <span class="c1"># read it in, modify it using the extent of a GeoImg</span>
+    <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;/net/lagringshotell/uio/lagringshotell/geofag/icemass/icemass-data/ICESatData/ICESat_archive/Programs/user_input_running.txt&quot;</span>
+    
+    <span class="c1"># Check for the working directory, and set if None</span>
+    <span class="k">if</span> <span class="n">workdir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> 
+        <span class="n">workdir</span><span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s1">&#39;./&#39;</span><span class="p">)</span>
+    <span class="n">tfilename</span> <span class="o">=</span> <span class="n">workdir</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span> <span class="o">+</span> <span class="s2">&quot;ICESat_input.txt&quot;</span>
+    <span class="c1"># Read in the input_file for icesat extraction</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        <span class="c1">#print lines</span>
+
+    <span class="c1"># Set the output file </span>
+    <span class="k">if</span> <span class="n">outfile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> 
+        <span class="n">outfile</span><span class="o">=</span><span class="s1">&#39;ICESat_DEM.h5&#39;</span>
+    <span class="c1"># replace lines</span>
+    <span class="n">strout</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">minLat</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">maxLat</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">minLon</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">maxLon</span><span class="p">)</span>
+    <span class="n">lines</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span> <span class="o">=</span> <span class="n">strout</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="n">lines</span><span class="p">[</span><span class="mi">12</span><span class="p">]</span> <span class="o">=</span> <span class="n">outfile</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>    
+    
+    <span class="c1"># write output configuration file</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">tfilename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+    
+    <span class="c1"># Here run bash command to the ICESat extraction routine using our newly created config file</span>
+    <span class="n">bshcmd</span> <span class="o">=</span> <span class="s2">&quot;module load ICESat; importICESat -np 20 -in &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">tfilename</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; &gt; ICESat_import_LOG.txt&quot;</span>
+    <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">bshcmd</span><span class="p">,</span><span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+    <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="ICESat"><a class="viewcode-back" href="../../modules/pybob.ICESat.html#pybob.ICESat.ICESat">[docs]</a><span class="k">class</span> <span class="nc">ICESat</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create an ICESat dataset from an HDF5 file containing ICESat data.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ICESat.__init__"><a class="viewcode-back" href="../../modules/pybob.ICESat.html#pybob.ICESat.ICESat.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_filename</span><span class="p">,</span> <span class="n">in_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;lat&#39;</span><span class="p">,</span> <span class="s1">&#39;lon&#39;</span><span class="p">,</span> <span class="s1">&#39;d_elev&#39;</span><span class="p">,</span> <span class="s1">&#39;d_UTCTime&#39;</span><span class="p">],</span> <span class="n">ellipse_hts</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param in_filename: Filename (optionally with path) of HDF5 file to be read in.</span>
+<span class="sd">        :param in_dir: Directory where in_filename is located. If not given, the directory</span>
+<span class="sd">            will be determined from the input filename.</span>
+<span class="sd">        :param cols: Columns to read in and set as attributes in the ICESat object.</span>
+<span class="sd">            Default values are [&#39;lat&#39;, &#39;lon&#39;, &#39;d_elev&#39;, &#39;d_UTCTime&#39;], and will</span>
+<span class="sd">            be added if not specified.</span>
+<span class="sd">        :param ellipse_hts: Convert elevations to ellipsoid heights. Default is True.</span>
+<span class="sd">        :type in_filename: str</span>
+<span class="sd">        :type in_dir: str</span>
+<span class="sd">        :type cols: array-like</span>
+<span class="sd">        :type ellipse_hts: bool</span>
+
+<span class="sd">        The following example:</span>
+
+<span class="sd">        &gt;&gt;&gt; ICESat(&#39;donjek_icesat.h5&#39;, ellipse_hts=True)</span>
+
+<span class="sd">        will return an ICESat object with lat, lon, elevation, and UTCTime attributes, with elevations given as height</span>
+<span class="sd">        above WGS84 ellipsoid.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">in_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">in_filename</span><span class="p">,</span> <span class="n">in_dir</span> <span class="o">=</span> <span class="n">get_file_info</span><span class="p">(</span><span class="n">in_filename</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">in_filename</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_dir_path</span> <span class="o">=</span> <span class="n">in_dir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_dir_abs_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">in_dir</span><span class="p">)</span>
+
+        <span class="n">h5f</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_dir_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">),</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+        <span class="n">h5data</span> <span class="o">=</span> <span class="n">h5f</span><span class="p">[</span><span class="s1">&#39;ICESatData&#39;</span><span class="p">]</span>  <span class="c1"># if data come from Anne&#39;s ICESat scripts, should be the only data group</span>
+        <span class="n">data_names</span> <span class="o">=</span> <span class="n">h5data</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="c1"># make sure that our default attributes are included.</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;lat&#39;</span><span class="p">,</span> <span class="s1">&#39;lon&#39;</span><span class="p">,</span> <span class="s1">&#39;d_elev&#39;</span><span class="p">,</span> <span class="s1">&#39;d_UTCTime&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">:</span>
+                <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+                
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">:</span>
+            <span class="n">ind</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">find_keyname</span><span class="p">(</span><span class="n">data_names</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+            <span class="c1"># set the attribute, removing d_ from the attribute name if it exists</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;d_&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">h5data</span><span class="p">[</span><span class="n">ind</span><span class="p">,</span> <span class="p">:])</span>
+            <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="s1">&#39;lon&#39;</span><span class="p">:</span>
+                <span class="c1"># return longitudes ranging from -180 to 180 (rather than 0 to 360)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lon</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">lon</span> <span class="o">&gt;</span> <span class="mi">180</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lon</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">lon</span> <span class="o">&gt;</span> <span class="mi">180</span><span class="p">]</span> <span class="o">-</span> <span class="mi">360</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_names</span> <span class="o">=</span> <span class="n">data_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">column_names</span> <span class="o">=</span> <span class="n">cols</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h5data</span> <span class="o">=</span> <span class="n">h5data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ellipse_hts</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj</span> <span class="o">=</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">Proj</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="s1">&#39;epsg:4326&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lon</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xy</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">ellipse_hts</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">to_ellipse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ICESat.to_ellipse"><a class="viewcode-back" href="../../modules/pybob.ICESat.html#pybob.ICESat.ICESat.to_ellipse">[docs]</a>    <span class="k">def</span> <span class="nf">to_ellipse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert ICESat elevations to ellipsoid heights, based on the data stored in the HDF5 file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># fgdh = find_keyname(self.data_names, &#39;d_gdHt&#39;)</span>
+        <span class="n">fde</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">find_keyname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_names</span><span class="p">,</span> <span class="s1">&#39;d_deltaEllip&#39;</span><span class="p">)</span>
+        <span class="n">de</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h5data</span><span class="p">[</span><span class="n">fde</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ellipse_hts</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">elev</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">elev</span> <span class="o">+</span> <span class="n">de</span></div>
+
+<div class="viewcode-block" id="ICESat.from_ellipse"><a class="viewcode-back" href="../../modules/pybob.ICESat.html#pybob.ICESat.ICESat.from_ellipse">[docs]</a>    <span class="k">def</span> <span class="nf">from_ellipse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert ICESat elevations from ellipsoid heights, based on the data stored in the HDF5 file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">fde</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">find_keyname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_names</span><span class="p">,</span> <span class="s1">&#39;d_deltaEllip&#39;</span><span class="p">)</span>
+        <span class="n">de</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h5data</span><span class="p">[</span><span class="n">fde</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ellipse_hts</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">elev</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">elev</span> <span class="o">-</span> <span class="n">de</span></div>
+
+<div class="viewcode-block" id="ICESat.to_shp"><a class="viewcode-back" href="../../modules/pybob.ICESat.html#pybob.ICESat.ICESat.to_shp">[docs]</a>    <span class="k">def</span> <span class="nf">to_shp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out_filename</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="s1">&#39;ESRI Shapefile&#39;</span><span class="p">,</span> <span class="n">epsg</span><span class="o">=</span><span class="mi">4326</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write ICESat data to shapefile.</span>
+
+<span class="sd">        :param out_filename: Filename (optionally with path) of file to read out.</span>
+<span class="sd">        :param driver: Name of driver fiona should use to create the outpufile. Default is &#39;ESRI Shapefile&#39;.</span>
+<span class="sd">        :param epsg: EPSG code to project data to. Default is 4326, WGS84 Lat/Lon.</span>
+<span class="sd">        :type out_filename: str</span>
+<span class="sd">        :type driver: str</span>
+<span class="sd">        :type epsg: int</span>
+
+<span class="sd">        Example:</span>
+
+<span class="sd">        &gt;&gt;&gt; donjek_icesat.to_shp(&#39;donjek_icesat.shp&#39;, epsg=3338)</span>
+
+<span class="sd">        will write donjek_icesat to a shapefile in Alaska Albers projection (EPSG:3338)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># skip the lat, lon columns in the h5data</span>
+        <span class="c1"># get the columns we&#39;re writing out</span>
+        <span class="n">props</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">prop_inds</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">data_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_names</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data_names</span><span class="p">):</span>
+            <span class="n">props</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">d</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;float&#39;</span><span class="p">])</span>
+            <span class="n">prop_inds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">lat_ind</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">find_keyname</span><span class="p">(</span><span class="n">data_names</span><span class="p">,</span> <span class="s1">&#39;lat&#39;</span><span class="p">)</span>
+        <span class="n">lon_ind</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">find_keyname</span><span class="p">(</span><span class="n">data_names</span><span class="p">,</span> <span class="s1">&#39;lon&#39;</span><span class="p">)</span>
+        <span class="n">prop_inds</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">lat_ind</span><span class="p">)</span>
+        <span class="n">prop_inds</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">lon_ind</span><span class="p">)</span>        
+
+        <span class="n">props</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">props</span><span class="p">)</span>
+        <span class="k">del</span> <span class="n">props</span><span class="p">[</span><span class="s1">&#39;d_lat&#39;</span><span class="p">],</span> <span class="n">props</span><span class="p">[</span><span class="s1">&#39;d_lon&#39;</span><span class="p">]</span>
+                
+        <span class="n">schema</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;properties&#39;</span><span class="p">:</span> <span class="n">props</span><span class="p">,</span> <span class="s1">&#39;geometry&#39;</span><span class="p">:</span> <span class="s1">&#39;Point&#39;</span><span class="p">}</span>
+
+        <span class="n">outfile</span> <span class="o">=</span> <span class="n">fiona</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">out_filename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">fiona</span><span class="o">.</span><span class="n">crs</span><span class="o">.</span><span class="n">from_epsg</span><span class="p">(</span><span class="n">epsg</span><span class="p">),</span> <span class="n">driver</span><span class="o">=</span><span class="n">driver</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">)</span>
+        <span class="n">lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lat</span>
+        <span class="n">lon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lon</span>
+        
+        <span class="k">if</span> <span class="n">epsg</span> <span class="o">!=</span> <span class="mi">4326</span><span class="p">:</span>
+            <span class="n">dest_proj</span> <span class="o">=</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">Proj</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="s1">&#39;epsg:</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">epsg</span><span class="p">))</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">pyproj</span><span class="o">.</span><span class="n">Proj</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="s1">&#39;epsg:4326&#39;</span><span class="p">),</span> <span class="n">dest_proj</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">)</span>
+            <span class="n">pts</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pts</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">pt</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pts</span><span class="p">):</span>
+            <span class="n">this_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h5data</span><span class="p">[</span><span class="n">prop_inds</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span>
+            <span class="n">out_data</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">props</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">this_data</span><span class="p">))</span>
+            <span class="n">point</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="n">pt</span><span class="p">)</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">({</span><span class="s1">&#39;properties&#39;</span><span class="p">:</span> <span class="n">out_data</span><span class="p">,</span> <span class="s1">&#39;geometry&#39;</span><span class="p">:</span> <span class="n">mapping</span><span class="p">(</span><span class="n">point</span><span class="p">)})</span>
+
+        <span class="n">outfile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="ICESat.to_csv"><a class="viewcode-back" href="../../modules/pybob.ICESat.html#pybob.ICESat.ICESat.to_csv">[docs]</a>    <span class="k">def</span> <span class="nf">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out_filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write ICESat data to csv format using pandas.</span>
+<span class="sd">        </span>
+<span class="sd">        :param out_filename: Filename (optionally with path) of file to read out.</span>
+<span class="sd">        :type out_filename: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">darr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h5data</span><span class="p">))</span>
+        <span class="n">data_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_names</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data_names</span><span class="p">):</span>
+            <span class="n">data_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">darr</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">data_names</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">elev</span>
+    
+        <span class="n">col_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">]</span>
+        <span class="n">col_names</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">data_names</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">col_names</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;d_elev&#39;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;d_lat&#39;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;d_lon&#39;</span><span class="p">]</span>
+    
+        <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">out_filename</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="ICESat.clean"><a class="viewcode-back" href="../../modules/pybob.ICESat.html#pybob.ICESat.ICESat.clean">[docs]</a>    <span class="k">def</span> <span class="nf">clean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">el_limit</span><span class="o">=-</span><span class="mi">500</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove all elevation points below a given elevation.</span>
+
+<span class="sd">        :param el_limit: minimum elevation to accept</span>
+<span class="sd">        :type el_limit: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mykeep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">elev</span> <span class="o">&gt;</span> <span class="n">el_limit</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">mykeep</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">mykeep</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">elev</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">elev</span><span class="p">[</span><span class="n">mykeep</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xy</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ICESat.mask"><a class="viewcode-back" href="../../modules/pybob.ICESat.html#pybob.ICESat.ICESat.mask">[docs]</a>    <span class="k">def</span> <span class="nf">mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">mask_value</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Mask values</span>
+
+<span class="sd">        :param mask: Array of same size as self.img corresponding to values that should be masked.</span>
+<span class="sd">        :param mask_value: Value within mask to mask. If True, masks image where mask is True. If numeric, masks image</span>
+<span class="sd">            where mask == mask_value.</span>
+<span class="sd">        :param drop: remove values from dataset (True), or mask using numpy.masked_array (False). Default is False.</span>
+<span class="sd">        :type mask: array-like</span>
+<span class="sd">        :type mask_value: bool or numeric</span>
+<span class="sd">        :type drop: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">mask_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span> <span class="o">==</span> <span class="n">mask_value</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">drop</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_where</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_where</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_names</span><span class="p">:</span>
+                <span class="n">this_attr</span> <span class="o">=</span> <span class="n">getarr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;d_&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">masked_attr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_where</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">this_attr</span><span class="p">)</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;d_&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">masked_attr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_names</span><span class="p">:</span>
+                <span class="n">this_attr</span> <span class="o">=</span> <span class="n">getarr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;d_&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">masked_attr</span> <span class="o">=</span> <span class="n">this_attr</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;d_&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">masked_attr</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">xy</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ICESat.unmask"><a class="viewcode-back" href="../../modules/pybob.ICESat.html#pybob.ICESat.ICESat.unmask">[docs]</a>    <span class="k">def</span> <span class="nf">unmask</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove a mask if it has been applied.</span>
+<span class="sd">        **Not implemented yet!**</span>
+
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="ICESat.clip"><a class="viewcode-back" href="../../modules/pybob.ICESat.html#pybob.ICESat.ICESat.clip">[docs]</a>    <span class="k">def</span> <span class="nf">clip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bounds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove ICEsat data that falls outside of a given bounding box.</span>
+
+<span class="sd">        :param bounds: bounding box to clip to, given as xmin, xmax, ymin, ymax</span>
+<span class="sd">        :type bounds: array-like</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">bounds</span>
+        <span class="n">mykeep_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">xmin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">xmax</span><span class="p">)</span>
+        <span class="n">mykeep_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">&gt;</span> <span class="n">ymin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">&lt;</span> <span class="n">ymax</span><span class="p">)</span>
+        <span class="n">mykeep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">mykeep_x</span><span class="p">,</span> <span class="n">mykeep_y</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">mykeep</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">mykeep</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">elev</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">elev</span><span class="p">[</span><span class="n">mykeep</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xy</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">))</span>
+        <span class="k">pass</span></div>
+    
+<div class="viewcode-block" id="ICESat.get_bounds"><a class="viewcode-back" href="../../modules/pybob.ICESat.html#pybob.ICESat.ICESat.get_bounds">[docs]</a>    <span class="k">def</span> <span class="nf">get_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geo</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return bounding coordinates of the dataset.</span>
+
+<span class="sd">        :param geo: Return geographic (lat/lon) coordinates (default is False)</span>
+<span class="sd">        :type geo: bool</span>
+
+<span class="sd">        :returns bounds: xmin, xmax, ymin, ymax values of dataset.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">        &gt;&gt;&gt; xmin, xmax, ymin, ymax = my_icesat.get_bounds()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">geo</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lon</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">lon</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">lat</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">lat</span><span class="o">.</span><span class="n">max</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ICESat.project"><a class="viewcode-back" href="../../modules/pybob.ICESat.html#pybob.ICESat.ICESat.project">[docs]</a>    <span class="k">def</span> <span class="nf">project</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dest_proj</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Project the ICESat dataset to a given coordinate system, using pyproj.transform.</span>
+<span class="sd">        ICESat.project does not overwrite the lat/lon coordinates, so calling</span>
+<span class="sd">        ICESat.project will only update self.x,self.y for the dataset, self.xy, and self.proj.</span>
+
+<span class="sd">        :param dest_proj: Coordinate system to project the dataset into. If dest_proj is a string,</span>
+<span class="sd">            ICESat.project() will create a pyproj.Proj instance with it.</span>
+<span class="sd">        :type dest_proj: str or pyproj.Proj</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">        Project icesat_data to Alaska Albers (NAD83) using epsg code:</span>
+
+<span class="sd">        &gt;&gt;&gt; icesat_data.project(&#39;epsg:3338&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dest_proj</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">dest_proj</span> <span class="o">=</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">Proj</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="n">dest_proj</span><span class="p">)</span>
+        <span class="n">wgs84</span> <span class="o">=</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">Proj</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="s1">&#39;epsg:4326&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">wgs84</span><span class="p">,</span> <span class="n">dest_proj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lat</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xy</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj</span> <span class="o">=</span> <span class="n">dest_proj</span></div>
+
+<div class="viewcode-block" id="ICESat.display"><a class="viewcode-back" href="../../modules/pybob.ICESat.html#pybob.ICESat.ICESat.display">[docs]</a>    <span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sfact</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">showfig</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">geo</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plot ICESat tracks in a figure.</span>
+
+<span class="sd">        :param fig: Figure to plot tracks in. If not set, creates a new figure.</span>
+<span class="sd">        :param extent: Spatial extent to limit the figure to, given as xmin, xmax, ymin, ymax.</span>
+<span class="sd">        :param sfact: Factor by which to reduce the number of points plotted.</span>
+<span class="sd">            Default is 1 (i.e., all points are plotted).</span>
+<span class="sd">        :param showfig: Open the figure window. Default is True.</span>
+<span class="sd">        :param geo: Plot tracks in lat/lon coordinates, rather than projected coordinates.</span>
+<span class="sd">            Default is False.</span>
+<span class="sd">        :param kwargs: Optional keyword arguments to pass to matplotlib.pyplot.plot</span>
+
+<span class="sd">        :type fig: matplotlib.figure.Figure</span>
+<span class="sd">        :type extent: array-like</span>
+<span class="sd">        :type sfact: int</span>
+<span class="sd">        :type showfig: bool</span>
+<span class="sd">        :type geo: bool</span>
+
+<span class="sd">        :returns fig: Handle pointing to the matplotlib Figure created (or passed to display).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+            <span class="c1"># fig.hold(True)</span>
+        <span class="c1"># else:</span>
+            <span class="c1"># fig.hold(True)</span>
+
+        <span class="k">if</span> <span class="n">extent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">extent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_bounds</span><span class="p">(</span><span class="n">geo</span><span class="o">=</span><span class="n">geo</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">extent</span>
+
+        <span class="c1"># if we aren&#39;t told which marker to use, pick one.</span>
+        <span class="k">if</span> <span class="s1">&#39;marker&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">this_marker</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">this_marker</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;marker&#39;</span><span class="p">]</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;marker&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">geo</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lon</span><span class="p">[::</span><span class="n">sfact</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">lat</span><span class="p">[::</span><span class="n">sfact</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="n">this_marker</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;None&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[::</span><span class="n">sfact</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">[::</span><span class="n">sfact</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="n">this_marker</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;None&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>  <span class="c1"># get current axes</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>    <span class="c1"># set equal aspect</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">autoscale</span><span class="p">(</span><span class="n">tight</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># set axes tight</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">extent</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">extent</span><span class="p">[</span><span class="mi">2</span><span class="p">:])</span>
+        
+        <span class="k">if</span> <span class="n">showfig</span><span class="p">:</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>  <span class="c1"># don&#39;t forget this one!</span>
+
+        <span class="k">return</span> <span class="n">fig</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Robert McNabb
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,441 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pybob.plot_tools &mdash; pybob  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="scripts" href="../scripts/index.html" />
+    <link rel="prev" title="pybob.image_tools" href="pybob.image_tools.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pybob
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pybob.GeoImg.html">pybob.GeoImg</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.ICESat.html">pybob.ICESat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.VelField.html">pybob.VelField</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.bob_tools.html">pybob.bob_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.coreg_tools.html">pybob.coreg_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.ddem_tools.html">pybob.ddem_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.hexagon_tools.html">pybob.hexagon_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.image_tools.html">pybob.image_tools</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">pybob.plot_tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../scripts/index.html">scripts</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pybob</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">modules</a> &raquo;</li>
+        
+      <li>pybob.plot_tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/modules/pybob.plot_tools.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pybob.plot_tools">
+<span id="pybob-plot-tools"></span><h1>pybob.plot_tools<a class="headerlink" href="#module-pybob.plot_tools" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="pybob.plot_tools.plot_chips_corr_matrix">
+<code class="descclassname">pybob.plot_tools.</code><code class="descname">plot_chips_corr_matrix</code><span class="sig-paren">(</span><em>srcimg</em>, <em>destimg</em>, <em>corrmat</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/plot_tools.html#plot_chips_corr_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.plot_tools.plot_chips_corr_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>srcimg</strong> – </li>
+<li><strong>destimg</strong> – </li>
+<li><strong>corrmat</strong> – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.plot_tools.plot_ddem_results">
+<code class="descclassname">pybob.plot_tools.</code><code class="descname">plot_ddem_results</code><span class="sig-paren">(</span><em>img</em>, <em>colormap='seismic'</em>, <em>caxsize='2.5%'</em>, <em>clim=None</em>, <em>sfact=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/plot_tools.html#plot_ddem_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.plot_tools.plot_ddem_results" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>img</strong> – </li>
+<li><strong>colormap</strong> – </li>
+<li><strong>caxsize</strong> – </li>
+<li><strong>clim</strong> – </li>
+<li><strong>sfact</strong> – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.plot_tools.plot_dh_elevation">
+<code class="descclassname">pybob.plot_tools.</code><code class="descname">plot_dh_elevation</code><span class="sig-paren">(</span><em>dDEM</em>, <em>DEM</em>, <em>glacier_mask=None</em>, <em>binning=None</em>, <em>bin_width=50</em>, <em>polyorder=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/plot_tools.html#plot_dh_elevation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.plot_tools.plot_dh_elevation" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dDEM</strong> – </li>
+<li><strong>DEM</strong> – </li>
+<li><strong>glacier_mask</strong> – </li>
+<li><strong>binning</strong> – </li>
+<li><strong>bin_width</strong> – </li>
+<li><strong>polyorder</strong> – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.plot_tools.plot_geoimg_sidebyside">
+<code class="descclassname">pybob.plot_tools.</code><code class="descname">plot_geoimg_sidebyside</code><span class="sig-paren">(</span><em>img1</em>, <em>img2</em>, <em>com_extent=None</em>, <em>fig=None</em>, <em>cmap='gray'</em>, <em>output_directory='.'</em>, <em>filename=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/plot_tools.html#plot_geoimg_sidebyside"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.plot_tools.plot_geoimg_sidebyside" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>img1</strong> – </li>
+<li><strong>img2</strong> – </li>
+<li><strong>com_extent</strong> – </li>
+<li><strong>fig</strong> – </li>
+<li><strong>cmap</strong> – </li>
+<li><strong>output_directory</strong> – </li>
+<li><strong>filename</strong> – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.plot_tools.plot_nice_histogram">
+<code class="descclassname">pybob.plot_tools.</code><code class="descname">plot_nice_histogram</code><span class="sig-paren">(</span><em>data_values</em>, <em>outfilename</em>, <em>output_directory</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/plot_tools.html#plot_nice_histogram"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.plot_tools.plot_nice_histogram" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data_values</strong> – </li>
+<li><strong>outfilename</strong> – </li>
+<li><strong>output_directory</strong> – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.plot_tools.plot_polygon_df">
+<code class="descclassname">pybob.plot_tools.</code><code class="descname">plot_polygon_df</code><span class="sig-paren">(</span><em>polygon_df</em>, <em>fig=None</em>, <em>ax=None</em>, <em>mpl='mpl_polygon'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/plot_tools.html#plot_polygon_df"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.plot_tools.plot_polygon_df" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a GeoDataFrame of polygons to figure.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>polygon_df</strong> (<em>geopandas.GeoDataFrame</em>) – GeoDataFrame of polygon(s) to plot.</li>
+<li><strong>fig</strong> (<em>matplotlib.pyplot.Figure</em>) – Optional existing figure to plot polygons to. If unset, creates a new figure.</li>
+<li><strong>ax</strong> (<em>matplotlib.axes</em>) – Optional axis handle to plot polygons to. If unset, uses fig.gca()</li>
+<li><strong>mpl</strong> (<em>str</em>) – GeoDataFrame column name containing multipolygon indices. Default is mpl_polygon.</li>
+<li><strong>kwargs</strong> – Keyword options to pass to matplotlib.collections.PatchCollection.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Returns fig, polygon_df:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><p class="first last">Figure handle of the plot created, and updated geodataframe with plot geometries.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">rgi</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="s1">&#39;07_rgi60_Svalbard.shp&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">f</span><span class="p">,</span> <span class="n">rgi</span> <span class="o">=</span> <span class="n">plot_polygon_df</span><span class="p">(</span><span class="n">rgi</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.plot_tools.plot_shaded_dem">
+<code class="descclassname">pybob.plot_tools.</code><code class="descname">plot_shaded_dem</code><span class="sig-paren">(</span><em>dem</em>, <em>azimuth=315</em>, <em>altitude=45</em>, <em>fig=None</em>, <em>extent=None</em>, <em>alpha=0.35</em>, <em>colormap='terrain'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/plot_tools.html#plot_shaded_dem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.plot_tools.plot_shaded_dem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a shaded relief image of a DEM.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dem</strong> (<em>pybob.GeoImg</em>) – GeoImg representing a DEM.</li>
+<li><strong>azimuth</strong> (<em>float</em>) – Solar azimuth angle, in degress from North. Default 315.</li>
+<li><strong>altitude</strong> (<em>float</em>) – Solar altitude angle, in degrees from horizon. Default 45.</li>
+<li><strong>fig</strong> (<em>matplotlib.figure.Figure</em>) – Figure to show image in. If not set, creates a new figure.</li>
+<li><strong>extent</strong> (<em>array-like</em>) – Spatial extent to limit the figure to, given as xmin, xmax, ymin, ymax.</li>
+<li><strong>alpha</strong> (<em>float</em>) – Alpha value to set DEM to. Default is 0.35.</li>
+<li><strong>colormap</strong> (<em>str</em>) – colormap style for matplotlib</li>
+<li><strong>kwargs</strong> – Optional keyword arguments to pass to plt.imshow</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns fig:</th><td class="field-body"><p class="first last">Handle pointing to the matplotlib Figure created (or passed to display).</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.plot_tools.save_results_quicklook">
+<code class="descclassname">pybob.plot_tools.</code><code class="descname">save_results_quicklook</code><span class="sig-paren">(</span><em>img</em>, <em>raster</em>, <em>com_ext</em>, <em>outfilename</em>, <em>vmin=0</em>, <em>vmax=10</em>, <em>sfact=2</em>, <em>output_directory='.'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/plot_tools.html#save_results_quicklook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.plot_tools.save_results_quicklook" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>img</strong> – </li>
+<li><strong>raster</strong> – </li>
+<li><strong>com_ext</strong> – </li>
+<li><strong>outfilename</strong> – </li>
+<li><strong>vmin</strong> – </li>
+<li><strong>vmax</strong> – </li>
+<li><strong>sfact</strong> – </li>
+<li><strong>output_directory</strong> – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.plot_tools.set_pretty_fonts">
+<code class="descclassname">pybob.plot_tools.</code><code class="descname">set_pretty_fonts</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/plot_tools.html#set_pretty_fonts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.plot_tools.set_pretty_fonts" title="Permalink to this definition">¶</a></dt>
+<dd><p>sets matplotlib fonts to be nice and pretty for graphs that don’t completely suck.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pybob.plot_tools.truncate_colormap">
+<code class="descclassname">pybob.plot_tools.</code><code class="descname">truncate_colormap</code><span class="sig-paren">(</span><em>cmap</em>, <em>minval=0</em>, <em>maxval=1</em>, <em>n=100</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/plot_tools.html#truncate_colormap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.plot_tools.truncate_colormap" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cmap</strong> – </li>
+<li><strong>minval</strong> – </li>
+<li><strong>maxval</strong> – </li>
+<li><strong>n</strong> – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../scripts/index.html" class="btn btn-neutral float-right" title="scripts" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pybob.image_tools.html" class="btn btn-neutral float-left" title="pybob.image_tools" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Robert McNabb
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

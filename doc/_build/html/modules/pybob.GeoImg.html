@@ -1,0 +1,761 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pybob.GeoImg &mdash; pybob  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pybob.ICESat" href="pybob.ICESat.html" />
+    <link rel="prev" title="modules" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pybob
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">pybob.GeoImg</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.ICESat.html">pybob.ICESat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.VelField.html">pybob.VelField</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.bob_tools.html">pybob.bob_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.coreg_tools.html">pybob.coreg_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.ddem_tools.html">pybob.ddem_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.hexagon_tools.html">pybob.hexagon_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.image_tools.html">pybob.image_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pybob.plot_tools.html">pybob.plot_tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../scripts/index.html">scripts</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pybob</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">modules</a> &raquo;</li>
+        
+      <li>pybob.GeoImg</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/modules/pybob.GeoImg.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pybob.GeoImg">
+<span id="pybob-geoimg"></span><h1>pybob.GeoImg<a class="headerlink" href="#module-pybob.GeoImg" title="Permalink to this headline">¶</a></h1>
+<p>pybob.GeoImg is a class to handle geospatial imagery, in particular satellite images and digital elevation models.</p>
+<dl class="class">
+<dt id="pybob.GeoImg.GeoImg">
+<em class="property">class </em><code class="descclassname">pybob.GeoImg.</code><code class="descname">GeoImg</code><span class="sig-paren">(</span><em>in_filename</em>, <em>in_dir=None</em>, <em>datestr=None</em>, <em>datefmt='%m/%d/%y'</em>, <em>dtype=&lt;MagicMock id='140062037353696'&gt;</em>, <em>attrs=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a GeoImg object from a GDAL-supported raster dataset.</p>
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>in_filename</em>, <em>in_dir=None</em>, <em>datestr=None</em>, <em>datefmt='%m/%d/%y'</em>, <em>dtype=&lt;MagicMock id='140062037353696'&gt;</em>, <em>attrs=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>in_filename</strong> (<em>str</em><em>, </em><em>gdal.Dataset</em>) – Filename or object to read in. If in_filename is a string, the GeoImg is created by reading the file
+corresponding to that filename. If in_filename is a gdal object, the
+GeoImg is created by operating on the corresponding object.</li>
+<li><strong>in_dir</strong> (<em>str</em>) – (optional) directory where in_filename is located. If not given, the directory
+will be determined from the input filename.</li>
+<li><strong>datestr</strong> (<em>str</em>) – (optional) string to pass to GeoImg, representing the date the image was acquired.</li>
+<li><strong>datefmt</strong> – Format of datestr that datetime.datetime should use to parse datestr.
+Default is %m/%d/%y.</li>
+<li><strong>dtype</strong> (<em>numpy datatype</em>) – numpy datatype to read input data as. Default is np.float32. See numpy docs for more details.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.copy">
+<code class="descname">copy</code><span class="sig-paren">(</span><em>new_raster=None</em>, <em>new_extent=None</em>, <em>driver='MEM'</em>, <em>filename=''</em>, <em>newproj=None</em>, <em>datatype=&lt;MagicMock name='mock.GDT_Float32' id='140062038345432'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy the GeoImg, creating a new GeoImg, optionally updating the extent and raster.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>new_raster</strong> (<em>array-like</em>) – New raster to use. If not set, the new GeoImg will have the same raster
+as the old image.</li>
+<li><strong>new_extent</strong> (<em>array_like</em>) – New extent to use, given as xmin, xmax, ymin, ymax. If not set,
+the old extent is used. If set, you must also include a new raster.</li>
+<li><strong>driver</strong> (<em>str</em>) – gdal driver to use to create the new GeoImg. Default is ‘MEM’ (in-memory).
+See gdal docs for more options. If a different driver is used, filename must
+also be specified.</li>
+<li><strong>filename</strong> (<em>str</em>) – Filename corresponding to the new image, if not created in memory.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Returns new_geo:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><p class="first last">A new GeoImg with the specified extent and raster.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.crop_to_extent">
+<code class="descname">crop_to_extent</code><span class="sig-paren">(</span><em>extent</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.crop_to_extent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.crop_to_extent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Crop image to given extent.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>extent</strong> (<em>matplotlib.figure.Figure</em><em> or </em><em>array-like</em>) – Extent to which image should be cropped. If extent is a matplotlib figure handle, the image
+extent is taken from the x and y limits of the current figure axes. If extent is array-like, 
+it is assumed to be [xmin, xmax, ymin, ymax]</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Returns cropped_img:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">new GeoImg object resampled to the given image extent.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.display">
+<code class="descname">display</code><span class="sig-paren">(</span><em>fig=None, cmap='gray', extent=None, sfact=None, showfig=True, band=[0, 1, 2], **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.display" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display GeoImg in a matplotlib figure.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fig</strong> (<em>matplotlib.figure.Figure</em>) – figure handle to show image in. If not set, creates a new figure.</li>
+<li><strong>cmap</strong> (<em>matplotlib colormap</em>) – colormap to use for the image. Default is gray.</li>
+<li><strong>extent</strong> (<em>array-like</em>) – spatial extent to limit the figure to, given as xmin, xmax, ymin, ymax.</li>
+<li><strong>sfact</strong> (<em>int</em>) – Factor by which to reduce the number of pixels plotted.
+Default is 1 (i.e., all pixels are displayed).</li>
+<li><strong>showfig</strong> (<em>bool</em>) – Open the figure window. Default is True.</li>
+<li><strong>band</strong> (<em>array-like</em>) – Image bands to use, if GeoImg represents a multi-band image.</li>
+<li><strong>kwargs</strong> – Optional keyword arguments to pass to matplotlib.pyplot.imshow</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns fig:</th><td class="field-body"><p class="first last">Handle pointing to the matplotlib Figure created (or passed to display).</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.find_corners">
+<code class="descname">find_corners</code><span class="sig-paren">(</span><em>nodata=&lt;MagicMock id='140062037386912'&gt;</em>, <em>mode='ij'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.find_corners"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.find_corners" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find corner coordinates of valid image area.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>nodata</strong> (<em>numeric</em>) – nodata value to use. Default is numpy.nan</li>
+<li><strong>mode</strong> (<em>str</em>) – Type of coordinates to return. Options are ‘ij’, row/column index,
+or ‘xy’, x,y coordinate. Default is ‘ij’.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Returns corners:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><p class="first last">Array corresponding to the corner coordinates, estimated from the convex hull
+of the valid data.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.find_valid_bbox">
+<code class="descname">find_valid_bbox</code><span class="sig-paren">(</span><em>nodata=&lt;MagicMock id='140062037399424'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.find_valid_bbox"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.find_valid_bbox" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find bounding box for valid data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>nodata</strong> (<em>numeric</em>) – nodata value to use for the image. Default is numpy.nan</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns bbox:</th><td class="field-body">xmin, xmax, ymin, ymax of valid image area.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.ij2xy">
+<code class="descname">ij2xy</code><span class="sig-paren">(</span><em>ij</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.ij2xy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.ij2xy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return x,y coordinates for a given row, column index pair.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ij</strong> (<em>float</em>) – row (i) and column (j) index of pixel.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns xy:</th><td class="field-body">x,y coordinates of i,j in the GeoImg’s spatial reference system.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.info">
+<code class="descname">info</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints information about the GeoImg (filename, coordinate system, number of columns/rows, etc.).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.is_area">
+<code class="descname">is_area</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.is_area"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.is_area" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if pixel coordinates correspond to pixel corners.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Returns is_area:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">True if pixel coordinates correspond to pixel corners.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.is_point">
+<code class="descname">is_point</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.is_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.is_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if pixel coordinates correspond to pixel centers.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Returns is_point:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">True if pixel coordinates correspond to pixel centers.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.is_rotated">
+<code class="descname">is_rotated</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.is_rotated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.is_rotated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether GeoImg is rotated with respect to North.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.mask">
+<code class="descname">mask</code><span class="sig-paren">(</span><em>mask</em>, <em>mask_value=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mask image values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>mask</strong> (<em>array-like</em>) – Array of same size as self.img corresponding to values that should be masked.</li>
+<li><strong>mask_value</strong> (<em>bool</em><em> or </em><em>numeric</em>) – Value within mask to mask. If True, masks image where mask is True. If numeric, masks image
+where mask == mask_value.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.match_sensor">
+<code class="descname">match_sensor</code><span class="sig-paren">(</span><em>fname</em>, <em>datestr=None</em>, <em>datefmt=''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.match_sensor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.match_sensor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Attempts to pull metadata (e.g., sensor, date information) from fname, setting sensor_name, satellite,
+tile, datetime, and date attributes of GeoImg object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fname</strong> (<em>str</em>) – filename of image to parse</li>
+<li><strong>datestr</strong> (<em>str</em>) – optional datestring to set date attributes</li>
+<li><strong>datefmt</strong> (<em>str</em>) – optional datetime format for datestr</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.mean">
+<code class="descname">mean</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns mean (ignoring NaNs) of the image.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.median">
+<code class="descname">median</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.median"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.median" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns median (ignoring NaNs) of the image.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.outside_image">
+<code class="descname">outside_image</code><span class="sig-paren">(</span><em>ij</em>, <em>index=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.outside_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.outside_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether a given point falls outside of the image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>ij</strong> (<em>array-like</em>) – Indices (or coordinates) of point to check.</li>
+<li><strong>index</strong> (<em>bool</em>) – Interpret ij as raster indices (default is True). If False, assumes ij is coordinates.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Returns is_outside:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><p class="first last">True if ij is outside of the image.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.overlay">
+<code class="descname">overlay</code><span class="sig-paren">(</span><em>raster</em>, <em>extent=None</em>, <em>vmin=0</em>, <em>vmax=10</em>, <em>sfact=None</em>, <em>showfig=True</em>, <em>alpha=0.25</em>, <em>cmap='jet'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.overlay"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.overlay" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overlay raster on top of GeoImg.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>raster</strong> (<em>array-like</em>) – raster to display on top of the GeoImg.</li>
+<li><strong>extent</strong> (<em>array-like</em>) – Spatial of the raster. If not set, assumed to be same as the extent of the GeoImg.
+Given as xmin, xmax, ymin, ymax.</li>
+<li><strong>vmin</strong> (<em>float</em>) – minimum color value for the raster. Default is 0.</li>
+<li><strong>vmax</strong> (<em>float</em>) – maximum color value for the raster. Default is 10.</li>
+<li><strong>sfact</strong> (<em>int</em>) – Factor by which to reduce the number of points plotted.
+Default is 1 (i.e., all points are plotted).</li>
+<li><strong>showfig</strong> (<em>bool</em>) – Open the figure window. Default is True.</li>
+<li><strong>alpha</strong> (<em>float</em>) – Alpha value to use for the overlay. Default is 0.25</li>
+<li><strong>cmap</strong> (<em>str</em>) – matplotlib.pyplot colormap to use for the image. Default is jet.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns fig:</th><td class="field-body"><p class="first last">Handle pointing to the matplotlib Figure created (or passed to display).</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.random_points">
+<code class="descname">random_points</code><span class="sig-paren">(</span><em>Npts</em>, <em>edge_buffer=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.random_points"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.random_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a random sample of points within the image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Npts</strong> (<em>int</em>) – number of random points to sample.</li>
+<li><strong>edge_buffer</strong> (<em>int</em>) – Optional buffer around edge of image, where pixels shouldn’t be sampled. Default is zero.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Returns rand_pts:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><p class="first last">array of N random points from within the image.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.raster_points">
+<code class="descname">raster_points</code><span class="sig-paren">(</span><em>pts</em>, <em>nsize=1</em>, <em>mode='linear'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.raster_points"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.raster_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolate raster values at a given point, or sets of points.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>pts</strong> (<em>array-like</em>) – Point(s) at which to interpolate raster value. If points fall outside
+of image, value returned is nan.’</li>
+<li><strong>nsize</strong> (<em>int</em>) – Number of neighboring points to include in the interpolation. Default is 1.</li>
+<li><strong>mode</strong> (<em>str</em>) – One of ‘linear’, ‘cubic’, or ‘quintic’. Determines what type of spline is
+used to interpolate the raster value at each point. For more information, see
+scipy.interpolate.interp2d. Default is linear.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns rpts:</th><td class="field-body"><p class="first last">Array of raster value(s) for the given points.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.raster_points2">
+<code class="descname">raster_points2</code><span class="sig-paren">(</span><em>pts</em>, <em>nsize=1</em>, <em>mode='linear'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.raster_points2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.raster_points2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolate raster values at a given point, or sets of points using multiprocessing for speed.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>pts</strong> (<em>array-like</em>) – Point(s) at which to interpolate raster value. If points fall outside
+of image, value returned is nan.’</li>
+<li><strong>nsize</strong> (<em>int</em>) – Number of neighboring points to include in the interpolation. Default is 1.</li>
+<li><strong>mode</strong> (<em>str</em>) – One of ‘linear’, ‘cubic’, or ‘quintic’. Determines what type of spline is
+used to interpolate the raster value at each point. For more information, see 
+scipy.interpolate.interp2d.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns rpts:</th><td class="field-body"><p class="first last">Array of raster value(s) for the given points.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.reproject">
+<code class="descname">reproject</code><span class="sig-paren">(</span><em>dst_raster</em>, <em>driver='MEM'</em>, <em>filename=''</em>, <em>method=&lt;MagicMock name='mock.GRA_Bilinear' id='140062037366208'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.reproject"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.reproject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reproject the GeoImg to the same extent and coordinate system as another GeoImg.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dst_raster</strong> (<a class="reference internal" href="#pybob.GeoImg.GeoImg" title="pybob.GeoImg.GeoImg"><em>GeoImg</em></a>) – GeoImg to project given raster to.</li>
+<li><strong>driver</strong> (<em>str</em>) – gdal driver to use to create the new GeoImg. Default is ‘MEM’ (in-memory).
+See gdal docs for more options. If a different driver is used, filename must
+also be specified.</li>
+<li><strong>filename</strong> (<em>str</em>) – Filename corresponding to the new image, if not created in memory.</li>
+<li><strong>method</strong> (<em>gdal_GRA</em>) – gdal resampling algorithm to use. Default is GRA_Bilinear.
+Other options include: GRA_Average, GRA_Cubic, GRA_CubicSpline, GRA_NearestNeighbour.
+See gdal docs for more options and details.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Returns new_geo:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><p class="first last">reprojected GeoImg.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.set_NDV">
+<code class="descname">set_NDV</code><span class="sig-paren">(</span><em>NDV</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.set_NDV"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.set_NDV" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set nodata value to given value</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>NDV</strong> (<em>numeric</em>) – value to set to nodata.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.shift">
+<code class="descname">shift</code><span class="sig-paren">(</span><em>xshift</em>, <em>yshift</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.shift"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.shift" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shift the GeoImg in space by a given x,y offset.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>xshift</strong> (<em>float</em>) – x offset to shift GeoImg by.</li>
+<li><strong>yshift</strong> (<em>float</em>) – y offset to shift GeoImg by.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.std">
+<code class="descname">std</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.std"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.std" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns standard deviation (ignoring NaNs) of the image.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.subimages">
+<code class="descname">subimages</code><span class="sig-paren">(</span><em>N</em>, <em>Ny=None</em>, <em>sBuffer=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.subimages"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.subimages" title="Permalink to this definition">¶</a></dt>
+<dd><p>Split the GeoImg into sub-images.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>N</strong> (<em>int</em>) – number of column cells to split the image into.</li>
+<li><strong>Ny</strong> (<em>int</em>) – number of row cells to split image into. Default is same as N.</li>
+<li><strong>sBuffer</strong> (<em>int</em>) – number of pixels to overlap subimages by. Default is 0.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Returns sub_images:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><p class="first last">list of GeoImg tiles.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.to_area">
+<code class="descname">to_area</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.to_area"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.to_area" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change pixel location from center (‘Point’) to corner (‘Area’). Shifts raster by half pixel in the -x, +y direction.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.to_point">
+<code class="descname">to_point</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.to_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.to_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change pixel location from corner (‘Area’) to center (‘Point’). Shifts raster by half pixel in the +x, -y direction.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.unmask">
+<code class="descname">unmask</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.unmask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.unmask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove mask from image. If mask is not set, has no effect.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.write">
+<code class="descname">write</code><span class="sig-paren">(</span><em>outfilename</em>, <em>out_folder=None</em>, <em>driver='GTiff'</em>, <em>dtype=None</em>, <em>bands=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write GeoImg to a gdal-supported raster file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>outfilename</strong> (<em>str</em>) – string representing the filename to be written to.</li>
+<li><strong>out_folder</strong> (<em>str</em>) – optional string representing the folder to be written to. If not set,
+folder is either guessed from outfilename, or assumed to be the current folder.</li>
+<li><strong>driver</strong> (<em>str</em>) – optional string representing the gdal driver to use to write the raster file. Default is GTiff.
+Options include: HDF4, HDF5, JPEG, PNG, JPEG2000 (if enabled). See gdal docs for more options.</li>
+<li><strong>datatype</strong> (<em>numpy datatype</em>) – Type of data to write the raster as. Check GeoImg.numpy2gdal.keys() to see numpy data types implemented.</li>
+<li><strong>bands</strong> (<em>array-like</em>) – Specify band(s) to write to file. Default behavior is all bands.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.xy">
+<code class="descname">xy</code><span class="sig-paren">(</span><em>ctype='corner'</em>, <em>grid=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.xy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.xy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get x,y coordinates of all pixels in the GeoImg.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>ctype</strong> (<em>str</em>) – coordinate type. If ‘corner’, returns corner coordinates of pixels.
+If ‘center’, returns center coordinates. Default is corner.</li>
+<li><strong>grid</strong> (<em>bool</em>) – Return gridded coordinates. Default is True.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns x,y:</th><td class="field-body"><p class="first last">numpy arrays corresponding to the x,y coordinates of each pixel.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pybob.GeoImg.GeoImg.xy2ij">
+<code class="descname">xy2ij</code><span class="sig-paren">(</span><em>xy</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pybob/GeoImg.html#GeoImg.xy2ij"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pybob.GeoImg.GeoImg.xy2ij" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return row, column indices for a given x,y coordinate pair.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>xy</strong> (<em>float</em>) – x, y coordinates in the GeoImg’s spatial reference system.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns ij:</th><td class="field-body">i,j indices of x,y in the image.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pybob.ICESat.html" class="btn btn-neutral float-right" title="pybob.ICESat" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="modules" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Robert McNabb
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
