@@ -96,14 +96,18 @@ class GeoImg(object):
             raise Exception('in_filename must be a string or a gdal Dataset')
 
         self.gt = self.gd.GetGeoTransform()
-        self.proj = self.gd.GetProjection()
+        self.proj_wkt = self.gd.GetProjection()
+        crs = osr.SpatialReference()
+        crs.ImportFromWkt(self.proj_wkt)
+        self.proj4 = crs.ExportToProj4()
+
         try:   # Starting to implement the possibility to load raster without ESPG pre-assigned
-            self.epsg = int(''.join(filter(lambda x: x.isdigit(), self.proj.split(',')[-1])))
+            self.epsg = int(''.join(filter(lambda x: x.isdigit(), self.proj_wkt.split(',')[-1])))
         except:
             self.epsg = None
-        self.spatialReference = osr.SpatialReference()
-        dump = self.spatialReference.ImportFromEPSG(self.epsg)  # do this to make our SRS nice and easy for osr later.
-        del dump
+
+        self.spatialReference = crs
+
         self.intype = self.gd.GetDriver().ShortName
         self.npix_x = self.gd.RasterXSize
         self.npix_y = self.gd.RasterYSize
