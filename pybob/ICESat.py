@@ -1,5 +1,6 @@
 """
-pybob.ICESat provides an interface to extracted ICESat(-1) data stored in HDF5 format.
+pybob.ICESat provides an interface to extracted ICESat(-1) data stored in HDF5 format. Pre-extracted ICESat tracks for
+    each of the RGI subregions can be found `here <http://tinyurl.com/UiOICESat>`_.
 """
 from __future__ import print_function
 #from future_builtins import zip
@@ -327,7 +328,7 @@ class ICESat(object):
     def unmask(self):
         """
         Remove a mask if it has been applied.
-        **Not implemented yet!**
+        **TODO: Not implemented yet!**
 
         :return:
         """
