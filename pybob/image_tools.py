@@ -98,7 +98,7 @@ def composite_raster(band1name, band2name, band3name, outname, out_dir='.', in_d
     out = driver.Create(out_dir + os.path.sep + outname, ncols, nrows, nband, datatype)
 
     out.SetGeoTransform(band1.gt)
-    out.SetProjection(band1.proj)
+    out.SetProjection(band1.proj_wkt)
 
     out.GetRasterBand(1).WriteArray(band1.gd.ReadAsArray())
     out.GetRasterBand(2).WriteArray(band2.gd.ReadAsArray())
@@ -155,7 +155,7 @@ def create_mask_from_shapefile(geoimg, shapefile):
 
     masktarget = gdal.GetDriverByName('MEM').Create('', geoimg.npix_x, geoimg.npix_y, 1, gdal.GDT_Byte)
     masktarget.SetGeoTransform((geoimg.xmin, geoimg.dx, 0, geoimg.ymax, 0, geoimg.dy))
-    masktarget.SetProjection(geoimg.proj)
+    masktarget.SetProjection(geoimg.proj_wkt)
     masktarget.GetRasterBand(1).Fill(0)
     gdal.RasterizeLayer(masktarget, [1], masklayer)
     mask = masktarget.GetRasterBand(1).ReadAsArray()
@@ -192,7 +192,7 @@ def rasterize_polygons(geoimg, shapefile, burn_handle=None, dtype=gdal.GDT_Int16
 
     target = gdal.GetDriverByName('MEM').Create('', geoimg.npix_x, geoimg.npix_y, 1, dtype)
     target.SetGeoTransform((geoimg.xmin, geoimg.dx, 0, geoimg.ymax, 0, geoimg.dy))
-    target.SetProjection(geoimg.proj)
+    target.SetProjection(geoimg.proj_wkt)
     target.GetRasterBand(1).Fill(-1)
 
     gdal.RasterizeLayer(target, [1], polylayer, options=["Attribute={}".format(burn_handle)])
