@@ -500,8 +500,10 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     if np.sum(np.greater(slope.flatten(), 3)) < 500:
         print("Exiting: Fewer than 500 valid slope points")
         if return_var:
+            pp.close()
             return masterDEM, slaveDEM, -1
         else:
+            pp.close()
             return -1
 
     mythresh = np.float64(200)  # float64 really necessary?
@@ -535,8 +537,10 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
                                      np.sum(np.isfinite(sdata.flatten())) < 100)):
                 print("Exiting: Fewer than 100 data points")
                 if return_var:
+                    pp.close()
                     return masterDEM, slaveDEM, -1
                 else:
+                    pp.close()
                     return -1
             if mycount == 1:
                 dH0 = np.copy(dH.img)
@@ -558,8 +562,10 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
                                      np.sum(np.isfinite(sdata.flatten())) < 100)):
                 print("Exiting: Not enough data points")
                 if return_var:
+                    pp.close()
                     return masterDEM, slaveDEM, -1
                 else:
+                    pp.close()
                     return -1
             if mycount == 1:
                 dH0 = dH_img
