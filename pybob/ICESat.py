@@ -318,14 +318,14 @@ class ICESat(object):
             self.y = np.ma.masked_where(mask, self.y)
 
             for c in self.column_names:
-                this_attr = getarr(self, c.split('d_', 1)[-1])
+                this_attr = getattr(self, c.split('d_', 1)[-1])
                 masked_attr = np.ma.masked_where(mask, this_attr)
                 setattr(self, c.split('d_', 1)[-1], masked_attr)
         else:
             self.x = self.x[mask]
             self.y = self.y[mask]
             for c in self.column_names:
-                this_attr = getarr(self, c.split('d_', 1)[-1])
+                this_attr = getattr(self, c.split('d_', 1)[-1])
                 masked_attr = this_attr[mask]
                 setattr(self, c.split('d_', 1)[-1], masked_attr)
 
