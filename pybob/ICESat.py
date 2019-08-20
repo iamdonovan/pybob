@@ -28,13 +28,14 @@ def get_file_info(in_filestring):
 
 
 def find_keyname(keys, subkey, mode='first'):
-    out_keys = [(i, k) for i, k in enumerate(keys) if subkey in k]
+    out_keys = [k for k in keys if subkey in k]
     if mode == 'first':
         return out_keys[0]
     elif mode == 'last':
         return out_keys[-1]
     else:
         return out_keys
+
 
 def extract_ICESat(in_filename,workdir=None,outfile=None):
     """
@@ -161,7 +162,8 @@ class ICESat(object):
                 cols.append(c)
                 
         for c in cols:
-            ind, _ = find_keyname(data_names, c)
+            key = find_keyname(data_names, c, 'first')
+            ind = h5data.attrs.get(key)[0]
             # set the attribute, removing d_ from the attribute name if it exists
             setattr(self, c.split('d_', 1)[-1], h5data[ind, :])
             if c == 'lon':
@@ -185,8 +187,9 @@ class ICESat(object):
         Convert ICESat elevations to ellipsoid heights, based on the data stored in the HDF5 file.
         """
         # fgdh = find_keyname(self.data_names, 'd_gdHt')
-        fde, _ = find_keyname(self.data_names, 'd_deltaEllip')
-        de = self.h5data[fde, :]
+        kde = find_keyname(self.data_names, 'd_deltaEllip', 'first')
+        ide = self.h5data.attrs.get(kde)[0]
+        de = self.h5data[ide, :]
         self.ellipse_hts = True
         self.elev = self.elev + de
 
@@ -194,8 +197,9 @@ class ICESat(object):
         """
         Convert ICESat elevations from ellipsoid heights, based on the data stored in the HDF5 file.
         """
-        fde, _ = find_keyname(self.data_names, 'd_deltaEllip')
-        de = self.h5data[fde, :]
+        kde = find_keyname(self.data_names, 'd_deltaEllip', 'first')
+        ide = self.h5data.attrs.get(kde)[0]
+        de = self.h5data[ide, :]
         self.ellipse_hts = False
         self.elev = self.elev - de
 
@@ -225,10 +229,12 @@ class ICESat(object):
         for i, d in enumerate(data_names):
             props.append([d.rsplit(str(i), 1)[0], 'float'])
             prop_inds.append(i)
-        lat_ind, _ = find_keyname(data_names, 'lat')
-        lon_ind, _ = find_keyname(data_names, 'lon')
+        lat_key = find_keyname(data_names, 'lat', 'first')
+        lat_ind = self.h5data.attrs.get(lat_key)[0]
+        lon_key = find_keyname(data_names, 'lon', 'first')
+        lon_ind = self.h5data.attrs.get(lon_key)[0]
         prop_inds.remove(lat_ind)
-        prop_inds.remove(lon_ind)        
+        prop_inds.remove(lon_ind)
 
         props = OrderedDict(props)
         del props['d_lat'], props['d_lon']
