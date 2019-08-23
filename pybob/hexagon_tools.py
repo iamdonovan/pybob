@@ -3,27 +3,18 @@ pybob.hexagon_tools is a collection of tools for working with KH-9 Hexagon image
 """
 from __future__ import print_function, division
 import os
-# import errno
-# import argparse
 import cv2
-# import multiprocessing as mp
-# from functools import partial
-# from scipy.ndimage.filters import median_filter
-# from skimage.io import imsave
 from skimage.morphology import disk
 from skimage.filters import rank
 from scipy.interpolate import RectBivariateSpline as RBS
-# import skimage.transform as tf
 from scipy import ndimage
 import numpy as np
-# import matplotlib.pyplot as plt
 import gdal
 import pyvips
-# from numba import jit
 from llc import jit_filter_function
 import pandas as pd
-# import lxml.etree as etree
-# import lxml.builder as builder
+import lxml.etree as etree
+import lxml.builder as builder
 
 
 ######################################################################################################################
@@ -58,6 +49,56 @@ def get_im_meas(gcps, E):
         pt_els.append(this_mes)
     return pt_els
 
+def generate_measures_files():
+    i_list = np.arange(22, -1, -1)
+    j_list = np.arange(0, 24)
+
+    J, I = np.meshgrid(np.arange(0, j_list.size), np.arange(0, i_list.size))
+    gcp_names = list(zip(I[0, :], J[0, :]))
+    for i in range(1, i_list.size):
+        gcp_names.extend(list(zip(I[i, :], J[i, :])))
+
+    JJ, II = np.meshgrid(np.round(j_list).astype(int), np.round(i_list).astype(int))
+    ij = list(zip(II[0, :], JJ[0, :]))
+    for i in np.arange(1, i_list.size):
+        ij.extend(list(zip(II[i, :], JJ[i, :])))
+    ij = 10 * np.array(ij)
+
+    E = builder.ElementMaker()
+    ImMes = E.MesureAppuiFlottant1Im(E.NameIm('Glob'))
+    SpGlob = E.SetPointGlob()
+
+    gcp_df = pd.DataFrame()
+    with open('id_fiducial.txt', 'w') as f:
+        for i, ind in enumerate(gcp_names):
+            row, col = ind
+            gcp_name = 'GCP_{}_{}'.format(row, col)
+            gcp_df.loc[i, 'gcp'] = gcp_name
+            gcp_df.loc[i, 'im_row'] = ij[i, 0]
+            gcp_df.loc[i, 'im_col'] = ij[i, 1]
+
+            pt_glob = E.PointGlob(E.Type('eNSM_Pts'),
+                                  E.Name(gcp_name),
+                                  E.LargeurFlou('0'),
+                                  E.NumAuto('0'),
+                                  E.SzRech('-1'))
+            SpGlob.append(pt_glob)
+            print(gcp_name, file=f)
+
+    tree = etree.ElementTree(SpGlob)
+    tree.write('Tmp-SL-Glob.xml', pretty_print=True, xml_declaration=True, encoding="utf-8")
+    pt_els = get_im_meas(gcp_df, E)
+    for p in pt_els:
+        ImMes.append(p)
+
+    outxml = E.SetOfMesureAppuisFlottants(ImMes)
+    tree = etree.ElementTree(outxml)
+    tree.write('MeasuresCamera.xml', pretty_print=True, xml_declaration=True, encoding="utf-8")
+
+    with open('id_fiducial.txt', 'w') as f:
+        for gcp in gcp_names:
+            row, col = gcp
+            print('GCP_{}_{}'.format(row, col), file=f)
 
 ######################################################################################################################
 # image filtering tools
@@ -111,11 +152,12 @@ def make_template(img, pt, half_size):
     return img[top_row:bot_row+1, left_col:right_col+1], row_inds, col_inds
 
 
-def find_match(img, template, half_size):
+def find_match(img, template):
     img_eq = rank.equalize(img, selem=disk(100))
-    res = cross_filter(img_eq, template)
-    i_off = int((img.shape[0] - res.shape[0])/2)
-    j_off = int((img.shape[1] - res.shape[1])/2)
+    # res = cross_filter(img_eq, template)
+    res = cv2.matchTemplate(img_eq, template, cv2.TM_CCORR_NORMED)
+    i_off = (img.shape[0] - res.shape[0])/2
+    j_off = (img.shape[1] - res.shape[1])/2
     minval, _, minloc, _ = cv2.minMaxLoc(res)
     # maxj, maxi = maxloc
     minj, mini = minloc
@@ -142,8 +184,8 @@ def get_subpixel(res):
         mml = cv2.minMaxLoc(b.reshape(21, 21))
         # mgx,mgy: meshgrid x,y of common area
         # sp_delx,sp_dely: subpixel delx,dely
-        sp_delx = mgx[mml[3][0], mml[3][1]]
-        sp_dely = mgy[mml[3][0], mml[3][1]]
+        sp_delx = mgx[mml[2][0], mml[2][1]]
+        sp_dely = mgy[mml[2][0], mml[2][1]]
     else:
         sp_delx = 0.0
         sp_dely = 0.0
