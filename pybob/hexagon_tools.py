@@ -49,6 +49,7 @@ def get_im_meas(gcps, E):
         pt_els.append(this_mes)
     return pt_els
 
+
 def generate_measures_files():
     i_list = np.arange(22, -1, -1)
     j_list = np.arange(0, 24)
