@@ -427,7 +427,7 @@ def get_geoimg(indata):
 
 
 def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.',
-                       pts=False, full_ext=False, return_var=True, alg='Horn', magnlimit=2):
+                       pts=False, full_ext=False, return_var=True, alg='Horn', magnlimit=2, inmem=False):
     """
     Iteratively co-register elevation data.
 
@@ -447,6 +447,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     :param alg: Algorithm for calculating Slope, Aspect. One of 'ZevenbergenThorne' or 'Horn'. Default is 'Horn'.
     :param magnlimit: Magnitude threshold for determining termination of co-registration algorithm, calculated as
         sum in quadrature of dx, dy, dz shifts. Default is 2 m.
+    :param inmem: Don't write anything to disk
 
     :type masterDEM: str, pybob.GeoImg
     :type slaveDEM: str, pybob.GeoImg
@@ -458,6 +459,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     :type return_var: bool
     :type alg: str
     :type magnlimit: float
+    :type inmem: bool
 
     :returns masterDEM, outslave, out_offs: if return_var=True, returns master DEM, co-registered slave DEM, and x,y,z
         shifts removed from slave DEM.
@@ -520,8 +522,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         slope_geo = get_slope(slaveDEM, alg)
         aspect_geo = get_aspect(slaveDEM, alg)
 
-        slope_geo.write('tmp_slope.tif', out_folder=outdir)
-        aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
+        if not inmem:
+            slope_geo.write('tmp_slope.tif', out_folder=outdir)
+            aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
 
         smask = create_stable_mask(slaveDEM, glaciermask, landmask)
         slaveDEM.mask(smask)
@@ -544,8 +547,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
         slope_geo = get_slope(masterDEM, alg)
         aspect_geo = get_aspect(masterDEM, alg)
-        slope_geo.write('tmp_slope.tif', out_folder=outdir)
-        aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
+        if not inmem:
+            slope_geo.write('tmp_slope.tif', out_folder=outdir)
+            aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
         masterDEM.mask(stable_mask)
 
     slope = np.ma.masked_invalid(slope_geo.img)
@@ -726,11 +730,13 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
     # if not pts and not full_ext:
     #    outslave = outslave.reproject(masterDEM)
-    outslave.write(slaveoutfile, out_folder=outdir)
+    if not inmem:
+        outslave.write(slaveoutfile, out_folder=outdir)
 
     if pts:
-        slope_geo.write('tmp_slope.tif', out_folder=outdir)
-        aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
+        if not inmem:
+            slope_geo.write('tmp_slope.tif', out_folder=outdir)
+            aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
 
     # Final Check --- for debug
     if not pts:
@@ -751,7 +757,8 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             masterDEM = orig_masterDEM
             outslave = outslave.reproject(masterDEM)
         masterDEM.write(mastoutfile, out_folder=outdir)
-    outslave.write(slaveoutfile, out_folder=outdir)
+    if not inmem:
+        outslave.write(slaveoutfile, out_folder=outdir)
     pp.close()
     print("Fin.")
     print("Fin.", file=paramf)
@@ -763,4 +770,4 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     
     gc.collect() # try releasing memory!
     if return_var:
-        return masterDEM, outslave, out_offs
+        return masterDEM, outslave, out_offs, stats_final
