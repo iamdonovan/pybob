@@ -25,7 +25,7 @@ from pybob.image_tools import match_hist, reshape_geoimg, create_mask_from_shape
 ######################################################################################################################
 # MicMac interfaces - write xml files for MicMac to read
 ######################################################################################################################
-def get_gcp_meas(im_name, meas_name, in_dir, E, nodist=None):
+def get_gcp_meas(im_name, meas_name, in_dir, E, nodist=None, gcp_name='GCP'):
     im = gdal.Open(os.path.sep.join([in_dir, im_name]))
     maxj = im.RasterXSize
     maxi = im.RasterYSize
@@ -42,7 +42,7 @@ def get_gcp_meas(im_name, meas_name, in_dir, E, nodist=None):
             in_im = in_im and in_nd
         if in_im:
             this_mes = E.OneMesureAF1I(
-                                E.NamePt('GCP{}'.format(ind+1)),
+                                E.NamePt('{}{}'.format(gcp_name, ind+1)),
                                 E.PtIm('{} {}'.format(row['j'], row['i']))
                             )
             this_im_mes.append(this_mes)
