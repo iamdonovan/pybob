@@ -15,16 +15,16 @@ from pybob.bob_tools import bin_data
 from pybob.image_tools import hillshade
 
 
-def set_pretty_fonts():
+def set_pretty_fonts(font_size=24, legend_size=16):
     """
     sets matplotlib fonts to be nice and pretty for graphs that don't completely suck.
     """
     font = {'family': 'sans',
             'weight': 'normal',
-            'size': 24}
+            'size': font_size}
     legend_font = {'family': 'sans',
                    'weight': 'normal',
-                   'size': '16'}
+                   'size': legend_size}
     matplotlib.rc('font', **font)
     plt.ion()
 
