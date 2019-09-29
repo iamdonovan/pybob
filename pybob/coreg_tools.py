@@ -49,7 +49,7 @@ def get_aspect(geoimg, alg='Horn'):
     return GeoImg(aspect_)
 
 
-def false_hillshade(dH, title, pp, clim=(-20, 20)):
+def false_hillshade(dH, title, pp=None, clim=(-20, 20)):
     niceext = np.array([dH.xmin, dH.xmax, dH.ymin, dH.ymax]) / 1000.
     mykeep = np.logical_and.reduce((np.isfinite(dH.img), (np.abs(dH.img) < np.nanstd(dH.img) * 3)))
     dH_vec = dH.img[mykeep]
@@ -81,8 +81,11 @@ def false_hillshade(dH, title, pp, clim=(-20, 20)):
     # plt.colorbar(im1)
 
     plt.tight_layout()
-    pp.savefig(fig, dpi=300)
-    return
+    if pp is not None:
+        pp.savefig(fig, dpi=300)
+        return
+    else:
+        return fig
 
 
 def create_stable_mask(img, mask1, mask2):
