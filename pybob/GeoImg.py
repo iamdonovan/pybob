@@ -382,7 +382,7 @@ class GeoImg(object):
         out = driver.Create(os.path.sep.join([out_folder, outfilename]), ncols, nrows, nband, numpy2gdal[dtype])
 
         setgeo = out.SetGeoTransform(self.gt)
-        setproj = out.SetProjection(self.proj)
+        setproj = out.SetProjection(self.proj_wkt)
         nanmask = np.isnan(self.img)
 
         if self.NDV is not None:
@@ -471,7 +471,7 @@ class GeoImg(object):
         sg = newGdal.SetGeoTransform(newgt)
 
         if newproj is None:
-            newproj = self.proj
+            newproj = self.proj_wkt
 
         sp = newGdal.SetProjection(newproj)
         md = newGdal.SetMetadata(self.gd.GetMetadata())
@@ -543,7 +543,7 @@ class GeoImg(object):
 
         dest = drv.Create('', dst_raster.npix_x, dst_raster.npix_y,
                           1, gdal.GDT_Float32)
-        dest.SetProjection(dst_raster.proj)
+        dest.SetProjection(dst_raster.proj_wkt)
         dest.SetGeoTransform(dst_raster.gt)
         # copy the metadata of the current GeoImg to the new GeoImg
         dest.SetMetadata(self.gd.GetMetadata())
@@ -556,7 +556,7 @@ class GeoImg(object):
         else:
             dest.GetRasterBand(1).Fill(0)
 
-        gdal.ReprojectImage(self.gd, dest, self.proj, dst_raster.proj, method)
+        gdal.ReprojectImage(self.gd, dest, self.proj_wkt, dst_raster.proj_wkt, method)
 
         out = GeoImg(dest, attrs=self)
         if out.NDV is not None and out.isfloat:
@@ -792,7 +792,7 @@ class GeoImg(object):
 
         drv = gdal.GetDriverByName('MEM')
         dest = drv.Create('', npix_x, npix_y, nbands, gdal.GDT_Float32)
-        dest.SetProjection(self.proj)
+        dest.SetProjection(self.proj_wkt)
         newgt = (xmin, dx, 0.0, ymax, 0.0, dy)
         dest.SetGeoTransform(newgt)
         if self.NDV is not None:
@@ -803,7 +803,7 @@ class GeoImg(object):
             for i in range(len(bands)):
                 dest.GetRasterBand(i+1).Fill(0)
 
-        gdal.ReprojectImage(self.gd, dest, self.proj, self.proj, gdal.GRA_Bilinear)
+        gdal.ReprojectImage(self.gd, dest, self.proj_wkt, self.proj_wkt, gdal.GRA_Bilinear)
         out = GeoImg(dest, attrs=self)
         if out.NDV is not None and out.isfloat:
             out.img[out.img == out.NDV] = np.nan
