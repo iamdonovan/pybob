@@ -295,7 +295,10 @@ class ICESat(object):
         mykeep = self.elev > el_limit
         self.x = self.x[mykeep]
         self.y = self.y[mykeep]
+        self.lat = self.lat[mykeep]
+        self.lon = self.lon[mykeep]
         self.elev = self.elev[mykeep]
+        self.UTCTime = self.UTCTime[mykeep]
         self.xy = list(zip(self.x,self.y))
 
     def mask(self, mask, mask_value=True, drop=False):
