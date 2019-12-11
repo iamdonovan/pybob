@@ -50,6 +50,15 @@ def get_aspect(geoimg, alg='Horn'):
 
 
 def false_hillshade(dH, title, pp=None, clim=(-20, 20)):
+    """
+    Create a map figure showing the differences in black and white... 
+
+    :param dh: GeoImg object of elevation differences 
+    :param title: Title for plot
+    :type geoimg: pybob.GeoImg
+    :type title: str
+    :returns fig: either prints to a pdf, or returns a figure
+    """
     niceext = np.array([dH.xmin, dH.xmax, dH.ymin, dH.ymax]) / 1000.
     mykeep = np.logical_and.reduce((np.isfinite(dH.img), (np.abs(dH.img) < np.nanstd(dH.img) * 3)))
     dH_vec = dH.img[mykeep]
@@ -61,7 +70,11 @@ def false_hillshade(dH, title, pp=None, clim=(-20, 20)):
     ax = plt.gca()
 
     im1 = ax.imshow(dH.img, extent=niceext)
-    im1.set_clim(clim[0], clim[1])
+    
+    ymin = np.nanmean(dH_vec) - 2 * np.nanstd(dH_vec)
+    ymax = np.nanmean(dH_vec) + 2 * np.nanstd(dH_vec)
+        
+    im1.set_clim(ymin, ymax)
     im1.set_cmap('Greys')
 
     #    if np.sum(np.isfinite(dH_vec))<10:
@@ -329,11 +342,20 @@ def final_histogram(dH0, dHfinal, pp=None):
     # dH0=dH0[np.isfinite(dH0)]
     # dHfinal=dHfinal[np.isfinite(dHfinal)]
 
-    j1, j2 = np.histogram(dH0, bins=100, range=(-60, 60))
-    k1, k2 = np.histogram(dHfinal, bins=100, range=(-60, 60))
-
     stats0 = [np.mean(dH0), np.median(dH0), np.std(dH0), RMSE(dH0), np.sum(np.isfinite(dH0))]
     stats_fin = [np.mean(dHfinal), np.median(dHfinal), np.std(dHfinal), RMSE(dHfinal), np.sum(np.isfinite(dHfinal))]
+
+    
+    if stats0[2] < 1:
+        myrange = (-4,4)
+    elif  stats0[2] > 1 & stats0[2] < 5:
+        myrange = (-25,25)
+    else:
+        myrange = (-60, 60)        
+
+    
+    j1, j2 = np.histogram(dH0, bins=100, range=myrange)
+    k1, k2 = np.histogram(dHfinal, bins=100, range=myrange)
 
     plt.plot(j2[1:], j1, 'k-', linewidth=2)
     plt.plot(k2[1:], k1, 'r-', linewidth=2)
@@ -341,7 +363,7 @@ def final_histogram(dH0, dHfinal, pp=None):
 
     plt.xlabel('Elevation difference [meters]')
     plt.ylabel('Number of samples')
-    plt.xlim(-50, 50)
+    plt.xlim(myrange[0], myrange[1])
 
     # numwidth = max([len('{:.1f} m'.format(xadj)), len('{:.1f} m'.format(yadj)), len('{:.1f} m'.format(zadj))])
     plt.text(0.05, 0.90, 'Mean: ' + ('{:.1f} m'.format(stats0[0])),
