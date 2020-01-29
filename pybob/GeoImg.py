@@ -929,8 +929,9 @@ class GeoImg(object):
         rpts = []
         # if we're given only one point, corresponding array
         # should have a size of two. in which case, we wrap it in a list.
-        if np.array(pts).size == 2:
-            pts = [pts]
+        #TODO: this breaks for a single point when passing a list of tuples
+        # if np.array(pts).size == 2:
+        #     pts = [pts]
 
         if self.is_area():
             self.to_point()            
