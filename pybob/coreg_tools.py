@@ -54,7 +54,10 @@ def false_hillshade(dH, title, pp=None, clim=(-20, 20)):
     mykeep = np.logical_and.reduce((np.isfinite(dH.img), (np.abs(dH.img) < np.nanstd(dH.img) * 3)))
     dH_vec = dH.img[mykeep]
 
-    fig = plt.figure(figsize=(7, 5), dpi=300)
+    if pp is not None:
+        fig = plt.figure(figsize=(7, 5), dpi=300)
+    else:
+        fig = plt.figure(figsize=(7,5))
     ax = plt.gca()
 
     im1 = ax.imshow(dH.img, extent=niceext)
@@ -225,7 +228,7 @@ def preprocess(stable_mask, slope, aspect, master, slave):
     return dH, xdata, ydata, sdata
 
 
-def coreg_fitting(xdata, ydata, sdata, title, pp):
+def coreg_fitting(xdata, ydata, sdata, title, pp=None):
     xdata = xdata.astype(np.float64)  # float64 truly necessary?
     ydata = ydata.astype(np.float64)
     sdata = sdata.astype(np.float64)
@@ -278,7 +281,10 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     p1[2] = np.divide(p1[2], np.nanmean(sdata[mysamp]))
     yp = fitfun(p1, xp, sp)
 
-    fig = plt.figure(figsize=(7, 5), dpi=300)
+    if pp is not None:
+        fig = plt.figure(figsize=(7, 5), dpi=300)
+    else:
+        fig = plt.figure(figsize=(7,5))
     # fig.suptitle(title, fontsize=14)
     plt.title(title, fontsize=14)
     plt.plot(xdata[mysamp], ydata2[mysamp], '^', ms=0.5, color='0.5', rasterized=True, fillstyle='full')
@@ -300,13 +306,18 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
     plt.text(0.05, 0.05, '$\Delta$z: ' + ('{:.1f} m'.format(zadj)).rjust(numwidth),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
-    pp.savefig(fig, dpi=200)
-
-    return xadj, yadj, zadj
+    if pp is not None:
+        pp.savefig(fig, dpi=200)
+        return xadj, yadj, zadj
+    else:
+        return xadj, yadj, zadj, fig
 
 
 def final_histogram(dH0, dHfinal, pp=None):
-    fig = plt.figure(figsize=(7, 5), dpi=200)
+    if pp is not None:
+        fig = plt.figure(figsize=(7, 5), dpi=200)
+    else:
+        fig = plt.figure(figsize=(7, 5))
     plt.title('Elevation difference histograms', fontsize=14)
 
     dH0 = np.squeeze(np.asarray(dH0[np.logical_and.reduce((np.isfinite(dH0), (np.abs(dH0) < np.nanstd(dH0) * 3)))]))
@@ -376,7 +387,7 @@ def get_geoimg(indata):
 
 
 def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.',
-                       pts=False, full_ext=False, return_var=True, alg='Horn', magnlimit=2):
+                       pts=False, full_ext=False, return_var=True, alg='Horn', magnlimit=2, inmem=False):
     """
     Iteratively co-register elevation data.
 
@@ -396,6 +407,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     :param alg: Algorithm for calculating Slope, Aspect. One of 'ZevenbergenThorne' or 'Horn'. Default is 'Horn'.
     :param magnlimit: Magnitude threshold for determining termination of co-registration algorithm, calculated as
         sum in quadrature of dx, dy, dz shifts. Default is 2 m.
+    :param inmem: Don't write anything to disk
 
     :type masterDEM: str, pybob.GeoImg
     :type slaveDEM: str, pybob.GeoImg
@@ -407,6 +419,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     :type return_var: bool
     :type alg: str
     :type magnlimit: float
+    :type inmem: bool
 
     :returns masterDEM, outslave, out_offs: if return_var=True, returns master DEM, co-registered slave DEM, and x,y,z
         shifts removed from slave DEM.
@@ -469,8 +482,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         slope_geo = get_slope(slaveDEM, alg)
         aspect_geo = get_aspect(slaveDEM, alg)
 
-        slope_geo.write('tmp_slope.tif', out_folder=outdir)
-        aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
+        if not inmem:
+            slope_geo.write('tmp_slope.tif', out_folder=outdir)
+            aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
 
         smask = create_stable_mask(slaveDEM, glaciermask, landmask)
         slaveDEM.mask(smask)
@@ -493,8 +507,9 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
         slope_geo = get_slope(masterDEM, alg)
         aspect_geo = get_aspect(masterDEM, alg)
-        slope_geo.write('tmp_slope.tif', out_folder=outdir)
-        aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
+        if not inmem:
+            slope_geo.write('tmp_slope.tif', out_folder=outdir)
+            aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
         masterDEM.mask(stable_mask)
 
     slope = slope_geo.img
@@ -674,11 +689,13 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
     # if not pts and not full_ext:
     #    outslave = outslave.reproject(masterDEM)
-    outslave.write(slaveoutfile, out_folder=outdir)
+    if not inmem:
+        outslave.write(slaveoutfile, out_folder=outdir)
 
     if pts:
-        slope_geo.write('tmp_slope.tif', out_folder=outdir)
-        aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
+        if not inmem:
+            slope_geo.write('tmp_slope.tif', out_folder=outdir)
+            aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
 
     # Final Check --- for debug
     if not pts:
@@ -699,7 +716,8 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             masterDEM = orig_masterDEM
             outslave = outslave.reproject(masterDEM)
         masterDEM.write(mastoutfile, out_folder=outdir)
-    outslave.write(slaveoutfile, out_folder=outdir)
+    if not inmem:
+        outslave.write(slaveoutfile, out_folder=outdir)
     pp.close()
     print("Fin.")
     print("Fin.", file=paramf)
@@ -710,4 +728,4 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     out_offs = [tot_dx, tot_dy, tot_dz]
 
     if return_var:
-        return masterDEM, outslave, out_offs
+        return masterDEM, outslave, out_offs, stats_final
