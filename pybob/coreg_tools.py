@@ -49,12 +49,15 @@ def get_aspect(geoimg, alg='Horn'):
     return GeoImg(aspect_)
 
 
-def false_hillshade(dH, title, pp, clim=(-20, 20)):
+def false_hillshade(dH, title, pp=None, clim=(-20, 20)):
     niceext = np.array([dH.xmin, dH.xmax, dH.ymin, dH.ymax]) / 1000.
     mykeep = np.logical_and.reduce((np.isfinite(dH.img), (np.abs(dH.img) < np.nanstd(dH.img) * 3)))
     dH_vec = dH.img[mykeep]
 
-    fig = plt.figure(figsize=(7, 5), dpi=300)
+    if pp is not None:
+        fig = plt.figure(figsize=(7, 5), dpi=300)
+    else:
+        fig = plt.figure(figsize=(7,5))
     ax = plt.gca()
 
     im1 = ax.imshow(dH.img, extent=niceext)
@@ -81,8 +84,11 @@ def false_hillshade(dH, title, pp, clim=(-20, 20)):
     # plt.colorbar(im1)
 
     plt.tight_layout()
-    pp.savefig(fig, dpi=300)
-    return
+    if pp is not None:
+        pp.savefig(fig, dpi=300)
+        return
+    else:
+        return fig
 
 
 def create_stable_mask(img, mask1, mask2):
@@ -222,7 +228,7 @@ def preprocess(stable_mask, slope, aspect, master, slave):
     return dH, xdata, ydata, sdata
 
 
-def coreg_fitting(xdata, ydata, sdata, title, pp):
+def coreg_fitting(xdata, ydata, sdata, title, pp=None):
     xdata = xdata.astype(np.float64)  # float64 truly necessary?
     ydata = ydata.astype(np.float64)
     sdata = sdata.astype(np.float64)
@@ -275,7 +281,10 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
     p1[2] = np.divide(p1[2], np.nanmean(sdata[mysamp]))
     yp = fitfun(p1, xp, sp)
 
-    fig = plt.figure(figsize=(7, 5), dpi=300)
+    if pp is not None:
+        fig = plt.figure(figsize=(7, 5), dpi=300)
+    else:
+        fig = plt.figure(figsize=(7,5))
     # fig.suptitle(title, fontsize=14)
     plt.title(title, fontsize=14)
     plt.plot(xdata[mysamp], ydata2[mysamp], '^', ms=0.5, color='0.5', rasterized=True, fillstyle='full')
@@ -297,13 +306,18 @@ def coreg_fitting(xdata, ydata, sdata, title, pp):
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
     plt.text(0.05, 0.05, '$\Delta$z: ' + ('{:.1f} m'.format(zadj)).rjust(numwidth),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
-    pp.savefig(fig, dpi=200)
-
-    return xadj, yadj, zadj
+    if pp is not None:
+        pp.savefig(fig, dpi=200)
+        return xadj, yadj, zadj
+    else:
+        return xadj, yadj, zadj, fig
 
 
 def final_histogram(dH0, dHfinal, pp=None):
-    fig = plt.figure(figsize=(7, 5), dpi=200)
+    if pp is not None:
+        fig = plt.figure(figsize=(7, 5), dpi=200)
+    else:
+        fig = plt.figure(figsize=(7, 5))
     plt.title('Elevation difference histograms', fontsize=14)
 
     dH0 = np.squeeze(np.asarray(dH0[np.logical_and.reduce((np.isfinite(dH0), (np.abs(dH0) < np.nanstd(dH0) * 3)))]))

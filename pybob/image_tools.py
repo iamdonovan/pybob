@@ -4,11 +4,12 @@ pybob.image_tools is a collection of tools related to working with images.
 from __future__ import print_function
 import os
 import numpy as np
-from osgeo import gdal, ogr
+from osgeo import gdal, ogr, osr
 import multiprocessing as mp
 from llc import jit_filter_function
 import scipy.ndimage as ndimage
 import scipy.ndimage.filters as filters
+from skimage.transform import match_histograms
 from skimage.feature import greycomatrix, greycoprops
 from pybob.bob_tools import parse_lsat_scene, round_down
 from pybob.GeoImg import GeoImg
@@ -137,7 +138,7 @@ def find_peaks(image, neighborhood_size=5, threshold=1500):
     return ij
 
 
-def create_mask_from_shapefile(geoimg, shapefile):
+def create_mask_from_shapefile(geoimg, shapefile, buffer=None):
     """
     Create a boolean mask representing the polygons in a shapefile.
 
@@ -150,7 +151,29 @@ def create_mask_from_shapefile(geoimg, shapefile):
     """
     # load shapefile, rasterize to raster's extent
     masksource = ogr.Open(shapefile)
-    masklayer = masksource.GetLayer()
+    inlayer = masksource.GetLayer()
+
+    if buffer is not None:
+        source_srs = inlayer.GetSpatialRef()
+        target_srs = geoimg.spatialReference
+        transform = osr.CoordinateTransformation(source_srs, target_srs)
+
+        drv = ogr.GetDriverByName('Memory')
+        dst_ds = drv.CreateDataSource('out')
+        bufflayer = dst_ds.CreateLayer('', geom_type=ogr.wkbPolygon, srs=target_srs)
+        feature_def = bufflayer.GetLayerDefn()
+
+        for feature in inlayer:
+            geom = feature.GetGeometryRef()
+            _ = geom.Transform(transform)
+            geom_buff = geom.Buffer(buffer)
+            out_feature = ogr.Feature(feature_def)
+            out_feature.SetGeometry(geom_buff)
+            bufflayer.CreateFeature(out_feature)
+            out_feature = None
+        masklayer = bufflayer
+    else:
+        masklayer = inlayer
     # masksrs = masklayer.GetSpatialRef()
 
     masktarget = gdal.GetDriverByName('MEM').Create('', geoimg.npix_x, geoimg.npix_y, 1, gdal.GDT_Byte)
@@ -338,3 +361,17 @@ def parallel_img_proc(fun, funargs, nproc=2):
     pool.close()
 
     return outputs
+
+
+def reshape_geoimg(fname, xr, yr, rescale=True):
+    ds = gdal.Warp('', fname, xRes=xr, yRes=yr, format='VRT', resampleAlg=gdal.GRA_Lanczos)
+    resamp = GeoImg(ds)
+    if rescale:
+        resamp.img = (resamp.img / 256).astype(np.uint8)
+    return resamp
+
+
+def match_hist(img, reference):
+    img_eq = match_histograms(img, reference)
+    img_eq[img == 0] = 0
+    return img_eq.astype(np.uint8)

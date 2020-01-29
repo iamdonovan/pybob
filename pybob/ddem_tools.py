@@ -452,7 +452,8 @@ def get_elev_curve(DEM, dDEM, glacier_mask=None, bins=None, mode='mean', outlier
         bins = get_bins(DEM, glacier_mask)
 
     if outlier:
-        ddem_data = outlier_removal(bins, dem_data, ddem_data)
+        # ddem_data = outlier_removal(bins, dem_data, ddem_data)
+        ddem_data = nmad_outlier_removal(bins, dem_data, ddem_data)
 
     if mode in ['mean', 'median']:
         curve, bin_areas = bin_data(bins, ddem_data, dem_data, mode=mode, nbinned=True)
@@ -469,6 +470,17 @@ def get_elev_curve(DEM, dDEM, glacier_mask=None, bins=None, mode='mean', outlier
         curve = polyval(bins, p)
 
     return bins, curve, bin_areas
+
+
+def nmad_outlier_removal(bins, DEM, dDEM, nfact=3):
+    new_ddem = np.zeros(dDEM.size)
+    digitized = np.digitize(DEM, bins)
+    for i, _ in enumerate(bins):
+        this_bindata = dDEM[digitized == i]
+        this_nmad = nmad(this_bindata)
+        this_bindata[np.abs(this_bindata) > nfact * this_nmad] = np.nan
+        new_ddem[digitized == i] = this_bindata
+    return new_ddem
 
 
 def outlier_removal(bins, DEM, dDEM, nsig=3):
