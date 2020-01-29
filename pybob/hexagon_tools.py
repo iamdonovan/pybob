@@ -8,6 +8,8 @@ import cv2
 from skimage.morphology import disk
 from skimage.filters import rank
 from skimage import exposure
+from skimage.measure import ransac
+from skimage.transform import match_histograms, warp, AffineTransform, EuclideanTransform
 from scipy.interpolate import RectBivariateSpline as RBS
 from scipy import ndimage
 import numpy as np
@@ -159,7 +161,8 @@ def make_template(img, pt, half_size):
     bot_row = min(row + half_size, nrows)
     row_inds = [row - top_row, bot_row - row]
     col_inds = [col - left_col, right_col - col]
-    return img[top_row:bot_row+1, left_col:right_col+1], row_inds, col_inds
+    template = img[top_row:bot_row+1, left_col:right_col+1].copy()
+    return template, row_inds, col_inds
 
 
 def find_match(img, template):
@@ -231,7 +234,14 @@ def get_footprint_mask(shpfile, geoimg, filelist, fprint_out=False):
     imlist = [im.split('OIS-Reech_')[-1].split('.tif')[0] for im in filelist]
     footprints_shp = gpd.read_file(shpfile)
     fp = footprints_shp[footprints_shp.ID.isin(imlist)]
-    fprint = cascaded_union(fp.to_crs(epsg=geoimg.epsg).geometry.values[1:-1]).minimum_rotated_rectangle
+    fp.sort_values('ID', inplace=True)
+    if fp.shape[0] > 3:
+        fprint = cascaded_union(fp.to_crs(epsg=geoimg.epsg).geometry.values[1:-1]).minimum_rotated_rectangle
+    elif fp.shape[0] == 3:
+        fprint = fp.to_crs(epsg=geoimg.epsg).geometry.values[1].minimum_rotated_rectangle
+    else:
+        fprint = fp.to_crs(epsg=geoimg.epsg).geometry.values[0].intersection(fp.to_crs(epsg=geoimg.epsg).geometry.values[1]).minimum_rotated_rectangle
+
     tmp_gdf = gpd.GeoDataFrame(columns=['geometry'])
     tmp_gdf.loc[0, 'geometry'] = fprint
     tmp_gdf.crs = {'init': 'epsg:{}'.format(geoimg.epsg)}
@@ -247,7 +257,7 @@ def get_footprint_mask(shpfile, geoimg, filelist, fprint_out=False):
         return maskout
 
 
-def get_initial_transformation(img1, img2, landmask=None, footmask=None):
+def get_initial_transformation(img1, img2, landmask=None, footmask=None, imlist=None):
     im2_lowres = reshape_geoimg(img2, 800, 800)
 
     im2_eq = match_hist(im2_lowres.img, np.array(img1))
@@ -256,26 +266,35 @@ def get_initial_transformation(img1, img2, landmask=None, footmask=None):
 
     im2_mask = 255 * np.ones(im2_eq.shape, dtype=np.uint8)
     im2_mask[im2_eq == 0] = 0
+
+    if imlist is None:
+        imlist = glob('OIS*.tif')
+
     if landmask is not None:
         mask_ = create_mask_from_shapefile(im2_lowres, landmask)
         im2_mask[~mask_] = 0
     if footmask is not None:
-        mask_ = get_footprint_mask(footmask, im2_lowres, glob('OIS*.tif'))
+        mask_ = get_footprint_mask(footmask, im2_lowres, imlist)
         im2_mask[~mask_] = 0
 
     kp, des, matches = get_matches(img1, im2_eq, mask1=im1_mask, mask2=im2_mask)
-    src_pts = np.float32([kp[0][m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
-    dst_pts = np.float32([kp[1][m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
-    aff_matrix, good_mask = cv2.estimateAffine2D(src_pts, dst_pts, ransacReprojThreshold=25)
+    src_pts = np.array([kp[0][m.queryIdx].pt for m in matches])
+    dst_pts = np.array([kp[1][m.trainIdx].pt for m in matches])
+    # aff_matrix, good_mask = cv2.estimateAffine2D(src_pts, dst_pts, ransacReprojThreshold=25)
+    Mout, inliers = ransac((dst_pts, src_pts), EuclideanTransform,
+                           min_samples=5, residual_threshold=2, max_trials=1000)
     # check that the transformation was successful by correlating the two images.
-    im1_tfm = cv2.warpAffine(img1, aff_matrix, (im2_lowres.img.shape[1], im2_lowres.img.shape[0]))
+    # im1_tfm = cv2.warpAffine(img1, aff_matrix, (im2_lowres.img.shape[1], im2_lowres.img.shape[0]))
+    im1_tfm = warp(img1, Mout, output_shape=im2_lowres.img.shape, preserve_range=True)
     im1_pad = np.zeros(np.array(im1_tfm.shape)+2, dtype=np.uint8)
     im1_pad[1:-1, 1:-1] = im1_tfm
-    res = cv2.matchTemplate(im2_eq, im1_pad, cv2.TM_CCORR_NORMED)
+    res = cv2.matchTemplate(np.ma.masked_values(im2_eq, 0),
+                            np.ma.masked_values(im1_pad, 0),
+                            cv2.TM_CCORR_NORMED)
     print(res[1,1])
-    success = res[1, 1] > 0.6
+    success = res[1, 1] > 0.5
 
-    return aff_matrix, success, im2_eq.shape
+    return Mout, success, im2_eq.shape
 
 
 def get_matches(img1, img2, mask1=None, mask2=None):
@@ -298,8 +317,8 @@ def get_matches(img1, img2, mask1=None, mask2=None):
     return (kp1, kp2), (des1, des2), matches
 
 
-def find_gcp_match(img, template):
-    res = cv2.matchTemplate(img, template, cv2.TM_CCORR_NORMED)
+def find_gcp_match(img, template, method=cv2.TM_CCORR_NORMED):
+    res = cv2.matchTemplate(img, template, method)
     i_off = (img.shape[0] - res.shape[0]) / 2
     j_off = (img.shape[1] - res.shape[1]) / 2
     _, maxval, _, maxloc = cv2.minMaxLoc(res)
