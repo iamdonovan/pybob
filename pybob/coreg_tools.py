@@ -59,7 +59,7 @@ def false_hillshade(dH, title, pp=None, clim=(-20, 20)):
     :type title: str
     :returns fig: either prints to a pdf, or returns a figure
     """
-    niceext = np.array([dH.xmin, dH.xmax, dH.ymin, dH.ymax]) / 1000.
+    niceext = np.array([dH.xmin, dH.xmax, dH.ymax, dH.ymin]) / 1000.
     mykeep = np.logical_and.reduce((np.isfinite(dH.img), (np.abs(dH.img) < np.nanstd(dH.img) * 3)))
     dH_vec = dH.img[mykeep]
 
@@ -69,7 +69,7 @@ def false_hillshade(dH, title, pp=None, clim=(-20, 20)):
         fig = plt.figure(figsize=(7,5))
     ax = plt.gca()
 
-    im1 = ax.imshow(dH.img, extent=niceext)
+    im1 = ax.imshow(dH.img, extent=niceext, origin='lower')
     
     ymin = np.nanmean(dH_vec) - 2 * np.nanstd(dH_vec)
     ymax = np.nanmean(dH_vec) + 2 * np.nanstd(dH_vec)
