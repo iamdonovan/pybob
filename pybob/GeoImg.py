@@ -80,6 +80,14 @@ class GeoImg(object):
         :type datestr: str
         :type dtype: numpy datatype
         """
+        def check_geotransform(gd):
+            # Replace geotransform if origin not located at upper right... 
+            gt = list(gd.GetGeoTransform())
+            if gt[5]>0: # if origin is lower left coordinate, then replace with upper left
+                gt[3] = gt[3] + gd.RasterXSize * gt[4] + gd.RasterYSize * gt[5]
+                gt[5] = -gt[5]                                                
+            return tuple(gt)
+       
         if type(in_filename) is gdal.Dataset:
             self.filename = None
             self.in_dir_path = None
@@ -95,7 +103,7 @@ class GeoImg(object):
         else:
             raise Exception('in_filename must be a string or a gdal Dataset')
 
-        self.gt = self.gd.GetGeoTransform()
+        self.gt = check_geotransform(self.gd)
         self.proj_wkt = self.gd.GetProjection()
         crs = osr.SpatialReference()
         crs.ImportFromWkt(self.proj_wkt)
@@ -704,7 +712,8 @@ class GeoImg(object):
         return [xmin, xmax, min(ymin, ymax), max(ymin, ymax)]
 
     def set_NDV(self, NDV):
-        """ Set nodata value to given value
+        """
+        Set nodata value to given value.
 
         :param NDV: value to set to nodata.
         :type NDV: numeric
