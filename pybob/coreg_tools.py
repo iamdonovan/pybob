@@ -370,8 +370,10 @@ def final_histogram(dH0, dHfinal, pp=None):
         myrange = (-60, 60)        
 
     
-    j1, j2 = np.histogram(np.ma.masked_invalid(dH0), bins=100, range=myrange)
-    k1, k2 = np.histogram(np.ma.masked_invalid(dHfinal), bins=100, range=myrange)
+    j1, j2 = np.histogram(dH0.compressed(), bins=100, range=myrange)
+    k1, k2 = np.histogram(dHfinal.compressed(), bins=100, range=myrange)
+    # j1, j2 = np.histogram(np.ma.masked_invalid(dH0), bins=100, range=myrange)
+    # k1, k2 = np.histogram(np.ma.masked_invalid(dHfinal), bins=100, range=myrange)
 
     plt.plot(j2[1:], j1, 'k-', linewidth=2)
     plt.plot(k2[1:], k1, 'r-', linewidth=2)
