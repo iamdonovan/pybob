@@ -372,8 +372,6 @@ def final_histogram(dH0, dHfinal, pp=None):
     
     j1, j2 = np.histogram(dH0.compressed(), bins=100, range=myrange)
     k1, k2 = np.histogram(dHfinal.compressed(), bins=100, range=myrange)
-    # j1, j2 = np.histogram(np.ma.masked_invalid(dH0), bins=100, range=myrange)
-    # k1, k2 = np.histogram(np.ma.masked_invalid(dHfinal), bins=100, range=myrange)
 
     plt.plot(j2[1:], j1, 'k-', linewidth=2)
     plt.plot(k2[1:], k1, 'r-', linewidth=2)
@@ -578,7 +576,8 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     else:
         this_slave = slaveDEM.reproject(masterDEM)
         this_slave.mask(stable_mask)
-
+        
+    plt.close('all')
     while mythresh > 2 and magnthresh > magnlimit:
         mycount += 1
         print("Running iteration #{}".format(mycount))
@@ -694,7 +693,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
                 dH, xdata, ydata, sdata = preprocess(stable_mask, slope_geo, aspect_geo, masterDEM, this_slave)
                 dx, dy, dz = coreg_fitting(xdata, ydata, sdata, mytitle2, pp)
                 dHfinal = dH
-
+        plt.close('all')
     # Create final histograms pre and post coregistration
     # shift = [tot_dx, tot_dy, tot_dz]  # commented because it wasn't actually used.
     stats_final, stats_init = final_histogram(dH0, dHfinal, pp=pp)
