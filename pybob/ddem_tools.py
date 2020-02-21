@@ -18,7 +18,7 @@ sensor_names = ['AST', 'SETSM', 'Map', 'SPOT', 'SDMI', 'HMA']
 
 
 def difference(dem1, dem2, glaciermask=None, landmask=None, outdir='.'):
-    master, slave = ct.dem_coregistration(dem1, dem2, glaciermask, landmask, outdir)
+    master, slave, _ = ct.dem_coregistration(dem1, dem2, glaciermask, landmask, outdir)
     master.unmask()
     slave.unmask()
 

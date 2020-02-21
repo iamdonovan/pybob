@@ -17,7 +17,7 @@ from pybob.GeoImg import GeoImg
 from pybob.ICESat import ICESat
 from pybob.image_tools import create_mask_from_shapefile
 from pybob.plot_tools import plot_shaded_dem
-
+import gc
 
 def get_slope(geoimg, alg='Horn'):
     """
@@ -50,9 +50,20 @@ def get_aspect(geoimg, alg='Horn'):
 
 
 def false_hillshade(dH, title, pp=None, clim=(-20, 20)):
+    """
+    Create a map figure showing the differences in black and white... 
+
+    :param dh: GeoImg object of elevation differences 
+    :param title: Title for plot
+    :type geoimg: pybob.GeoImg
+    :type title: str
+    :returns fig: either prints to a pdf, or returns a figure
+    """
     niceext = np.array([dH.xmin, dH.xmax, dH.ymin, dH.ymax]) / 1000.
-    mykeep = np.logical_and.reduce((np.isfinite(dH.img), (np.abs(dH.img) < np.nanstd(dH.img) * 3)))
-    dH_vec = dH.img[mykeep]
+    dHtemp = np.ma.masked_invalid(dH.img)
+    mykeep = np.ma.less(np.ma.abs(dHtemp),np.ma.std(dHtemp) * 3)
+    # mykeep = np.logical_and.reduce((np.isfinite(dH.img), (np.abs(dH.img) < np.nanstd(dH.img) * 3)))
+    dH_vec = dHtemp[mykeep]
 
     if pp is not None:
         fig = plt.figure(figsize=(7, 5), dpi=300)
@@ -60,22 +71,27 @@ def false_hillshade(dH, title, pp=None, clim=(-20, 20)):
         fig = plt.figure(figsize=(7,5))
     ax = plt.gca()
 
-    im1 = ax.imshow(dH.img, extent=niceext)
-    im1.set_clim(clim[0], clim[1])
+    im1 = ax.imshow(dH.img, extent=niceext, origin='upper')
+    
+    ymin = np.ma.mean(dH_vec) - 2 * np.ma.std(dH_vec)
+    ymax = np.ma.mean(dH_vec) + 2 * np.ma.std(dH_vec)
+        
+    im1.set_clim(ymin, ymax)
     im1.set_cmap('Greys')
+
     #    if np.sum(np.isfinite(dH_vec))<10:
     #        print("Error for statistics in false_hillshade")
     #    else:
     plt.title(title, fontsize=14)
 
-    numwid = max([len('{:.1f} m'.format(np.mean(dH_vec))),
-                  len('{:.1f} m'.format(np.median(dH_vec))), len('{:.1f} m'.format(np.std(dH_vec)))])
-    plt.annotate('MEAN:'.ljust(8) + ('{:.1f} m'.format(np.mean(dH_vec))).rjust(numwid), xy=(0.65, 0.95),
+    numwid = max([len('{:.1f} m'.format(np.ma.mean(dH_vec))),
+                  len('{:.1f} m'.format(np.ma.median(dH_vec))), len('{:.1f} m'.format(np.ma.std(dH_vec)))])
+    plt.annotate('MEAN:'.ljust(8) + ('{:.1f} m'.format(np.ma.mean(dH_vec))).rjust(numwid), xy=(0.65, 0.95),
                  xycoords='axes fraction', fontsize=12, fontweight='bold', color='red', family='monospace')
-    plt.annotate('MEDIAN:'.ljust(8) + ('{:.1f} m'.format(np.median(dH_vec))).rjust(numwid),
+    plt.annotate('MEDIAN:'.ljust(8) + ('{:.1f} m'.format(np.ma.median(dH_vec))).rjust(numwid),
                  xy=(0.65, 0.90), xycoords='axes fraction', fontsize=12, fontweight='bold',
                  color='red', family='monospace')
-    plt.annotate('STD:'.ljust(8) + ('{:.1f} m'.format(np.std(dH_vec))).rjust(numwid), xy=(0.65, 0.85),
+    plt.annotate('STD:'.ljust(8) + ('{:.1f} m'.format(np.ma.std(dH_vec))).rjust(numwid), xy=(0.65, 0.85),
                  xycoords='axes fraction', fontsize=12, fontweight='bold', color='red', family='monospace')
 
     divider = make_axes_locatable(ax)
@@ -84,6 +100,7 @@ def false_hillshade(dH, title, pp=None, clim=(-20, 20)):
     # plt.colorbar(im1)
 
     plt.tight_layout()
+    gc.collect()
     if pp is not None:
         pp.savefig(fig, dpi=300)
         return
@@ -193,8 +210,12 @@ def preprocess(stable_mask, slope, aspect, master, slave):
             dH.img[stable_mask] = np.nan
 
         dHtan = dH.img / stan
-        mykeep = ((np.absolute(dH.img) < 200.0) & np.isfinite(dH.img) &
-                  (slope > 3.0) & (dH.img != 0.0) & (aspect >= 0))
+        mykeep = ((np.ma.less(np.absolute(np.ma.masked_invalid(dH.img)),200.0)) & \
+                  np.isfinite(dH.img) & \
+                  (np.ma.greater(np.ma.masked_invalid(slope),3.0)) & \
+                  (np.ma.masked_invalid(dH.img) != 0.0) & \
+                  (np.ma.greater_equal(np.ma.masked_invalid(aspect),0)) & \
+                  (np.ma.less(np.ma.masked_invalid(stan),100)))
         dH.img[np.invert(mykeep)] = np.nan
         xdata = aspect[mykeep]
         #        ydata = dHtan[mykeep]
@@ -216,8 +237,14 @@ def preprocess(stable_mask, slope, aspect, master, slave):
 
         dHtan = dH / stan
 
-        mykeep = ((np.absolute(dH) < 100.0) & np.isfinite(dH) &
-                  (slope_pts > 3.0) & (dH != 0.0) & (aspect_pts >= 0))
+        mykeep = ((np.ma.less(np.absolute(np.ma.masked_invalid(dH.img)),200.0)) & \
+                  np.isfinite(dH.img) & \
+                  (np.ma.greater(np.ma.masked_invalid(slope),3.0)) & \
+                  (np.ma.masked_invalid(dH.img) != 0.0) & \
+                  (np.ma.greater_equal(np.ma.masked_invalid(aspect),0)) & \
+                  (np.ma.less(np.ma.masked_invalid(stan),100)))
+        # mykeep = ((np.absolute(dH) < 100.0) & np.isfinite(dH) &
+        #           (slope_pts > 3.0) & (dH != 0.0) & (aspect_pts >= 0) & (stan < 100))
 
         dH[np.invert(mykeep)] = np.nan
         xdata = aspect_pts[mykeep]
@@ -225,6 +252,7 @@ def preprocess(stable_mask, slope, aspect, master, slave):
         ydata = dH[mykeep]
         sdata = stan[mykeep]
 
+    gc.collect()
     return dH, xdata, ydata, sdata
 
 
@@ -289,7 +317,6 @@ def coreg_fitting(xdata, ydata, sdata, title, pp=None):
     plt.title(title, fontsize=14)
     plt.plot(xdata[mysamp], ydata2[mysamp], '^', ms=0.5, color='0.5', rasterized=True, fillstyle='full')
     plt.plot(xp, np.zeros(xp.size), 'k', ms=3)
-    # plt.plot(xp, np.divide(yp,sp), 'r-', ms=2)
     plt.plot(xp, np.divide(yp, sp), 'r-', ms=2)
 
     plt.xlim(0, 360)
@@ -306,6 +333,8 @@ def coreg_fitting(xdata, ydata, sdata, title, pp=None):
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
     plt.text(0.05, 0.05, '$\Delta$z: ' + ('{:.1f} m'.format(zadj)).rjust(numwidth),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
+    
+    gc.collect()
     if pp is not None:
         pp.savefig(fig, dpi=200)
         return xadj, yadj, zadj
@@ -320,18 +349,29 @@ def final_histogram(dH0, dHfinal, pp=None):
         fig = plt.figure(figsize=(7, 5))
     plt.title('Elevation difference histograms', fontsize=14)
 
-    dH0 = np.squeeze(np.asarray(dH0[np.logical_and.reduce((np.isfinite(dH0), (np.abs(dH0) < np.nanstd(dH0) * 3)))]))
-    dHfinal = np.squeeze(np.asarray(dHfinal[np.logical_and.reduce((np.isfinite(dHfinal),
-                                                                   (np.abs(dHfinal) < np.nanstd(dHfinal) * 3)))]))
+    dH0 = np.ma.masked_invalid(dH0)
+    dHfinal = np.ma.masked_invalid(dHfinal)
+    
+    dH0 = np.squeeze(np.ma.masked_invalid(dH0[np.ma.less(np.ma.abs(dH0),np.ma.std(dH0) * 3)]))
+    dHfinal = np.squeeze(np.ma.masked_invalid(dHfinal[np.ma.less(np.ma.abs(dHfinal),np.ma.std(dHfinal) * 3)]))
 
     # dH0=dH0[np.isfinite(dH0)]
     # dHfinal=dHfinal[np.isfinite(dHfinal)]
 
-    j1, j2 = np.histogram(dH0, bins=100, range=(-60, 60))
-    k1, k2 = np.histogram(dHfinal, bins=100, range=(-60, 60))
+    stats0 = [np.ma.mean(dH0), np.ma.median(dH0), np.ma.std(dH0), RMSE(dH0), np.ma.sum(np.isfinite(dH0))]
+    stats_fin = [np.ma.mean(dHfinal), np.ma.median(dHfinal), np.ma.std(dHfinal), RMSE(dHfinal), np.ma.sum(np.isfinite(dHfinal))]
 
-    stats0 = [np.mean(dH0), np.median(dH0), np.std(dH0), RMSE(dH0), np.sum(np.isfinite(dH0))]
-    stats_fin = [np.mean(dHfinal), np.median(dHfinal), np.std(dHfinal), RMSE(dHfinal), np.sum(np.isfinite(dHfinal))]
+    
+    if (np.less(stats0[2],1)):
+        myrange = (-4,4)
+    elif np.logical_and(np.greater(stats0[2],1),np.less(stats0[2],5)):
+        myrange = (-25,25)
+    else:
+        myrange = (-60, 60)        
+
+    
+    j1, j2 = np.histogram(dH0.compressed(), bins=100, range=myrange)
+    k1, k2 = np.histogram(dHfinal.compressed(), bins=100, range=myrange)
 
     plt.plot(j2[1:], j1, 'k-', linewidth=2)
     plt.plot(k2[1:], k1, 'r-', linewidth=2)
@@ -339,7 +379,7 @@ def final_histogram(dH0, dHfinal, pp=None):
 
     plt.xlabel('Elevation difference [meters]')
     plt.ylabel('Number of samples')
-    plt.xlim(-50, 50)
+    plt.xlim(myrange[0], myrange[1])
 
     # numwidth = max([len('{:.1f} m'.format(xadj)), len('{:.1f} m'.format(yadj)), len('{:.1f} m'.format(zadj))])
     plt.text(0.05, 0.90, 'Mean: ' + ('{:.1f} m'.format(stats0[0])),
@@ -512,10 +552,10 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
         masterDEM.mask(stable_mask)
 
-    slope = slope_geo.img
-    aspect = aspect_geo.img
+    slope = np.ma.masked_invalid(slope_geo.img)
+    aspect = np.ma.masked_invalid(aspect_geo.img)
 
-    if np.sum(np.greater(slope.flatten(), 3)) < 500:
+    if np.ma.sum(np.ma.greater(slope.flatten(), 3)) < 500:
         print("Exiting: Fewer than 500 valid slope points")
         if return_var:
             pp.close()
@@ -540,7 +580,8 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     else:
         this_slave = slaveDEM.reproject(masterDEM)
         this_slave.mask(stable_mask)
-
+        
+    plt.close('all')
     while mythresh > 2 and magnthresh > magnlimit:
         mycount += 1
         print("Running iteration #{}".format(mycount))
@@ -573,7 +614,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
         else:
             dH, xdata, ydata, sdata = preprocess(stable_mask, slope_geo, aspect_geo, masterDEM, this_slave)
-            dH_img = dH
+            dH_img = dH.img
             # if np.logical_or(np.sum(np.isfinite(dH.flatten()))<100, np.sum(np.isfinite(ydata.flatten()))<100):
             if np.logical_or.reduce((np.sum(np.isfinite(xdata.flatten())) < 100,
                                      np.sum(np.isfinite(ydata.flatten())) < 100,
@@ -627,8 +668,8 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             this_slave = this_slave.reproject(masterDEM)
             this_slave.mask(stable_mask)
 
-        print("Percent-improvement threshold and Magnitude threshold:")
-        print(mythresh, magnthresh)
+        print("Percent-improvement threshold: " + str(mythresh))
+        print("Magnitude threshold: " + str(magnthresh))
 
         # slaves[-1].display()
         if mythresh > 2 and magnthresh > magnlimit:
@@ -656,7 +697,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
                 dH, xdata, ydata, sdata = preprocess(stable_mask, slope_geo, aspect_geo, masterDEM, this_slave)
                 dx, dy, dz = coreg_fitting(xdata, ydata, sdata, mytitle2, pp)
                 dHfinal = dH
-
+        plt.close('all')
     # Create final histograms pre and post coregistration
     # shift = [tot_dx, tot_dy, tot_dz]  # commented because it wasn't actually used.
     stats_final, stats_init = final_histogram(dH0, dHfinal, pp=pp)
@@ -726,6 +767,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     plt.close("all")
 
     out_offs = [tot_dx, tot_dy, tot_dz]
-
+    
+    gc.collect() # try releasing memory!
     if return_var:
         return masterDEM, outslave, out_offs, stats_final
