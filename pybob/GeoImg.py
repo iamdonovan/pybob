@@ -1,7 +1,6 @@
 """
 pybob.GeoImg is a class to handle geospatial imagery, in particular satellite images and digital elevation models.
 """
-from __future__ import print_function
 import os
 import re
 import random
@@ -251,7 +250,7 @@ class GeoImg(object):
     def info(self):
         """ Prints information about the GeoImg (filename, coordinate system, number of columns/rows, etc.)."""
         print('Driver:             {}'.format(self.gd.GetDriver().LongName))
-        if self.intype != 'MEM':
+        if self.intype not in ['MEM', 'VRT']:
             print('File:               {}'.format(self.in_dir_path + os.path.sep + self.filename))
         else:
             print('File:               {}'.format('in memory'))
@@ -509,7 +508,7 @@ class GeoImg(object):
         :returns x,y: numpy arrays corresponding to the x,y coordinates of each pixel.
         """
         assert ctype in ['corner', 'center'], "ctype is not one of 'corner', 'center': {}".format(ctype)
-        
+
         xx = np.linspace(self.xmin, self.xmax, self.npix_x+1)
 
         if self.dy < 0:
@@ -821,6 +820,19 @@ class GeoImg(object):
 
         return out
 
+    def resample(self, xres, yres=None, method=gdal.GRA_Bilinear):
+        '''
+
+        :param xres:
+        :param yres:
+        :param method:
+        :return:
+        '''
+        if yres is None:
+            yres = xres
+
+        ds = gdal.Warp('', self.gd, xRes=xres, yRes=yres, format='VRT', resampleAlg=method)
+        return GeoImg(ds)
 
     def overlay(self, raster, extent=None, vmin=0, vmax=10, sfact=None, showfig=True, alpha=0.25, cmap='jet'):
         """
