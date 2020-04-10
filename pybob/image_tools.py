@@ -1,7 +1,6 @@
 """
 pybob.image_tools is a collection of tools related to working with images.
 """
-from __future__ import print_function
 import os
 import numpy as np
 from osgeo import gdal, ogr, osr
