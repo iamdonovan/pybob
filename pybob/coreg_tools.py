@@ -69,15 +69,15 @@ def false_hillshade(dH, title, pp=None, clim=(-20, 20)):
     #    else:
     plt.title(title, fontsize=14)
 
-    numwid = max([len('{:.1f} m'.format(np.mean(dH_vec))),
-                  len('{:.1f} m'.format(np.median(dH_vec))), len('{:.1f} m'.format(np.std(dH_vec)))])
-    plt.annotate('MEAN:'.ljust(8) + ('{:.1f} m'.format(np.mean(dH_vec))).rjust(numwid), xy=(0.65, 0.95),
+    numwid = max([len('{:.4f} m'.format(np.mean(dH_vec))),
+                  len('{:.4f} m'.format(np.median(dH_vec))), len('{:.4f} m'.format(np.std(dH_vec)))])
+    plt.annotate('MEAN:'.ljust(8) + ('{:.4f} m'.format(np.mean(dH_vec))).rjust(numwid), xy=(0.65, 0.95),
 
                  xycoords='axes fraction', fontsize=12, fontweight='bold', color='red', family='monospace')
-    plt.annotate('MEDIAN:'.ljust(8) + ('{:.1f} m'.format(np.median(dH_vec))).rjust(numwid),
+    plt.annotate('MEDIAN:'.ljust(8) + ('{:.4f} m'.format(np.median(dH_vec))).rjust(numwid),
                  xy=(0.65, 0.90), xycoords='axes fraction', fontsize=12, fontweight='bold',
                  color='red', family='monospace')
-    plt.annotate('STD:'.ljust(8) + ('{:.1f} m'.format(np.std(dH_vec))).rjust(numwid), xy=(0.65, 0.85),
+    plt.annotate('STD:'.ljust(8) + ('{:.4f} m'.format(np.std(dH_vec))).rjust(numwid), xy=(0.65, 0.85),
                  xycoords='axes fraction', fontsize=12, fontweight='bold', color='red', family='monospace')
 
     divider = make_axes_locatable(ax)
@@ -301,12 +301,12 @@ def coreg_fitting(xdata, ydata, sdata, title, pp=None):
     # plt.axis([0, 360, -200, 200])
     plt.xlabel('Aspect [degrees]')
     plt.ylabel('dH / tan(slope)')
-    numwidth = max([len('{:.1f} m'.format(xadj)), len('{:.1f} m'.format(yadj)), len('{:.1f} m'.format(zadj))])
-    plt.text(0.05, 0.15, '$\Delta$x: ' + ('{:.1f} m'.format(xadj)).rjust(numwidth),
+    numwidth = max([len('{:.4f} m'.format(xadj)), len('{:.4f} m'.format(yadj)), len('{:.4f} m'.format(zadj))])
+    plt.text(0.05, 0.15, '$\Delta$x: ' + ('{:.4f} m'.format(xadj)).rjust(numwidth),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
-    plt.text(0.05, 0.1, '$\Delta$y: ' + ('{:.1f} m'.format(yadj)).rjust(numwidth),
+    plt.text(0.05, 0.1, '$\Delta$y: ' + ('{:.4f} m'.format(yadj)).rjust(numwidth),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
-    plt.text(0.05, 0.05, '$\Delta$z: ' + ('{:.1f} m'.format(zadj)).rjust(numwidth),
+    plt.text(0.05, 0.05, '$\Delta$z: ' + ('{:.4f} m'.format(zadj)).rjust(numwidth),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
     if pp is not None:
         pp.savefig(fig, dpi=200)
@@ -344,25 +344,25 @@ def final_histogram(dH0, dHfinal, pp=None):
     plt.xlim(-50, 50)
 
     # numwidth = max([len('{:.1f} m'.format(xadj)), len('{:.1f} m'.format(yadj)), len('{:.1f} m'.format(zadj))])
-    plt.text(0.05, 0.90, 'Mean: ' + ('{:.1f} m'.format(stats0[0])),
+    plt.text(0.05, 0.90, 'Mean: ' + ('{:.4f} m'.format(stats0[0])),
              fontsize=12, fontweight='bold', color='black', family='monospace', transform=plt.gca().transAxes)
-    plt.text(0.05, 0.85, 'Median: ' + ('{:.1f} m'.format(stats0[1])),
+    plt.text(0.05, 0.85, 'Median: ' + ('{:.4f} m'.format(stats0[1])),
              fontsize=12, fontweight='bold', color='black', family='monospace', transform=plt.gca().transAxes)
-    plt.text(0.05, 0.80, 'Std dev.: ' + ('{:.1f} m'.format(stats0[2])),
+    plt.text(0.05, 0.80, 'Std dev.: ' + ('{:.4f} m'.format(stats0[2])),
              fontsize=12, fontweight='bold', color='black', family='monospace', transform=plt.gca().transAxes)
-    plt.text(0.05, 0.75, 'RMSE: ' + ('{:.1f} m'.format(stats0[3])),
+    plt.text(0.05, 0.75, 'RMSE: ' + ('{:.4f} m'.format(stats0[3])),
              fontsize=12, fontweight='bold', color='black', family='monospace', transform=plt.gca().transAxes)
 
-    plt.text(0.05, 0.65, 'Mean: ' + ('{:.1f} m'.format(stats_fin[0])),
+    plt.text(0.05, 0.65, 'Mean: ' + ('{:.4f} m'.format(stats_fin[0])),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
-    plt.text(0.05, 0.60, 'Median: ' + ('{:.1f} m'.format(stats_fin[1])),
+    plt.text(0.05, 0.60, 'Median: ' + ('{:.4f} m'.format(stats_fin[1])),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
-    plt.text(0.05, 0.55, 'Std dev.: ' + ('{:.1f} m'.format(stats_fin[2])),
+    plt.text(0.05, 0.55, 'Std dev.: ' + ('{:.4f} m'.format(stats_fin[2])),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
-    plt.text(0.05, 0.50, 'RMSE: ' + ('{:.1f} m'.format(stats_fin[3])),
+    plt.text(0.05, 0.50, 'RMSE: ' + ('{:.4f} m'.format(stats_fin[3])),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
     if pp is not None:
-        pp.savefig(fig, bbox_inches='tight', dpi=200)
+        pp.savefig(fig, bbox_inches='tight', dpi=300)
 
     return stats_fin, stats0
 
@@ -492,7 +492,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         # Create initial plot of where stable terrain is, including ICESat pts
         fig1, _ = plot_shaded_dem(slaveDEM)
         plt.plot(masterDEM.x[~np.isnan(masterDEM.elev)], masterDEM.y[~np.isnan(masterDEM.elev)], 'k.')
-        pp.savefig(fig1, bbox_inches='tight', dpi=200)
+        pp.savefig(fig1, bbox_inches='tight', dpi=300)
 
     else:
         orig_masterDEM = get_geoimg(masterDEM)
