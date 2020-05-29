@@ -3,11 +3,15 @@ pybob.image_tools is a collection of tools related to working with images.
 """
 import os
 import numpy as np
+import cv2
 from osgeo import gdal, ogr, osr
 import multiprocessing as mp
+from shapely.geometry import Point
 from llc import jit_filter_function
+from scipy.interpolate import RectBivariateSpline as RBS
 import scipy.ndimage as ndimage
 import scipy.ndimage.filters as filters
+from skimage.feature import peak_local_max
 from skimage.transform import match_histograms
 from skimage.feature import greycomatrix, greycoprops
 from pybob.bob_tools import parse_lsat_scene, round_down
@@ -374,3 +378,189 @@ def match_hist(img, reference):
     img_eq = match_histograms(img, reference)
     img_eq[img == 0] = 0
     return img_eq.astype(np.uint8)
+
+
+def make_template(img, pt, half_size):
+    nrows, ncols = img.shape
+    row, col = np.round(pt).astype(int)
+    left_col = max(col - half_size, 0)
+    right_col = min(col + half_size, ncols)
+    top_row = max(row - half_size, 0)
+    bot_row = min(row + half_size, nrows)
+    row_inds = [row - top_row, bot_row - row]
+    col_inds = [col - left_col, right_col - col]
+    template = img[top_row:bot_row+1, left_col:right_col+1].copy()
+    return template, row_inds, col_inds
+
+
+def sliding_window_filter(img_shape, pts_df, winsize, stepsize=None, mindist=2000):
+    if stepsize is None:
+        stepsize = winsize / 2
+
+    out_inds = []
+    out_pts = []
+
+    for x_ind in np.arange(stepsize, img_shape[1], winsize):
+        for y_ind in np.arange(stepsize, img_shape[0], winsize):
+            min_x = x_ind - winsize / 2
+            max_x = x_ind + winsize / 2
+            min_y = y_ind - winsize / 2
+            max_y = y_ind + winsize / 2
+            samp_ = pts_df.loc[np.logical_and.reduce([pts_df.match_j > min_x,
+                                                      pts_df.match_j < max_x,
+                                                      pts_df.match_i > min_y,
+                                                      pts_df.match_i < max_y])].copy()
+            if samp_.shape[0] == 0:
+                continue
+            samp_.sort_values('z_corr', ascending=True, inplace=True)
+            if len(out_inds) == 0:
+                best_ind = samp_.index[0]
+                best_pt = Point(samp_.loc[best_ind, ['match_j', 'match_i']].values)
+
+                out_inds.append(best_ind)
+                out_pts.append(best_pt)
+            else:
+                for ind, row in samp_.iterrows():
+                    this_pt = Point(row[['match_j', 'match_i']].values)
+                    this_min_dist = np.array([this_pt.distance(pt) for pt in out_pts]).min()
+                    if this_min_dist > mindist:
+                        out_inds.append(ind)
+                        out_pts.append(this_pt)
+
+    return np.array(out_inds)
+
+
+def highpass_filter(img):
+    v = img.copy()
+    v[np.isnan(img)] = 0
+    vv = ndimage.gaussian_filter(v, 3)
+
+    w = 0 * img.copy() + 1
+    w[np.isnan(img)] = 0
+    ww = ndimage.gaussian_filter(w, 3)
+
+    tmplow = vv / ww
+    tmphi = img - tmplow
+    return tmphi
+
+
+def find_match(img, template, method=cv2.TM_CCORR_NORMED):
+    res = cv2.matchTemplate(img, template, method)
+    i_off = (img.shape[0] - res.shape[0]) / 2
+    j_off = (img.shape[1] - res.shape[1]) / 2
+    _, maxval, _, maxloc = cv2.minMaxLoc(res)
+    maxj, maxi = maxloc
+    sp_delx, sp_dely = get_subpixel(res, how='max')
+
+    return res, maxi + i_off + sp_dely, maxj + j_off + sp_delx
+
+
+def get_subpixel(res, how='min'):
+    assert how in ['min', 'max'], "have to choose min or max"
+
+    mgx, mgy = np.meshgrid(np.arange(-1, 1.01, 0.1), np.arange(-1, 1.01, 0.1), indexing='xy')  # sub-pixel mesh
+
+    if how == 'min':
+        peakval, _, peakloc, _ = cv2.minMaxLoc(res)
+        mml_ind = 2
+    else:
+        _, peakval, _, peakloc = cv2.minMaxLoc(res)
+        mml_ind = 3
+
+    rbs_halfsize = 3  # size of peak area used for spline for subpixel peak loc
+    rbs_order = 4    # polynomial order for subpixel rbs interpolation of peak location
+
+    if((np.array([n-rbs_halfsize for n in peakloc]) >= np.array([0, 0])).all()
+                & (np.array([(n+rbs_halfsize) for n in peakloc]) < np.array(list(res.shape))).all()):
+        rbs_p = RBS(range(-rbs_halfsize, rbs_halfsize+1), range(-rbs_halfsize, rbs_halfsize+1),
+                    res[(peakloc[1]-rbs_halfsize):(peakloc[1]+rbs_halfsize+1),
+                        (peakloc[0]-rbs_halfsize):(peakloc[0]+rbs_halfsize+1)],
+                    kx=rbs_order, ky=rbs_order)
+
+        b = rbs_p.ev(mgx.flatten(), mgy.flatten())
+        mml = cv2.minMaxLoc(b.reshape(21, 21))
+        # mgx,mgy: meshgrid x,y of common area
+        # sp_delx,sp_dely: subpixel delx,dely
+        sp_delx = mgx[mml[mml_ind][0], mml[mml_ind][1]]
+        sp_dely = mgy[mml[mml_ind][0], mml[mml_ind][1]]
+    else:
+        sp_delx = 0.0
+        sp_dely = 0.0
+    return sp_delx, sp_dely
+
+
+def gridded_matching(mst, slv, mask, spacing, tmpl_size=25, search_size=None, highpass=False):
+    # for each of these pairs (src, dst), find the precise subpixel match (or not...)
+
+    jj = np.arange(0, mst.shape[1], spacing)
+    ii = np.arange(0, mst.shape[0], spacing)
+    J, I = np.meshgrid(jj, ii)
+
+    search_pts = np.concatenate([I.reshape(-1,1), J.reshape(-1,1)], axis=1)
+    match_pts = -1 * np.ones(search_pts.shape)
+    z_corrs = -1 * np.ones((search_pts.shape[0], 1))
+    peak_corrs = -1 * np.ones((search_pts.shape[0], 1))
+
+    for ind, pt in enumerate(search_pts):
+        _i, _j = pt
+
+        # for pt in search_pts:
+        # if mask[pt[1], pt[0]] == 0:
+        if mask[_i, _j] == 0:
+
+            continue
+        try:
+            # testchip, _, _ = imtools.make_template(rough_tfm, (pt[1], pt[0]), 40)
+            # dst_chip, _, _ = imtools.make_template(mst.img, (pt[1], pt[0]), 200)
+            testchip, _, _ = make_template(mst, (_i, _j), tmpl_size)
+            if search_size is None:
+                dst_chip = slv
+            else:
+                dst_chip, rows, cols = make_template(slv, (_i, _j), search_size)
+
+            dst_chip[np.isnan(dst_chip)] = 0
+            if highpass:
+                test = np.ma.masked_values(highpass_filter(testchip), 0)
+                dest = np.ma.masked_values(highpass_filter(dst_chip), 0)
+            else:
+                test = np.ma.masked_values(testchip, 0)
+                dest = np.ma.masked_values(dst_chip, 0)
+
+            corr_res, this_i, this_j = find_match(dest.astype(np.float32), test.astype(np.float32))
+            peak_corr = cv2.minMaxLoc(corr_res)[1]
+
+            pks = peak_local_max(corr_res, min_distance=5, num_peaks=2)
+            this_z_corrs = []
+            for pk in pks:
+                max_ = corr_res[pk[0], pk[1]]
+                this_z_corrs.append((max_ - corr_res.mean()) / corr_res.std())
+            dz_corr = max(this_z_corrs) / min(this_z_corrs)
+            z_corr = max(this_z_corrs)
+
+            # if the correlation peak is very high, or very unique, add it as a match
+            # out_i, out_j = this_i - 200 + pt[1], this_j - 200 + pt[0]
+            if search_size is not None:
+                out_i, out_j = this_i - min(rows) + _i, this_j - min(cols) + _j
+            else:
+                out_i, out_j = this_i, this_j
+
+            z_corrs[ind] = z_corr
+            peak_corrs[ind] = peak_corr
+            match_pts[ind] = np.array([out_j, out_i])
+
+        except:
+
+            continue
+
+    return search_pts, np.array(match_pts), np.array(peak_corrs), np.array(z_corrs)
+
+
+def stretch_image(img, scale=(0,1), mult=255, outtype=np.uint8):
+    maxval = np.nanquantile(img, max(scale))
+    minval = np.nanquantile(img, min(scale))
+
+    img[img > maxval] = maxval
+    img[img < minval] = minval
+
+    return (mult * (img - minval) / (maxval - minval)).astype(outtype)
+
