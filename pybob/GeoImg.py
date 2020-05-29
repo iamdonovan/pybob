@@ -18,6 +18,9 @@ numpy2gdal = {np.uint8: gdal.GDT_Byte, np.uint16: gdal.GDT_UInt16, np.int16: gda
               np.uint32: gdal.GDT_UInt32, np.int32: gdal.GDT_Int32, 
               np.complex64: gdal.GDT_CFloat64}
 
+gdal2numpy = {1: np.uint8, 2: np.uint16, 3: np.int16, 4: np.uint32, 5: np.int32,
+              6: np.float32, 7: np.float64, 11: np.complex64}
+
 lsat_sensor = {'C': 'OLI/TIRS', 'E': 'ETM+', 'T': 'TM', 'M': 'MSS', 'O': 'OLI', 'TI': 'TIRS'}
 
 
@@ -62,7 +65,7 @@ class GeoImg(object):
     """
     Create a GeoImg object from a GDAL-supported raster dataset.
     """
-    def __init__(self, in_filename, in_dir=None, datestr=None, datefmt='%m/%d/%y', dtype=np.float32, attrs=None):
+    def __init__(self, in_filename, in_dir=None, datestr=None, datefmt='%m/%d/%y', dtype=None, attrs=None):
         """
         :param in_filename:  Filename or object to read in. If in_filename is a string, the GeoImg is created by reading the file
             corresponding to that filename. If in_filename is a gdal object, the
@@ -98,7 +101,7 @@ class GeoImg(object):
             self.filename = in_filename
             self.in_dir_path = in_dir
             self.in_dir_abs_path = os.path.abspath(in_dir)
-            self.gd = gdal.Open(os.path.join(self.in_dir_path, self.filename))
+            self.gd = gdal.Open(os.path.join(self.in_dir_path, self.filename), gdal.GA_Update)
         else:
             raise Exception('in_filename must be a string or a gdal Dataset')
 
@@ -126,6 +129,11 @@ class GeoImg(object):
         self.dy = self.gt[5]
         self.UTMtfm = [self.xmin, self.ymax, self.dx, self.dy]
         self.NDV = self.gd.GetRasterBand(1).GetNoDataValue()
+        if dtype is None:  # if no datatype is given, try to read the one given by gdal
+            try:
+                dtype = gdal2numpy[self.gd.GetRasterBand(1).DataType]
+            except KeyError:  # default to float32 if we haven't explicitly programmed the dtype yet.
+                dtype = np.float32
         self.img = self.gd.ReadAsArray().astype(dtype)
         self.dtype = dtype
         self.px_loc = self.gd.GetMetadataItem('AREA_OR_POINT')
@@ -602,8 +610,13 @@ class GeoImg(object):
 
         :returns xy: x,y coordinates of i,j in the GeoImg's spatial reference system.
         """
-        x = self.UTMtfm[0]+((ij[1]+0.5)*self.UTMtfm[2])
-        y = self.UTMtfm[1]+((ij[0]+0.5)*self.UTMtfm[3])
+        if self.is_point():
+            delta_p = 0.5
+        else:
+            delta_p = 0
+
+        x = self.UTMtfm[0]+((ij[1]+delta_p)*self.UTMtfm[2])
+        y = self.UTMtfm[1]+((ij[0]+delta_p)*self.UTMtfm[3])
 
         return x, y
 
@@ -619,8 +632,13 @@ class GeoImg(object):
         """
         x = xy[0]
         y = xy[1]
-        j = int((x-self.UTMtfm[0])/self.UTMtfm[2]) - 0.5  # if python started at 1, + 0.5
-        i = int((y-self.UTMtfm[1])/self.UTMtfm[3]) - 0.5  # if python started at 1, + 0.5
+        if self.is_point():
+            delta_p = 0.5
+        else:
+            delta_p = 0
+
+        j = (x - self.UTMtfm[0])/self.UTMtfm[2] - delta_p  # if python started at 1, + 0.5
+        i = (y - self.UTMtfm[1])/self.UTMtfm[3] - delta_p  # if python started at 1, + 0.5
 
         return i, j
 
@@ -683,7 +701,7 @@ class GeoImg(object):
 
         iverts = goodpoints[hull.vertices, 0]
         jverts = goodpoints[hull.vertices, 1]
-        corners = zip(iverts, jverts)
+        corners = list(zip(iverts, jverts))
 
         if mode == 'xy':
             xycorners = [self.ij2xy(corner) for corner in corners]
