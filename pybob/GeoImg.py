@@ -56,7 +56,7 @@ def int_pts(myins):
     try:
         zint = griddata((X.flatten(), Y.flatten()), z.flatten(), pt, method=mode)
     except:
-        zint = np.nan
+        zint = np.array(np.nan)
     return zint
 #    return griddata((myins[2].flatten(), myins[3].flatten()), myins[4].flatten(), myins[0], method=myins[5])
 
@@ -121,6 +121,7 @@ class GeoImg(object):
         self.intype = self.gd.GetDriver().ShortName
         self.npix_x = self.gd.RasterXSize
         self.npix_y = self.gd.RasterYSize
+        self.shape = (self.npix_y, self.npix_x)
         self.xmin = self.gt[0]
         self.xmax = self.gt[0] + self.npix_x * self.gt[1] + self.npix_y * self.gt[2]
         self.ymin = self.gt[3] + self.npix_x * self.gt[4] + self.npix_y * self.gt[5]
@@ -991,7 +992,7 @@ class GeoImg(object):
                 try:
                     zint = griddata((X.flatten(), Y.flatten()), z.flatten(), pt, method=mode)
                 except:
-                    zint = np.nan
+                    zint = np.array(np.nan)
                 rpts.append(zint)
         return np.array(rpts)
 
@@ -1029,7 +1030,7 @@ class GeoImg(object):
             y = yy[ij[0]-nsize:ij[0]+nsize+1]
             X, Y = np.meshgrid(x, y)
             z = myimg.img[ij[0]-nsize:ij[0]+nsize+1, ij[1]-nsize:ij[1]+nsize+1]
-            return (pt, ij, X, Y, z, mode)
+            return pt, ij, X, Y, z, mode
 
         myins = [getgrids((self, pt, nsize, mode)) for pt in pts]
         # print("half way")
