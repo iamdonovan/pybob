@@ -343,7 +343,7 @@ def orthorectify_registered(imgname, fn_dem, sat_altitude=None):
     new_line = l1t_line - y_shift
     new_samp = l1t_samp - x_shift
 
-    outimg = warp(img.img, np.array([new_line, new_samp]), order=3)
+    outimg = warp(img.img, np.array([new_line, new_samp]), order=5, preserve_range=True)
 
     out = img.copy(new_raster=outimg)
     out.write('Ortho.' + imgname, dtype=np.uint8)
