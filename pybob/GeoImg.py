@@ -101,7 +101,7 @@ class GeoImg(object):
             self.filename = in_filename
             self.in_dir_path = in_dir
             self.in_dir_abs_path = os.path.abspath(in_dir)
-            self.gd = gdal.Open(os.path.join(self.in_dir_path, self.filename), gdal.GA_Update)
+            self.gd = gdal.Open(os.path.join(self.in_dir_path, self.filename))
         else:
             raise Exception('in_filename must be a string or a gdal Dataset')
 
