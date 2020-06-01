@@ -68,8 +68,8 @@ def get_rough_geotransformation(mst, slv, landmask=None):
     best_lowres['dj'] = best_lowres['dj'] * dst_scale
     best_lowres['di'] = best_lowres['di'] * dst_scale
 
-    Minit, inliers = ransac((dst_pts, src_pts), EuclideanTransform, min_samples=5,
-                            residual_threshold=4, max_trials=5000)
+    Minit, inliers = ransac((dst_pts * dst_scale, src_pts * src_scale), EuclideanTransform, min_samples=5,
+                            residual_threshold=25, max_trials=5000)
     print('{} points used to find initial transformation'.format(np.count_nonzero(inliers)))
 
     return Minit, inliers, best_lowres
@@ -112,116 +112,119 @@ def _argparser():
                         help='path to shapefile of glacier outlines')
     parser.add_argument('-landmask', action='store', type=str, default=None,
                         help='path to shapefile of land outlines')
-
+    parser.add_argument('-no_lowres', action='store_true', default=False,
+                        help="Don't do an initial low-res transformation")
     return parser
 
 
-def main():
-    parser_ = _argparser()
-    args = parser_.parse_args()
+# def main():
+parser_ = _argparser()
+args = parser_.parse_args()
 
-    mst_fullres = GeoImg(args.master)
-    slv_fullres = GeoImg(args.slave)
+mst_fullres = GeoImg(args.master)
+slv_fullres = GeoImg(args.slave)
 
-    mst_fullres = mst_fullres.reproject(slv_fullres)
+mst_fullres = mst_fullres.reproject(slv_fullres)
 
+if not args.no_lowres:
     Minit, inliers_init, lowres_gcps = get_rough_geotransformation(mst_fullres, slv_fullres, landmask=args.landmask)
 
     # rough_tfm = warp(mst_fullres.img, Minit, output_shape=slv_fullres.img.shape, preserve_range=True)
     # rough_tfm[np.isnan(rough_tfm)] = 0
-    # shift the slave image so that it is better aligned with the master image
     # shift the slave image so that it is better aligned with the master image
     slv_fullres.shift(slv_fullres.dx * lowres_gcps.loc[inliers_init, 'dj'].median(),
                       slv_fullres.dy * lowres_gcps.loc[inliers_init, 'di'].median())
 
     mst_fullres = GeoImg(args.master)  # reload master, then re-project
     mst_fullres = mst_fullres.reproject(slv_fullres)
+else:
+    print('skipping low-res transformation')
 
-    mst_fullres.img[np.isnan(mst_fullres.img)] = 0
+mst_fullres.img[np.isnan(mst_fullres.img)] = 0
 
-    # mask = get_mask(mst_fullres, slv_fullres, Minit, args)
-    mask = get_mask(mst_fullres, args)
-    mask[mst_fullres.img == 0] = 0
+# mask = get_mask(mst_fullres, slv_fullres, Minit, args)
+mask = get_mask(mst_fullres, args)
+mask[mst_fullres.img == 0] = 0
 
-    search_pts, match_pts, peak_corr, z_corr = imtools.gridded_matching(mst_fullres.img,
-                                                                        slv_fullres.img,
-                                                                        mask,
-                                                                        spacing=50,
-                                                                        tmpl_size=20,
-                                                                        search_size=80,
-                                                                        highpass=True)
+search_pts, match_pts, peak_corr, z_corr = imtools.gridded_matching(mst_fullres.img,
+                                                                    slv_fullres.img,
+                                                                    mask,
+                                                                    spacing=50,
+                                                                    tmpl_size=20,
+                                                                    search_size=80,
+                                                                    highpass=True)
 
-    xy = np.array([mst_fullres.ij2xy(pt) for pt in search_pts]).reshape(-1, 2)
+xy = np.array([mst_fullres.ij2xy(pt) for pt in search_pts]).reshape(-1, 2)
 
-    gcps = gpd.GeoDataFrame()
-    gcps['geometry'] = [Point(pt) for pt in xy]
-    gcps['pk_corr'] = peak_corr
-    gcps['z_corr'] = z_corr
-    gcps['match_j'] = match_pts[:, 0]
-    gcps['match_i'] = match_pts[:, 1]
-    gcps['src_j'] = search_pts[:, 1]  # remember that search_pts is i, j, not j, i
-    gcps['src_i'] = search_pts[:, 0]
-    gcps['dj'] = gcps['src_j'] - gcps['match_j']
-    gcps['di'] = gcps['src_i'] - gcps['match_i']
-    gcps['elevation'] = 0
-    gcps.crs = mst_fullres.proj4
+gcps = gpd.GeoDataFrame()
+gcps['geometry'] = [Point(pt) for pt in xy]
+gcps['pk_corr'] = peak_corr
+gcps['z_corr'] = z_corr
+gcps['match_j'] = match_pts[:, 0]
+gcps['match_i'] = match_pts[:, 1]
+gcps['src_j'] = search_pts[:, 1]  # remember that search_pts is i, j, not j, i
+gcps['src_i'] = search_pts[:, 0]
+gcps['dj'] = gcps['src_j'] - gcps['match_j']
+gcps['di'] = gcps['src_i'] - gcps['match_i']
+gcps['elevation'] = 0
+gcps.crs = mst_fullres.proj4
 
-    gcps.dropna(inplace=True)
+gcps.dropna(inplace=True)
 
-    if args.dem is not None:
-        dem = GeoImg(args.dem)
-        for i, row in gcps.to_crs(crs=dem.proj4).iterrows():
-            gcps.loc[i, 'elevation'] = dem.raster_points([(row.geometry.x, row.geometry.y)], nsize=9, mode='cubic')
+if args.dem is not None:
+    dem = GeoImg(args.dem)
+    for i, row in gcps.to_crs(crs=dem.proj4).iterrows():
+        gcps.loc[i, 'elevation'] = dem.raster_points([(row.geometry.x, row.geometry.y)], nsize=9, mode='cubic')
 
-    best = gcps[gcps.z_corr > gcps.z_corr.quantile(0.5)]
+best = gcps[gcps.z_corr > gcps.z_corr.quantile(0.5)]
 
-    Mfin, inliers_fin = ransac((best[['match_j', 'match_i']].values, best[['src_j', 'src_i']].values), AffineTransform,
-                               min_samples=10, residual_threshold=4, max_trials=1000)
-    print('{} points used to find initial transformation'.format(np.count_nonzero(inliers_fin)))
-    best = best[inliers_fin]
+Mfin, inliers_fin = ransac((best[['match_j', 'match_i']].values, best[['src_j', 'src_i']].values), AffineTransform,
+                           min_samples=10, residual_threshold=4, max_trials=1000)
+print('{} points used to find final transformation'.format(np.count_nonzero(inliers_fin)))
+best = best[inliers_fin]
 
-    out_inds = imtools.sliding_window_filter([slv_fullres.img.shape[1], slv_fullres.img.shape[0]], best, 200, mindist=100)
+out_inds = imtools.sliding_window_filter([slv_fullres.img.shape[1], slv_fullres.img.shape[0]], best, 200, mindist=100)
 
-    best = best.loc[out_inds]
+best = best.loc[out_inds]
 
-    gcp_list = []
-    outname = os.path.splitext(os.path.basename(args.slave))[0]
-    with open('{}_gcps.txt'.format(outname), 'w') as f:
-        for i, row in best.iterrows():
-            gcp_list.append(gdal.GCP(row.geometry.x, row.geometry.y, row.elevation, row.match_j, row.match_i))
-            print(row.geometry.x, row.geometry.y, row.elevation, row.match_j, row.match_i, file=f)
+gcp_list = []
+outname = os.path.splitext(os.path.basename(args.slave))[0]
+with open('{}_gcps.txt'.format(outname), 'w') as f:
+    for i, row in best.iterrows():
+        gcp_list.append(gdal.GCP(row.geometry.x, row.geometry.y, row.elevation, row.match_j, row.match_i))
+        print(row.geometry.x, row.geometry.y, row.elevation, row.match_j, row.match_i, file=f)
 
-    shutil.copy(args.slave, 'tmp.tif')
-    # slv_fullres.write('tmp.tif')
-    in_ds = gdal.Open('tmp.tif', gdal.GA_Update)
+shutil.copy(args.slave, 'tmp.tif')
+# slv_fullres.write('tmp.tif')
+in_ds = gdal.Open('tmp.tif', gdal.GA_Update)
 
-    # unset the geotransform based on
-    # For now only the GTiff drivers understands full-zero as a hint
-    # to unset the geotransform
-    if in_ds.GetDriver().ShortName == 'GTiff':
-        in_ds.SetGeoTransform([0, 0, 0, 0, 0, 0])
-    else:
-        in_ds.SetGeoTransform([0, 1, 0, 0, 0, 1])
+# unset the geotransform based on
+# For now only the GTiff drivers understands full-zero as a hint
+# to unset the geotransform
+if in_ds.GetDriver().ShortName == 'GTiff':
+    in_ds.SetGeoTransform([0, 0, 0, 0, 0, 0])
+else:
+    in_ds.SetGeoTransform([0, 1, 0, 0, 0, 1])
 
-    gcp_wkt = mst_fullres.proj_wkt
-    in_ds.SetGCPs(gcp_list, gcp_wkt)
+gcp_wkt = mst_fullres.proj_wkt
+in_ds.SetGCPs(gcp_list, gcp_wkt)
 
-    # del in_ds  # close the dataset, write to disk
-    # in_ds = gdal.Open('tmp.tif')
+# del in_ds  # close the dataset, write to disk
+# in_ds = gdal.Open('tmp.tif')
 
-    print('warping image to new geometry')
-    mkdir_p('warped')
-    gdal.Warp(os.path.join('warped', os.path.basename(args.slave)),
-              in_ds, dstSRS=gcp_wkt,
-              xRes=slv_fullres.dx,
-              yRes=slv_fullres.dy,
-              resampleAlg=gdal.GRA_Lanczos,
-              outputType=gdal.GDT_Byte)
+print('warping image to new geometry')
+mkdir_p('warped')
+gdal.Warp(os.path.join('warped', os.path.basename(args.slave)),
+          in_ds, dstSRS=gcp_wkt,
+          xRes=slv_fullres.dx,
+          yRes=slv_fullres.dy,
+          resampleAlg=gdal.GRA_Lanczos,
+          outputType=gdal.GDT_Byte)
 
-    print('cleaning up.')
+print('cleaning up.')
 
-    os.remove('tmp.tif')
+os.remove('tmp.tif')
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
