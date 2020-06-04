@@ -12,7 +12,7 @@ import geopandas as gpd
 from shapely.geometry.point import Point
 from skimage.feature import peak_local_max
 from skimage.measure import ransac
-from skimage.transform import EuclideanTransform, AffineTransform, warp
+from skimage.transform import EuclideanTransform, AffineTransform, SimilarityTransform, warp
 from pybob.bob_tools import mkdir_p
 from pybob.image_tools import create_mask_from_shapefile
 from pybob.GeoImg import GeoImg
@@ -151,7 +151,7 @@ search_pts, match_pts, peak_corr, z_corr = imtools.gridded_matching(mst_fullres.
                                                                     mask,
                                                                     spacing=50,
                                                                     tmpl_size=20,
-                                                                    search_size=80,
+                                                                    search_size=40,
                                                                     highpass=True)
 
 xy = np.array([mst_fullres.ij2xy(pt) for pt in search_pts]).reshape(-1, 2)
@@ -169,6 +169,7 @@ gcps['di'] = gcps['src_i'] - gcps['match_i']
 gcps['elevation'] = 0
 gcps.crs = mst_fullres.proj4
 
+gcps.loc[gcps.z_corr == -1, 'z_corr'] = np.nan
 gcps.dropna(inplace=True)
 
 if args.dem is not None:
@@ -178,14 +179,14 @@ if args.dem is not None:
 
 best = gcps[gcps.z_corr > gcps.z_corr.quantile(0.5)]
 
-Mfin, inliers_fin = ransac((best[['match_j', 'match_i']].values, best[['src_j', 'src_i']].values), AffineTransform,
+Mfin, inliers_fin = ransac((best[['match_j', 'match_i']].values, best[['src_j', 'src_i']].values), SimilarityTransform,
                            min_samples=10, residual_threshold=4, max_trials=1000)
 print('{} points used to find final transformation'.format(np.count_nonzero(inliers_fin)))
 best = best[inliers_fin]
 
-out_inds = imtools.sliding_window_filter([slv_fullres.img.shape[1], slv_fullres.img.shape[0]], best, 200, mindist=100)
+# out_inds = imtools.sliding_window_filter([slv_fullres.img.shape[1], slv_fullres.img.shape[0]], best, 200, mindist=100)
 
-best = best.loc[out_inds]
+# best = best.loc[out_inds]
 
 gcp_list = []
 outname = os.path.splitext(os.path.basename(args.slave))[0]
@@ -195,7 +196,7 @@ with open('{}_gcps.txt'.format(outname), 'w') as f:
         print(row.geometry.x, row.geometry.y, row.elevation, row.match_j, row.match_i, file=f)
 
 shutil.copy(args.slave, 'tmp.tif')
-# slv_fullres.write('tmp.tif')
+slv_fullres.write('tmp.tif')
 in_ds = gdal.Open('tmp.tif', gdal.GA_Update)
 
 # unset the geotransform based on
@@ -209,8 +210,8 @@ else:
 gcp_wkt = mst_fullres.proj_wkt
 in_ds.SetGCPs(gcp_list, gcp_wkt)
 
-# del in_ds  # close the dataset, write to disk
-# in_ds = gdal.Open('tmp.tif')
+del in_ds  # close the dataset, write to disk
+in_ds = gdal.Open('tmp.tif')
 
 print('warping image to new geometry')
 mkdir_p('warped')
