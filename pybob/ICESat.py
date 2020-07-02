@@ -3,7 +3,7 @@ pybob.ICESat provides an interface to extracted ICESat(-1) data stored in HDF5 f
     each of the RGI subregions can be found `here <http://tinyurl.com/UiOICESat>`_.
 """
 from __future__ import print_function
-#from future_builtins import zip
+# from future_builtins import zip
 from collections import OrderedDict
 import os
 import h5py
@@ -16,7 +16,9 @@ from osgeo import ogr, osr
 from pybob.GeoImg import GeoImg
 import matplotlib.pyplot as plt
 from shapely.geometry import Point, mapping
-#import numpy as np
+
+
+# import numpy as np
 
 
 def get_file_info(in_filestring):
@@ -37,7 +39,7 @@ def find_keyname(keys, subkey, mode='first'):
         return out_keys
 
 
-def extract_ICESat(in_filename,workdir=None,outfile=None):
+def extract_ICESat(in_filename, workdir=None, outfile=None):
     """
     Extract ICESat data given the extent of a GeoImg.
 
@@ -54,74 +56,75 @@ def extract_ICESat(in_filename,workdir=None,outfile=None):
     """
 
     def getExtent(in_filename):
-    #This function uses GeoImg.find_valid_bbox to get the extent, then projects 
-    #extent into the same reference system as in_filename
-    #in_filename - input filename (string). should be a geotiff
+        # This function uses GeoImg.find_valid_bbox to get the extent, then projects
+        # extent into the same reference system as in_filename
+        # in_filename - input filename (string). should be a geotiff
         myDEM = GeoImg(in_filename)
         mybbox = myDEM.find_valid_bbox()
-        
+
         # Setup the source projection - you can also import from epsg, proj4...
         source = osr.SpatialReference()
         source.ImportFromEPSG(myDEM.epsg)
-    
+
         # The target projection
         target = osr.SpatialReference()
         target.ImportFromEPSG(4326)
-    
+
         # Create the transform - this can be used repeatedly
         transform = osr.CoordinateTransformation(source, target)
-    
+
         # Transform the point. You can also create an ogr geometry and use the more generic `point.Transform()`
         J1 = transform.TransformPoint(mybbox[0], mybbox[2])
         J2 = transform.TransformPoint(mybbox[1], mybbox[3])
-        
+
         minLat = J1[1]
         maxLat = J2[1]
-        
+
         minLon = J1[0]
         maxLon = J2[0]
-        
-    #    if minLon<0:
-    #        minLon = 360 + minLon
-    #    if maxLon<0:
-    #        maxLon = 360 + maxLon
-    
+
+        #    if minLon<0:
+        #        minLon = 360 + minLon
+        #    if maxLon<0:
+        #        maxLon = 360 + maxLon
+
         return minLat, maxLat, minLon, maxLon
-        
-    #workdir = os.path.abspath(workdir)
-    minLat, maxLat, minLon, maxLon = getExtent(in_filename)    
-    
+
+    # workdir = os.path.abspath(workdir)
+    minLat, maxLat, minLon, maxLon = getExtent(in_filename)
+
     # Hard coded name of the input configuration file for ICESat extraction. Here we will 
     # read it in, modify it using the extent of a GeoImg
-    filename="/net/lagringshotell/uio/lagringshotell/geofag/icemass/icemass-data/ICESatData/ICESat_archive/Programs/user_input_running.txt"
-    
+    filename = "/net/lagringshotell/uio/lagringshotell/geofag/icemass/icemass-data/ICESatData/ICESat_archive/Programs/user_input_running.txt"
+
     # Check for the working directory, and set if None
-    if workdir is None: 
-        workdir= os.path.abspath('./')
+    if workdir is None:
+        workdir = os.path.abspath('./')
     tfilename = workdir + os.path.sep + "ICESat_input.txt"
     # Read in the input_file for icesat extraction
     with open(filename) as f:
         lines = f.readlines()
-        #print lines
+        # print lines
 
     # Set the output file 
-    if outfile is None: 
-        outfile='ICESat_DEM.h5'
+    if outfile is None:
+        outfile = 'ICESat_DEM.h5'
     # replace lines
     strout = str(minLat) + "\t" + str(maxLat) + "\t" + str(minLon) + "\t" + str(maxLon)
     lines[10] = strout + "\n"
-    lines[12] = outfile + "\n"    
-    
+    lines[12] = outfile + "\n"
+
     # write output configuration file
     with open(tfilename, 'w') as f:
         for item in lines:
             f.write(str(item))
-    
+
     # Here run bash command to the ICESat extraction routine using our newly created config file
     bshcmd = "module load ICESat; importICESat -np 20 -in " + str(tfilename) + " > ICESat_import_LOG.txt"
-    subprocess.call(bshcmd,stdout=subprocess.PIPE, shell=True)
-    
+    subprocess.call(bshcmd, stdout=subprocess.PIPE, shell=True)
+
     pass
+
 
 class ICESat(object):
     """Create an ICESat dataset from an HDF5 file containing ICESat data."""
@@ -153,14 +156,14 @@ class ICESat(object):
         self.in_dir_path = in_dir
         self.in_dir_abs_path = os.path.abspath(in_dir)
 
-        h5f = h5py.File(os.path.join(self.in_dir_path, self.filename),'r')
+        h5f = h5py.File(os.path.join(self.in_dir_path, self.filename), 'r')
         h5data = h5f['ICESatData']  # if data come from Anne's ICESat scripts, should be the only data group
         data_names = h5data.attrs.keys()
         # make sure that our default attributes are included.
         for c in ['lat', 'lon', 'd_elev', 'd_UTCTime']:
             if c not in cols:
                 cols.append(c)
-                
+
         for c in cols:
             key = find_keyname(data_names, c, 'first')
             ind = h5data.attrs.get(key)[0]
@@ -238,13 +241,13 @@ class ICESat(object):
 
         props = OrderedDict(props)
         del props['d_lat'], props['d_lon']
-                
+
         schema = {'properties': props, 'geometry': 'Point'}
 
         outfile = fiona.open(out_filename, 'w', crs=fiona.crs.from_epsg(epsg), driver=driver, schema=schema)
         lat = self.lat
         lon = self.lon
-        
+
         if epsg != 4326:
             dest_proj = pyproj.Proj(init='epsg:{}'.format(epsg))
             x, y = pyproj.transform(pyproj.Proj(init='epsg:4326'), dest_proj, lon, lat)
@@ -259,7 +262,7 @@ class ICESat(object):
             outfile.write({'properties': out_data, 'geometry': mapping(point)})
 
         outfile.close()
-        
+
     def to_csv(self, out_filename):
         """
         Write ICESat data to csv format using pandas.
@@ -275,16 +278,16 @@ class ICESat(object):
         df['x'] = self.x
         df['y'] = self.y
         df['z'] = self.elev
-    
+
         col_names = ['x', 'y', 'z']
         col_names.extend(data_names)
         df = df[col_names]
         del df['d_elev']
         del df['d_lat']
         del df['d_lon']
-    
+
         df.to_csv(out_filename, index=False)
-        
+
     def clean(self, el_limit=-500):
         """
         Remove all elevation points below a given elevation.
@@ -295,11 +298,11 @@ class ICESat(object):
         mykeep = self.elev > el_limit
         self.x = self.x[mykeep]
         self.y = self.y[mykeep]
-        self.lat = self.lat[mykeep]
-        self.lon = self.lon[mykeep]
-        self.elev = self.elev[mykeep]
-        self.UTCTime = self.UTCTime[mykeep]
-        self.xy = list(zip(self.x,self.y))
+        self.xy = list(zip(self.x, self.y))
+
+        for c in self.column_names:
+            this_attr = getattr(self, c.split('d_', 1)[-1])
+            setattr(self, c.split('d_', 1)[-1], this_attr[mykeep])
 
     def mask(self, mask, mask_value=True, drop=False):
         """
@@ -354,13 +357,15 @@ class ICESat(object):
         mykeep_x = np.logical_and(self.x > xmin, self.x < xmax)
         mykeep_y = np.logical_and(self.y > ymin, self.y < ymax)
         mykeep = np.logical_and(mykeep_x, mykeep_y)
-        
-        self.x=self.x[mykeep]
-        self.y=self.y[mykeep]
-        self.elev=self.elev[mykeep]
-        self.xy = list(zip(self.x,self.y))
-        pass
-    
+
+        self.x = self.x[mykeep]
+        self.y = self.y[mykeep]
+        self.xy = list(zip(self.x, self.y))
+        # make sure to re-size all of the attributes, not just the ones above.
+        for c in self.column_names:
+            this_attr = getattr(self, c.split('d_', 1)[-1])
+            setattr(self, c.split('d_', 1)[-1], this_attr[mykeep])
+
     def get_bounds(self, geo=False):
         """
         Return bounding coordinates of the dataset.
@@ -425,7 +430,7 @@ class ICESat(object):
             fig = plt.figure(facecolor='w')
             # fig.hold(True)
         # else:
-            # fig.hold(True)
+        # fig.hold(True)
 
         if extent is None:
             extent = self.get_bounds(geo=geo)
@@ -445,11 +450,11 @@ class ICESat(object):
             plt.plot(self.x[::sfact], self.y[::sfact], marker=this_marker, ls='None', **kwargs)
 
         ax = fig.gca()  # get current axes
-        ax.set_aspect('equal')    # set equal aspect
+        ax.set_aspect('equal')  # set equal aspect
         ax.autoscale(tight=True)  # set axes tight
         ax.set_xlim(extent[:2])
         ax.set_ylim(extent[2:])
-        
+
         if showfig:
             fig.show()  # don't forget this one!
 
