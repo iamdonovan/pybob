@@ -403,7 +403,7 @@ class GeoImg(object):
 
         if self.NDV is not None:
             self.img[nanmask] = self.NDV
-        else:
+        elif np.count_nonzero(nanmask) > 0:
             self.img[nanmask] = -9999
             self.NDV = -9999
 
