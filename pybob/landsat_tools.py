@@ -7,7 +7,7 @@ from shapely.geometry.linestring import LineString
 from skimage.transform import warp
 from skimage.morphology import binary_closing, disk
 from pybob.GeoImg import GeoImg
-from pymmaster.mmaster_tools import rmse
+from pybob.coreg_tools import RMSE
 
 
 ####################### parameter tools
