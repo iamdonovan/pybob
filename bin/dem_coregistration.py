@@ -33,9 +33,10 @@ def main():
     parser = _argparser()
 
     args = parser.parse_args()
-    master, coreg_slave, _ = dem_coregistration(args.masterdem, args.slavedem,
-                                                glaciermask=args.mask1, landmask=args.mask2,
-                                                outdir=args.outdir, pts=args.icesat, full_ext=args.full_ext)
+    dem_coregistration(args.masterdem, args.slavedem,
+                       glaciermask=args.mask1, landmask=args.mask2,
+                       outdir=args.outdir, pts=args.icesat,
+                       full_ext=args.full_ext, return_var=False)
 
 
 if __name__ == "__main__":
