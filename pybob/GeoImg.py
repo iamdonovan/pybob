@@ -102,6 +102,8 @@ class GeoImg(object):
             self.in_dir_path = in_dir
             self.in_dir_abs_path = os.path.abspath(in_dir)
             self.gd = gdal.Open(os.path.join(self.in_dir_path, self.filename))
+            if self.gd is None:
+                raise RuntimeError('Unable to open file {}'.format(os.path.join(self.in_dir_path, self.filename)))
         else:
             raise Exception('in_filename must be a string or a gdal Dataset')
 
@@ -974,7 +976,7 @@ class GeoImg(object):
         #     pts = [pts]
 
         if self.is_area():
-            self.to_point()            
+            self.to_point()
             
         xx, yy = self.xy(ctype='center', grid=False)
         for pt in pts:
