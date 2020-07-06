@@ -18,5 +18,6 @@ setup(name='pybob',
                'bin/write_qgis_meta.py', 'bin/dem_difference.py',
                'bin/calculate_mmaster_dh_curves.py', 'bin/image_footprint_from_met.py',
                'bin/dem_coregistration_grid.py','bin/extract_ICESat.py',
-               'bin/write_utm_zones.py', 'bin/register_landsat.py', 'bin/orthorectify_landsat.py'],
+               'bin/write_utm_zones.py', 'bin/register_landsat.py',
+               'bin/orthorectify_landsat.py', 'bin/convert_elevations.py'],
       zip_safe=False)
