@@ -23,17 +23,20 @@ def main():
     else:
         suff = 'ell'
 
+    if args.out_folder is None:
+        args.out_folder = os.getcwd()
+
     dem = GeoImg(args.dem)
     geoid = GeoImg(args.geoid)
 
-    geoid = geoid.project(dem)
+    geoid = geoid.reproject(dem)
 
     if args.to_geoid:
         out_dem = dem.copy(new_raster=(dem.img - geoid.img))
     else:
         out_dem = dem.copy(new_raster=(dem.img + geoid.img))
 
-    out_dem.write(os.path.join(dem.in_dir_abs_path,
+    out_dem.write(os.path.join(args.out_folder,
                                os.path.splitext(dem.filename)[0] + '_ell' + os.path.splitext(dem.filename)[1]))
 
 
