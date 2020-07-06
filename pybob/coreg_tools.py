@@ -512,7 +512,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
     slaveDEM = get_geoimg(slaveDEM)
     #    slaveDEM.mask(np.less(slaveDEM.img.data,-30))
-    # we assume that we are working with 'area' pixels (i.e., pixel x,y corresponds to corner)
+    # we assume that we are working with 'area' pixels (i.e., pixel x,y corresponds to corner, not center)
     if slaveDEM.is_point():
         slaveDEM.to_area()
 
