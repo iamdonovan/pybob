@@ -22,7 +22,7 @@ def _argparser():
 
 def main():
     np.seterr(all='ignore')
-    # add master, slave, masks to argparse
+    # add primary, secondary, masks to argparse
     # can also add output directory
     parser = _argparser()
     args = parser.parse_args()

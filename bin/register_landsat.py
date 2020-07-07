@@ -19,28 +19,28 @@ from pybob.GeoImg import GeoImg
 import pybob.image_tools as imtools
 
 
-def get_rough_geotransformation(mst, slv, landmask=None):
-    # mst_lowres = mst.resample(400, method=gdal.GRA_NearestNeighbour)
-    slv_lowres = slv.resample(400, method=gdal.GRA_Lanczos)
-    mst_lowres = mst.resample(400, method=gdal.GRA_Lanczos)
+def get_rough_geotransformation(prim, second, landmask=None):
+    # prim_lowres = prim.resample(400, method=gdal.GRA_NearestNeighbour)
+    second_lowres = second.resample(400, method=gdal.GRA_Lanczos)
+    prim_lowres = prim.resample(400, method=gdal.GRA_Lanczos)
 
-    slv_lowres.img[np.isnan(slv_lowres.img)] = 0
-    mst_lowres.img[np.isnan(mst_lowres.img)] = 0
-
-    if landmask is not None:
-        lmask = create_mask_from_shapefile(mst_lowres, landmask)
-
-    mst_rescale = imtools.stretch_image(mst_lowres.img, (0.05, 0.95))
-
-    _mask = 255 * np.ones(mst_lowres.img.shape, dtype=np.uint8)
+    second_lowres.img[np.isnan(second_lowres.img)] = 0
+    prim_lowres.img[np.isnan(prim_lowres.img)] = 0
 
     if landmask is not None:
-        _mask[np.logical_or(mst_rescale == 0, ~lmask)] = 0
+        lmask = create_mask_from_shapefile(prim_lowres, landmask)
+
+    prim_rescale = imtools.stretch_image(prim_lowres.img, (0.05, 0.95))
+
+    _mask = 255 * np.ones(prim_lowres.img.shape, dtype=np.uint8)
+
+    if landmask is not None:
+        _mask[np.logical_or(prim_rescale == 0, ~lmask)] = 0
     else:
-        _mask[np.logical_or(np.isnan(mst_rescale), mst_rescale == 0)] = 0
+        _mask[np.logical_or(np.isnan(prim_rescale), prim_rescale == 0)] = 0
 
-    search_pts, match_pts, peak_corrs, z_corrs = imtools.gridded_matching(mst_lowres.img,
-                                                                          slv_lowres.img,
+    search_pts, match_pts, peak_corrs, z_corrs = imtools.gridded_matching(prim_lowres.img,
+                                                                          second_lowres.img,
                                                                           _mask,
                                                                           spacing=20,
                                                                           tmpl_size=20,
@@ -62,8 +62,8 @@ def get_rough_geotransformation(mst, slv, landmask=None):
     dst_pts = best_lowres[['match_j', 'match_i']].values
     src_pts = best_lowres[['src_j', 'src_i']].values
 
-    dst_scale = (slv_lowres.dx / slv.dx)
-    src_scale = (mst_lowres.dx / mst.dx)
+    dst_scale = (second_lowres.dx / second.dx)
+    src_scale = (prim_lowres.dx / prim.dx)
 
     best_lowres['dj'] = best_lowres['dj'] * dst_scale
     best_lowres['di'] = best_lowres['di'] * dst_scale
@@ -80,20 +80,20 @@ def qa_mask(img):
                                                 img == 1696, img == 1700, img == 1704, img == 1708)))
 
 
-def get_mask(mst, _args):
-    mask = 255 * np.ones(mst.img.shape, dtype=np.uint8)
+def get_mask(prim, _args):
+    mask = 255 * np.ones(prim.img.shape, dtype=np.uint8)
 
     if _args.quality_mask is not None:
-        slv_qa = GeoImg(_args.quality_mask)
-        quality_mask = qa_mask(slv_qa.img)
+        second_qa = GeoImg(_args.quality_mask)
+        quality_mask = qa_mask(second_qa.img)
         mask[quality_mask] = 0
 
     if _args.landmask is not None:
-        lm = create_mask_from_shapefile(mst, _args.landmask)
+        lm = create_mask_from_shapefile(prim, _args.landmask)
         mask[lm == 0] = 0
 
     if _args.glacmask is not None:
-        gm = create_mask_from_shapefile(mst, _args.glacmask, buffer=200)
+        gm = create_mask_from_shapefile(prim, _args.glacmask, buffer=200)
         mask[gm > 0] = 0
 
     return mask
@@ -102,8 +102,8 @@ def get_mask(mst, _args):
 def _argparser():
     parser = argparse.ArgumentParser(description="Automatically register a Landsat L1GS image to a Landsat L1TP image",
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('master', action='store', type=str, help='non-referenced orthophoto mosaic')
-    parser.add_argument('slave', action='store', type=str, help='georeferenced satellite image')
+    parser.add_argument('primary', action='store', type=str, help='non-referenced orthophoto mosaic')
+    parser.add_argument('secondary', action='store', type=str, help='georeferenced satellite image')
     parser.add_argument('-q', '--quality_mask', action='store', type=str, default=None,
                         help='BQA band for the L1GS image (recommended)')
     parser.add_argument('-dem', action='store', type=str, default=None,
@@ -121,40 +121,40 @@ def _argparser():
 parser_ = _argparser()
 args = parser_.parse_args()
 
-mst_fullres = GeoImg(args.master)
-slv_fullres = GeoImg(args.slave)
+prim_fullres = GeoImg(args.primary)
+second_fullres = GeoImg(args.secondary)
 
-mst_fullres = mst_fullres.reproject(slv_fullres)
+prim_fullres = prim_fullres.reproject(second_fullres)
 
 if not args.no_lowres:
-    Minit, inliers_init, lowres_gcps = get_rough_geotransformation(mst_fullres, slv_fullres, landmask=args.landmask)
+    Minit, inliers_init, lowres_gcps = get_rough_geotransformation(prim_fullres, second_fullres, landmask=args.landmask)
 
-    # rough_tfm = warp(mst_fullres.img, Minit, output_shape=slv_fullres.img.shape, preserve_range=True)
+    # rough_tfm = warp(prim_fullres.img, Minit, output_shape=second_fullres.img.shape, preserve_range=True)
     # rough_tfm[np.isnan(rough_tfm)] = 0
-    # shift the slave image so that it is better aligned with the master image
-    slv_fullres.shift(slv_fullres.dx * lowres_gcps.loc[inliers_init, 'dj'].median(),
-                      slv_fullres.dy * lowres_gcps.loc[inliers_init, 'di'].median())
+    # shift the secondary image so that it is better aligned with the primary image
+    second_fullres.shift(second_fullres.dx * lowres_gcps.loc[inliers_init, 'dj'].median(),
+                      second_fullres.dy * lowres_gcps.loc[inliers_init, 'di'].median())
 
-    mst_fullres = GeoImg(args.master)  # reload master, then re-project
-    mst_fullres = mst_fullres.reproject(slv_fullres)
+    prim_fullres = GeoImg(args.primary)  # reload primary, then re-project
+    prim_fullres = prim_fullres.reproject(second_fullres)
 else:
     print('skipping low-res transformation')
 
-mst_fullres.img[np.isnan(mst_fullres.img)] = 0
+prim_fullres.img[np.isnan(prim_fullres.img)] = 0
 
-# mask = get_mask(mst_fullres, slv_fullres, Minit, args)
-mask = get_mask(mst_fullres, args)
-mask[mst_fullres.img == 0] = 0
+# mask = get_mask(prim_fullres, second_fullres, Minit, args)
+mask = get_mask(prim_fullres, args)
+mask[prim_fullres.img == 0] = 0
 
-search_pts, match_pts, peak_corr, z_corr = imtools.gridded_matching(mst_fullres.img,
-                                                                    slv_fullres.img,
+search_pts, match_pts, peak_corr, z_corr = imtools.gridded_matching(prim_fullres.img,
+                                                                    second_fullres.img,
                                                                     mask,
                                                                     spacing=50,
                                                                     tmpl_size=20,
                                                                     search_size=40,
                                                                     highpass=True)
 
-xy = np.array([mst_fullres.ij2xy(pt) for pt in search_pts]).reshape(-1, 2)
+xy = np.array([prim_fullres.ij2xy(pt) for pt in search_pts]).reshape(-1, 2)
 
 gcps = gpd.GeoDataFrame()
 gcps['geometry'] = [Point(pt) for pt in xy]
@@ -167,7 +167,7 @@ gcps['src_i'] = search_pts[:, 0]
 gcps['dj'] = gcps['src_j'] - gcps['match_j']
 gcps['di'] = gcps['src_i'] - gcps['match_i']
 gcps['elevation'] = 0
-gcps.crs = mst_fullres.proj4
+gcps.crs = prim_fullres.proj4
 
 gcps.loc[gcps.z_corr == -1, 'z_corr'] = np.nan
 gcps.dropna(inplace=True)
@@ -184,19 +184,19 @@ Mfin, inliers_fin = ransac((best[['match_j', 'match_i']].values, best[['src_j', 
 print('{} points used to find final transformation'.format(np.count_nonzero(inliers_fin)))
 best = best[inliers_fin]
 
-# out_inds = imtools.sliding_window_filter([slv_fullres.img.shape[1], slv_fullres.img.shape[0]], best, 200, mindist=100)
+# out_inds = imtools.sliding_window_filter([second_fullres.img.shape[1], second_fullres.img.shape[0]], best, 200, mindist=100)
 
 # best = best.loc[out_inds]
 
 gcp_list = []
-outname = os.path.splitext(os.path.basename(args.slave))[0]
+outname = os.path.splitext(os.path.basename(args.secondary))[0]
 with open('{}_gcps.txt'.format(outname), 'w') as f:
     for i, row in best.iterrows():
         gcp_list.append(gdal.GCP(row.geometry.x, row.geometry.y, row.elevation, row.match_j, row.match_i))
         print(row.geometry.x, row.geometry.y, row.elevation, row.match_j, row.match_i, file=f)
 
-shutil.copy(args.slave, 'tmp.tif')
-slv_fullres.write('tmp.tif')
+shutil.copy(args.secondary, 'tmp.tif')
+second_fullres.write('tmp.tif')
 in_ds = gdal.Open('tmp.tif', gdal.GA_Update)
 
 # unset the geotransform based on
@@ -207,7 +207,7 @@ if in_ds.GetDriver().ShortName == 'GTiff':
 else:
     in_ds.SetGeoTransform([0, 1, 0, 0, 0, 1])
 
-gcp_wkt = mst_fullres.proj_wkt
+gcp_wkt = prim_fullres.proj_wkt
 in_ds.SetGCPs(gcp_list, gcp_wkt)
 
 del in_ds  # close the dataset, write to disk
@@ -215,10 +215,10 @@ in_ds = gdal.Open('tmp.tif')
 
 print('warping image to new geometry')
 mkdir_p('warped')
-gdal.Warp(os.path.join('warped', os.path.basename(args.slave)),
+gdal.Warp(os.path.join('warped', os.path.basename(args.secondary)),
           in_ds, dstSRS=gcp_wkt,
-          xRes=slv_fullres.dx,
-          yRes=slv_fullres.dy,
+          xRes=second_fullres.dx,
+          yRes=second_fullres.dy,
           resampleAlg=gdal.GRA_Lanczos,
           outputType=gdal.GDT_Byte)
 

@@ -18,11 +18,11 @@ sensor_names = ['AST', 'SETSM', 'Map', 'SPOT', 'SDMI', 'HMA']
 
 
 def difference(dem1, dem2, glaciermask=None, landmask=None, outdir='.'):
-    master, slave, _ = ct.dem_coregistration(dem1, dem2, glaciermask, landmask, outdir)
-    master.unmask()
-    slave.unmask()
+    primary, secondary, _ = ct.dem_coregistration(dem1, dem2, glaciermask, landmask, outdir)
+    primary.unmask()
+    secondary.unmask()
 
-    return master.copy(new_raster=(master.img - slave.img))
+    return primary.copy(new_raster=(primary.img - secondary.img))
 
 
 def fill_holes(dDEM, method, **kwargs):

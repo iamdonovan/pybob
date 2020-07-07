@@ -489,11 +489,11 @@ def get_subpixel(res, how='min'):
     return sp_delx, sp_dely
 
 
-def gridded_matching(mst, slv, mask, spacing, tmpl_size=25, search_size=None, highpass=False):
+def gridded_matching(prim, second, mask, spacing, tmpl_size=25, search_size=None, highpass=False):
     # for each of these pairs (src, dst), find the precise subpixel match (or not...)
 
-    jj = np.arange(0, mst.shape[1], spacing)
-    ii = np.arange(0, mst.shape[0], spacing)
+    jj = np.arange(0, prim.shape[1], spacing)
+    ii = np.arange(0, prim.shape[0], spacing)
     J, I = np.meshgrid(jj, ii)
 
     search_pts = np.concatenate([I.reshape(-1,1), J.reshape(-1,1)], axis=1)
@@ -511,12 +511,12 @@ def gridded_matching(mst, slv, mask, spacing, tmpl_size=25, search_size=None, hi
             continue
         try:
             # testchip, _, _ = imtools.make_template(rough_tfm, (pt[1], pt[0]), 40)
-            # dst_chip, _, _ = imtools.make_template(mst.img, (pt[1], pt[0]), 200)
-            testchip, _, _ = make_template(mst, (_i, _j), tmpl_size)
+            # dst_chip, _, _ = imtools.make_template(prim.img, (pt[1], pt[0]), 200)
+            testchip, _, _ = make_template(prim, (_i, _j), tmpl_size)
             if search_size is None:
-                dst_chip = slv
+                dst_chip = second
             else:
-                dst_chip, rows, cols = make_template(slv, (_i, _j), search_size)
+                dst_chip, rows, cols = make_template(second, (_i, _j), search_size)
 
             dst_chip[np.isnan(dst_chip)] = 0
             if highpass:

@@ -192,20 +192,20 @@ def create_stable_mask(img, mask1, mask2):
         return np.logical_or(gmask, np.logical_not(lmask))  # true where there's glacier or water
 
 
-def preprocess(stable_mask, slope, aspect, master, slave):
-    if isinstance(master, GeoImg):
+def preprocess(stable_mask, slope, aspect, primary, secondary):
+    if isinstance(primary, GeoImg):
         stan = np.tan(np.radians(slope)).astype(np.float32)
-        dH = master.copy(new_raster=(master.img - slave.img))
+        dH = primary.copy(new_raster=(primary.img - secondary.img))
         dH.img[stable_mask] = np.nan
-        master_mask = isinstance(master.img, np.ma.masked_array)
-        slave_mask = isinstance(slave.img, np.ma.masked_array)
+        primary_mask = isinstance(primary.img, np.ma.masked_array)
+        secondary_mask = isinstance(secondary.img, np.ma.masked_array)
 
-        if master_mask and slave_mask:
-            dH.mask(np.logical_or(master.img.mask, slave.img.mask))
-        elif master_mask:
-            dH.mask(master.img.mask)
-        elif slave_mask:
-            dH.mask(slave.img.mask)
+        if primary_mask and secondary_mask:
+            dH.mask(np.logical_or(primary.img.mask, secondary.img.mask))
+        elif primary_mask:
+            dH.mask(primary.img.mask)
+        elif secondary_mask:
+            dH.mask(secondary.img.mask)
 
         if dH.isfloat:
             dH.img[stable_mask] = np.nan
@@ -226,16 +226,16 @@ def preprocess(stable_mask, slope, aspect, master, slave):
         ydata = dH.img[mykeep]
         sdata = stan[mykeep]
 
-    elif isinstance(master, ICESat):
-        slave_pts = slave.raster_points(master.xy, nsize=5, mode='cubic')
-        dH = master.elev - slave_pts
+    elif isinstance(primary, ICESat):
+        secondary_pts = secondary.raster_points2(primary.xy, nsize=5, mode='cubic')
+        dH = primary.elev - secondary_pts
 
-        slope_pts = slope.raster_points(master.xy, nsize=5, mode='cubic')
+        slope_pts = slope.raster_points2(primary.xy, nsize=5, mode='cubic')
         stan = np.tan(np.radians(slope_pts))
 
-        aspect_pts = aspect.raster_points(master.xy, nsize=5, mode='cubic')
+        aspect_pts = aspect.raster_points2(primary.xy, nsize=5, mode='cubic')
 
-        smask = stable_mask.raster_points(master.xy) > 0
+        smask = stable_mask.raster_points2(primary.xy) > 0
 
         dH[smask] = np.nan
 
@@ -430,21 +430,21 @@ def get_geoimg(indata):
         raise TypeError('input data must be a string pointing to a gdal dataset, or a GeoImg object.')
 
 
-def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, outdir='.',
+def dem_coregistration(primaryDEM, secondaryDEM, glaciermask=None, landmask=None, outdir='.',
                        pts=False, full_ext=False, return_var=True, alg='Horn', magnlimit=2, inmem=False):
     """
     Iteratively co-register elevation data.
 
-    :param masterDEM: Path to filename or GeoImg dataset representing "master" DEM.
-    :param slaveDEM: Path to filename or GeoImg dataset representing "slave" DEM.
+    :param primaryDEM: Path to filename or GeoImg dataset representing "primary" DEM.
+    :param secondaryDEM: Path to filename or GeoImg dataset representing "secondary" DEM.
     :param glaciermask: Path to shapefile representing points to exclude from co-registration
         consideration (i.e., glaciers).
     :param landmask: Path to shapefile representing points to include in co-registration
         consideration (i.e., stable ground/land).
     :param outdir: Location to save co-registration outputs.
-    :param pts: If True, program assumes that masterDEM represents point data (i.e., ICESat),
-        as opposed to raster data. Slope/aspect are then calculated from slaveDEM.
-        masterDEM should be a string representing an HDF5 file continaing ICESat data.
+    :param pts: If True, program assumes that primaryDEM represents point data (i.e., ICESat),
+        as opposed to raster data. Slope/aspect are then calculated from secondaryDEM.
+        primaryDEM should be a string representing an HDF5 file continaing ICESat data.
     :param full_ext: If True, program writes full extents of input DEMs. If False, program writes
         input DEMs cropped to their common extent. Default is False.
     :param return_var: return variables representing co-registered DEMs and offsets (default).
@@ -453,8 +453,8 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         sum in quadrature of dx, dy, dz shifts. Default is 2 m.
     :param inmem: Don't write anything to disk
 
-    :type masterDEM: str, pybob.GeoImg
-    :type slaveDEM: str, pybob.GeoImg
+    :type primaryDEM: str, pybob.GeoImg
+    :type secondaryDEM: str, pybob.GeoImg
     :type glaciermask: str
     :type landmask: str
     :type outdir: str
@@ -465,11 +465,11 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     :type magnlimit: float
     :type inmem: bool
 
-    :returns masterDEM, outslave, out_offs: if return_var=True, returns master DEM, co-registered slave DEM, and x,y,z
-        shifts removed from slave DEM.
+    :returns primaryDEM, outsecondary, out_offs, stats: if return_var=True, returns primary DEM, co-registered
+        secondary DEM x,y,z shifts removed from secondary DEM, and before/after comparison stats.
 
         If co-registration fails (i.e., there are too few acceptable points to perform co-registration), then returns
-        original master and slave DEMs, with offsets set to -1.
+        original primary and secondary DEMs, with offsets set to -1.
     """
 
     # if the output directory does not exist, create it.
@@ -492,69 +492,69 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     else:
         print('Writing DEMs cropped to common extent.')
 
-    if type(masterDEM) is str:
-        mfilename = os.path.basename(masterDEM)
-        mfiledir = os.path.dirname(masterDEM)
+    if type(primaryDEM) is str:
+        mfilename = os.path.basename(primaryDEM)
+        mfiledir = os.path.dirname(primaryDEM)
         if mfiledir == '':
             mfiledir = os.path.abspath('.')
     else:
-        mfilename = masterDEM.filename
-        mfiledir = masterDEM.in_dir_abs_path
+        mfilename = primaryDEM.filename
+        mfiledir = primaryDEM.in_dir_abs_path
 
-    if type(slaveDEM) is str:
-        sfilename = os.path.basename(slaveDEM)
-        sfiledir = os.path.dirname(slaveDEM)
+    if type(secondaryDEM) is str:
+        sfilename = os.path.basename(secondaryDEM)
+        sfiledir = os.path.dirname(secondaryDEM)
         if sfiledir == '':
             sfiledir = os.path.abspath('.')
     else:
-        sfilename = slaveDEM.filename
-        sfiledir = slaveDEM.in_dir_abs_path
+        sfilename = secondaryDEM.filename
+        sfiledir = secondaryDEM.in_dir_abs_path
 
-    slaveDEM = get_geoimg(slaveDEM)
-    #    slaveDEM.mask(np.less(slaveDEM.img.data,-30))
+    secondaryDEM = get_geoimg(secondaryDEM)
+    #    secondaryDEM.mask(np.less(secondaryDEM.img.data,-30))
     # we assume that we are working with 'area' pixels (i.e., pixel x,y corresponds to corner, not center)
-    if slaveDEM.is_point():
-        slaveDEM.to_area()
+    if secondaryDEM.is_point():
+        secondaryDEM.to_area()
 
-    # if we're dealing with ICESat/pt data, change how we load masterDEM data
+    # if we're dealing with ICESat/pt data, change how we load primaryDEM data
     if pts:
-        masterDEM = ICESat(masterDEM)
-        masterDEM.project('epsg:{}'.format(slaveDEM.epsg))
-        mybounds = [slaveDEM.xmin, slaveDEM.xmax, slaveDEM.ymin, slaveDEM.ymax]
-        masterDEM.clip(mybounds)
-        masterDEM.clean()
-        slope_geo = get_slope(slaveDEM, alg)
-        aspect_geo = get_aspect(slaveDEM, alg)
+        primaryDEM = ICESat(primaryDEM)
+        primaryDEM.project('epsg:{}'.format(secondaryDEM.epsg))
+        mybounds = [secondaryDEM.xmin, secondaryDEM.xmax, secondaryDEM.ymin, secondaryDEM.ymax]
+        primaryDEM.clip(mybounds)
+        primaryDEM.clean()
+        slope_geo = get_slope(secondaryDEM, alg)
+        aspect_geo = get_aspect(secondaryDEM, alg)
 
         if not inmem:
             slope_geo.write('tmp_slope.tif', out_folder=outdir)
             aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
 
-        smask = create_stable_mask(slaveDEM, glaciermask, landmask)
-        slaveDEM.mask(smask)
-        stable_mask = slaveDEM.copy(new_raster=smask)  # make the mask a geoimg
+        smask = create_stable_mask(secondaryDEM, glaciermask, landmask)
+        secondaryDEM.mask(smask)
+        stable_mask = secondaryDEM.copy(new_raster=smask)  # make the mask a geoimg
 
         # Create initial plot of where stable terrain is, including ICESat pts
-        fig1, _ = plot_shaded_dem(slaveDEM)
-        plt.plot(masterDEM.x[~np.isnan(masterDEM.elev)], masterDEM.y[~np.isnan(masterDEM.elev)], 'k.')
+        fig1, _ = plot_shaded_dem(secondaryDEM)
+        plt.plot(primaryDEM.x[~np.isnan(primaryDEM.elev)], primaryDEM.y[~np.isnan(primaryDEM.elev)], 'k.')
         pp.savefig(fig1, bbox_inches='tight', dpi=200)
 
     else:
-        orig_masterDEM = get_geoimg(masterDEM)
+        orig_primaryDEM = get_geoimg(primaryDEM)
 
-        # orig_masterDEM.mask(np.less(orig_masterDEM.img.data,-10))
-        if orig_masterDEM.is_point():
-            orig_masterDEM.to_area()
-        masterDEM = orig_masterDEM.reproject(slaveDEM)  # need to resample masterDEM to cell size, extent of slave.
+        # orig_primaryDEM.mask(np.less(orig_primaryDEM.img.data,-10))
+        if orig_primaryDEM.is_point():
+            orig_primaryDEM.to_area()
+        primaryDEM = orig_primaryDEM.reproject(secondaryDEM)  # need to resample primaryDEM to cell size, extent of secondary.
 
-        stable_mask = create_stable_mask(masterDEM, glaciermask, landmask)
+        stable_mask = create_stable_mask(primaryDEM, glaciermask, landmask)
 
-        slope_geo = get_slope(masterDEM, alg)
-        aspect_geo = get_aspect(masterDEM, alg)
+        slope_geo = get_slope(primaryDEM, alg)
+        aspect_geo = get_aspect(primaryDEM, alg)
         if not inmem:
             slope_geo.write('tmp_slope.tif', out_folder=outdir)
             aspect_geo.write('tmp_aspect.tif', out_folder=outdir)
-        masterDEM.mask(stable_mask)
+        primaryDEM.mask(stable_mask)
 
     slope = np.ma.masked_invalid(slope_geo.img)
     aspect = np.ma.masked_invalid(aspect_geo.img)
@@ -563,7 +563,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         print("Exiting: Fewer than 500 valid slope points")
         if return_var:
             pp.close()
-            return masterDEM, slaveDEM, -1
+            return primaryDEM, secondaryDEM, -1
         else:
             pp.close()
             return -1
@@ -579,11 +579,11 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     mytitle = 'DEM difference: pre-coregistration'
 
     if pts:
-        this_slave = slaveDEM
-        this_slave.mask(stable_mask.img)
+        this_secondary = secondaryDEM
+        this_secondary.mask(stable_mask.img)
     else:
-        this_slave = slaveDEM.reproject(masterDEM)
-        this_slave.mask(stable_mask)
+        this_secondary = secondaryDEM.reproject(primaryDEM)
+        this_secondary.mask(stable_mask)
 
     plt.close('all')
     while mythresh > 2 and magnthresh > magnlimit:
@@ -593,7 +593,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
         # if we don't have two DEMs, showing the false hillshade doesn't work.
         if not pts:
-            dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, this_slave)
+            dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, primaryDEM, this_secondary)
             # if np.logical_or(np.sum(np.isfinite(xdata.flatten()))<100, np.sum(np.isfinite(ydata.flatten()))<100):
             if np.logical_or.reduce((np.sum(np.isfinite(xdata.flatten())) < 100,
                                      np.sum(np.isfinite(ydata.flatten())) < 100,
@@ -601,7 +601,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
                 print("Exiting: Fewer than 100 data points")
                 if return_var:
                     pp.close()
-                    return masterDEM, slaveDEM, -1
+                    return primaryDEM, secondaryDEM, -1
                 else:
                     pp.close()
                     return -1
@@ -617,7 +617,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             dH_img = dH.img
 
         else:
-            dH, xdata, ydata, sdata = preprocess(stable_mask, slope_geo, aspect_geo, masterDEM, this_slave)
+            dH, xdata, ydata, sdata = preprocess(stable_mask, slope_geo, aspect_geo, primaryDEM, this_secondary)
             dH_img = dH
             # if np.logical_or(np.sum(np.isfinite(dH.flatten()))<100, np.sum(np.isfinite(ydata.flatten()))<100):
             if np.logical_or.reduce((np.sum(np.isfinite(xdata.flatten())) < 100,
@@ -626,7 +626,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
                 print("Exiting: Not enough data points")
                 if return_var:
                     pp.close()
-                    return masterDEM, slaveDEM, -1
+                    return primaryDEM, secondaryDEM, -1
                 else:
                     pp.close()
                     return -1
@@ -653,29 +653,29 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         magnthresh = np.sqrt(np.square(dx) + np.square(dy) + np.square(dz))
         print(tot_dx, tot_dy, tot_dz)
         print(tot_dx, tot_dy, tot_dz, file=paramf)
-        # print np.nanmean(slaves[-1].img)
+        # print np.nanmean(secondarys[-1].img)
 
-        # print slaves[-1].xmin, slaves[-1].ymin
+        # print secondarys[-1].xmin, secondarys[-1].ymin
 
-        # shift most recent slave DEM
-        this_slave.shift(dx, dy)  # shift in x,y
+        # shift most recent secondary DEM
+        this_secondary.shift(dx, dy)  # shift in x,y
         # print tot_dx, tot_dy
-        # no idea why slaves[-1].img += dz doesn't work, but the below seems to.
-        zupdate = np.ma.array(this_slave.img.data + dz, mask=this_slave.img.mask)  # shift in z
-        this_slave = this_slave.copy(new_raster=zupdate)
+        # no idea why secondarys[-1].img += dz doesn't work, but the below seems to.
+        zupdate = np.ma.array(this_secondary.img.data + dz, mask=this_secondary.img.mask)  # shift in z
+        this_secondary = this_secondary.copy(new_raster=zupdate)
         if pts:
-            this_slave.mask(stable_mask.img)
+            this_secondary.mask(stable_mask.img)
             slope_geo.shift(dx, dy)
             aspect_geo.shift(dx, dy)
             stable_mask.shift(dx, dy)
         else:
-            this_slave = this_slave.reproject(masterDEM)
-            this_slave.mask(stable_mask)
+            this_secondary = this_secondary.reproject(primaryDEM)
+            this_secondary.mask(stable_mask)
 
         print("Percent-improvement threshold: " + str(mythresh))
         print("Magnitude threshold: " + str(magnthresh))
 
-        # slaves[-1].display()
+        # secondarys[-1].display()
         if mythresh > 2 and magnthresh > magnlimit:
             dH = None
             dx = None
@@ -686,7 +686,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
             sdata = None
         else:
             if not pts:
-                dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, this_slave)
+                dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, primaryDEM, this_secondary)
                 mytitle = "DEM difference: After Iteration {}".format(mycount)
                 # adjust final dH
                 # myfadj=np.nanmean([np.nanmean(dH.img),np.nanmedian(dH.img)])
@@ -698,7 +698,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
                 dHfinal = dH.img
             else:
                 mytitle2 = "Co-registration: FINAL"
-                dH, xdata, ydata, sdata = preprocess(stable_mask, slope_geo, aspect_geo, masterDEM, this_slave)
+                dH, xdata, ydata, sdata = preprocess(stable_mask, slope_geo, aspect_geo, primaryDEM, this_secondary)
                 dx, dy, dz = coreg_fitting(xdata, ydata, sdata, mytitle2, pp)
                 dHfinal = dH
         plt.close('all')
@@ -713,29 +713,29 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     # dH.write(outdir + os.path.sep + 'dHpost.tif') # have to fill these in!
     # save full dH output
     # dHfinal.write('dHpost.tif', out_folder=outdir)
-    # save adjusted slave dem
+    # save adjusted secondary dem
     if sfilename is not None:
-        slaveoutfile = '.'.join(sfilename.split('.')[0:-1]) + '_adj.tif'
+        secondaryoutfile = '.'.join(sfilename.split('.')[0:-1]) + '_adj.tif'
     else:
-        slaveoutfile = 'slave_adj.tif'
+        secondaryoutfile = 'secondary_adj.tif'
 
     if pts:
-        outslave = slaveDEM.copy()
+        outsecondary = secondaryDEM.copy()
     else:
         if full_ext:
-            outslave = get_geoimg(slaveDEM)
-            # outslave = slaveDEM.copy()
+            outsecondary = get_geoimg(secondaryDEM)
+            # outsecondary = secondaryDEM.copy()
         else:
-            outslave = slaveDEM.reproject(masterDEM)
-    # outslave = this_slave.copy()
-    # outslave.unmask()
-    outslave.shift(tot_dx, tot_dy)
-    outslave.img = outslave.img + tot_dz
+            outsecondary = secondaryDEM.reproject(primaryDEM)
+    # outsecondary = this_secondary.copy()
+    # outsecondary.unmask()
+    outsecondary.shift(tot_dx, tot_dy)
+    outsecondary.img = outsecondary.img + tot_dz
 
     # if not pts and not full_ext:
-    #    outslave = outslave.reproject(masterDEM)
+    #    outsecondary = outsecondary.reproject(primaryDEM)
     if not inmem:
-        outslave.write(slaveoutfile, out_folder=outdir)
+        outsecondary.write(secondaryoutfile, out_folder=outdir)
 
     if pts:
         if not inmem:
@@ -745,24 +745,24 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     # Final Check --- for debug
     if not pts:
         print("FinalCHECK")
-        # outslave = outslave.reproject(masterDEM)
-        masterDEM = orig_masterDEM.reproject(outslave)
+        # outsecondary = outsecondary.reproject(primaryDEM)
+        primaryDEM = orig_primaryDEM.reproject(outsecondary)
 
-        dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, masterDEM, outslave)
+        dH, xdata, ydata, sdata = preprocess(stable_mask, slope, aspect, primaryDEM, outsecondary)
         false_hillshade(dH, 'FINAL CHECK', pp)
         # dx, dy, dz = coreg_fitting(xdata, ydata, sdata, "Final Check", pp)
 
         if mfilename is not None:
             mastoutfile = '.'.join(mfilename.split('.')[0:-1]) + '_adj.tif'
         else:
-            mastoutfile = 'master_adj.tif'
+            mastoutfile = 'primary_adj.tif'
 
         if full_ext:
-            masterDEM = orig_masterDEM
-            outslave = outslave.reproject(masterDEM)
-        masterDEM.write(mastoutfile, out_folder=outdir)
+            primaryDEM = orig_primaryDEM
+            outsecondary = outsecondary.reproject(primaryDEM)
+        primaryDEM.write(mastoutfile, out_folder=outdir)
     if not inmem:
-        outslave.write(slaveoutfile, out_folder=outdir)
+        outsecondary.write(secondaryoutfile, out_folder=outdir)
     pp.close()
     print("Fin.")
     print("Fin.", file=paramf)
@@ -774,4 +774,4 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
 
     gc.collect()  # try releasing memory!
     if return_var:
-        return masterDEM, outslave, out_offs, stats_final
+        return primaryDEM, outsecondary, out_offs, stats_final

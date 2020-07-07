@@ -20,8 +20,8 @@ def _argparser():
     parser = argparse.ArgumentParser(description="""Iteratively calculate co-registration parameters for sub-grids of two DEMs, as seen in `Nuth and Kääb (2011)`_.
 
                 .. _Nuth and Kääb (2011): https://www.the-cryosphere.net/5/271/2011/tc-5-271-2011.html""")
-    parser.add_argument('masterdem', type=str, help='path to master DEM to be used for co-registration')
-    parser.add_argument('slavedem', type=str, help='path to slave DEM to be co-registered')
+    parser.add_argument('primarydem', type=str, help='path to primary DEM to be used for co-registration')
+    parser.add_argument('secondarydem', type=str, help='path to secondary DEM to be co-registered')
     parser.add_argument('-a', '--mask1', type=str, default=None,
                         help='Glacier mask. Areas inside of this shapefile will not be used for coregistration [None]')
     parser.add_argument('-b', '--mask2', type=str, default=None,
@@ -33,15 +33,15 @@ def _argparser():
     parser.add_argument('-o', '--outdir', type=str, default='.',
                         help='Directory to output files to (creates if not already present). [.]')
     parser.add_argument('-i', '--icesat', action='store_true', default=False,
-                        help="Process assuming that master DEM is ICESat data [False].")
+                        help="Process assuming that primary DEM is ICESat data [False].")
     parser.add_argument('-f', '--full_ext', action='store_true', default=False,
-                        help="Write full extent of master DEM and shifted slave DEM. [False].")
+                        help="Write full extent of primary DEM and shifted secondary DEM. [False].")
     return parser
 
 
 def main():
     np.seterr(all='ignore')
-    # add master, slave, masks to argparse
+    # add primary, secondary, masks to argparse
     # can also add output directory
     parser = _argparser()
     args = parser.parse_args()
@@ -120,8 +120,8 @@ def main():
         del newGdal
         pass 
 
-    # Divide SLAVE DEM into grid for co-registration
-    myDEMs = collect_subimages(args.slavedem,args.mysize)
+    # Divide secondary DEM into grid for co-registration
+    myDEMs = collect_subimages(args.secondarydem,args.mysize)
        
     # if the output directory does not exist, create it.
     outdir = os.path.abspath(args.outdir)
@@ -147,16 +147,16 @@ def main():
     # mydirs=mydirs[:15]
 
     # get a dictionary of arguments for each of the different DEMs,
-    # starting with the common arguments (master dem, glacier mask, etc.)
-    # dem_coregistration(masterDEM, slaveDEM, glaciermask=None,
+    # starting with the common arguments (primary dem, glacier mask, etc.)
+    # dem_coregistration(primaryDEM, secondaryDEM, glaciermask=None,
     # landmask=None, outdir='.', pts=False, full_ext=False, return_var=True):
-    arg_dict = {'masterDEM': args.masterdem, 
+    arg_dict = {'primaryDEM': args.primarydem,
                 'glaciermask': args.mask1, 
                 'landmask': args.mask2, 
                 'pts': args.icesat, 
                 'full_ext': args.full_ext, 
                 'return_var': False}
-    u_args = [{'outdir': mydirs[ix], 'slaveDEM': mynames[ix]} for ix in np.arange(0,len(myDEMs))]
+    u_args = [{'outdir': mydirs[ix], 'secondaryDEM': mynames[ix]} for ix in np.arange(0,len(myDEMs))]
     for d in u_args:
         d.update(arg_dict)
 
