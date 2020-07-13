@@ -6,6 +6,7 @@ from __future__ import print_function
 # from future_builtins import zip
 from collections import OrderedDict
 import os
+import re
 import h5py
 import numpy as np
 import pandas as pd
@@ -129,7 +130,9 @@ def extract_ICESat(in_filename, workdir=None, outfile=None):
 class ICESat(object):
     """Create an ICESat dataset from an HDF5 file containing ICESat data."""
 
-    def __init__(self, in_filename, in_dir=None, cols=['lat', 'lon', 'd_elev', 'd_UTCTime'], ellipse_hts=True):
+    def __init__(self, in_filename, in_dir=None, el_name='d_elev',
+                 cols=['lat', 'lon', 'd_elev', 'd_UTCTime'],
+                 ellipse_hts=True):
         """
         :param in_filename: Filename (optionally with path) of HDF5 file to be read in.
         :param in_dir: Directory where in_filename is located. If not given, the directory
@@ -147,7 +150,7 @@ class ICESat(object):
 
         >>> ICESat('donjek_icesat.h5', ellipse_hts=True)
 
-        will return an ICESat object with lat, lon, elevation, and UTCTime attributes, with elevations given as height
+        will return an ICESat object with lat, lon, elevation, and time attributes, with elevations given as height
         above WGS84 ellipsoid.
         """
         if in_dir is None:
@@ -157,54 +160,94 @@ class ICESat(object):
         self.in_dir_abs_path = os.path.abspath(in_dir)
 
         h5f = h5py.File(os.path.join(self.in_dir_path, self.filename), 'r')
-        h5data = h5f['ICESatData']  # if data come from Anne's ICESat scripts, should be the only data group
-        data_names = h5data.attrs.keys()
-        # make sure that our default attributes are included.
-        for c in ['lat', 'lon', 'd_elev', 'd_UTCTime']:
-            if c not in cols:
-                cols.append(c)
+        if 'ICESatData' in h5f.keys():  # this came from Anne's script
+            h5data = h5f['ICESatData']  # if data come from Anne's ICESat scripts, should be the only data group
+            data_names = h5data.attrs.keys()
+            # make sure that our default attributes are included.
+            for c in ['lat', 'lon', 'd_elev', 'd_UTCTime']:
+                if c not in cols:
+                    cols.append(c)
 
-        for c in cols:
-            key = find_keyname(data_names, c, 'first')
-            ind = h5data.attrs.get(key)[0]
-            # set the attribute, removing d_ from the attribute name if it exists
-            setattr(self, c.split('d_', 1)[-1], h5data[ind, :])
-            if c == 'lon':
-                # return longitudes ranging from -180 to 180 (rather than 0 to 360)
+            for c in cols:
+                key = find_keyname(data_names, c, 'first')
+                ind = h5data.attrs.get(key)[0]
+                # set the attribute, removing d_ from the attribute name if it exists
+                setattr(self, re.split('^d_', c, maxsplit=1)[-1], h5data[ind, :])
+                if c == 'lon':
+                    # return longitudes ranging from -180 to 180 (rather than 0 to 360)
+                    self.lon[self.lon > 180] = self.lon[self.lon > 180] - 360
+            self.h5data = h5data
+
+        elif 'Data_1HZ' in h5f.keys() or 'Data_40HZ' in h5f.keys():  # this is the original GLAS data
+            data_names = ['d_lat', 'd_lon', 'd_UTCTime', 'd_elev', 'd_deltaEllip']
+            cols = data_names
+            self.lat = h5f['Data_40HZ']['Geolocation']['d_lat'][()]
+            self.lon = h5f['Data_40HZ']['Geolocation']['d_lon'][()]
+            if self.lon.max() > 180:
                 self.lon[self.lon > 180] = self.lon[self.lon > 180] - 360
+            # self.i_track = h5f['Data_1HZ']['Geolocation']['i_track'][()]
+            self.UTCTime = h5f['Data_40HZ']['Time']['d_UTCTime_40'][()]
+            self.elev = h5f['Data_40HZ']['Elevation_Surfaces']['d_elev'][()]
+            self.deltaEllip = h5f['Data_40HZ']['Geophysical']['d_deltaEllip'][()]
+
+        else:  # everything else, probably gonna break.
+            data_names = list(h5f.keys())
+            cols = data_names
+            try:
+                setattr(self, 'elev', h5f[el_name][()])
+            except KeyError as e:
+                raise KeyError('Unable to set elevation attribute using {}'.format(el_name))
+
+            for d in data_names:
+                setattr(self, d, h5f[d][()])
+                if d == 'lon' and self.lon.max() > 180:
+                    self.lon[self.lon > 180] = self.lon[self.lon > 180] - 360
 
         self.data_names = data_names
         self.column_names = cols
-        self.h5data = h5data
         self.ellipse_hts = False
         self.proj = pyproj.Proj(init='epsg:4326')
         self.x = self.lon
         self.y = self.lat
         self.xy = list(zip(self.x, self.y))
+        self.size = self.x.size
 
         if ellipse_hts:
             self.to_ellipse()
+
+    def remove_nodata(self):
+        good_data = np.logical_and(np.isfinite(self.lat), np.isfinite(self.lon))
+        for c in self.column_names:
+            this_attr = getattr(self, re.split('^d_', c, maxsplit=1)[-1])
+            setattr(self, re.split('^d_', c, maxsplit=1)[-1], this_attr[good_data])
+
 
     def to_ellipse(self):
         """
         Convert ICESat elevations to ellipsoid heights, based on the data stored in the HDF5 file.
         """
         # fgdh = find_keyname(self.data_names, 'd_gdHt')
-        kde = find_keyname(self.data_names, 'd_deltaEllip', 'first')
-        ide = self.h5data.attrs.get(kde)[0]
-        de = self.h5data[ide, :]
-        self.ellipse_hts = True
-        self.elev = self.elev + de
+        if not self.ellipse_hts:
+            try:
+                de = self.deltaEllip
+                self.ellipse_hts = True
+                self.elev = self.elev + de
+            except AttributeError as e:
+                print('Unable to set ellipsoid heights - object has no deltaEllip attribute.')
+                return
 
     def from_ellipse(self):
         """
         Convert ICESat elevations from ellipsoid heights, based on the data stored in the HDF5 file.
         """
-        kde = find_keyname(self.data_names, 'd_deltaEllip', 'first')
-        ide = self.h5data.attrs.get(kde)[0]
-        de = self.h5data[ide, :]
-        self.ellipse_hts = False
-        self.elev = self.elev - de
+        if self.ellipse_hts:
+            try:
+                de = self.deltaEllip
+                self.ellipse_hts = False
+                self.elev = self.elev - de
+            except AttributeError as e:
+                print('Unable to set ellipsoid heights - object has no deltaEllip attribute.')
+                return
 
     def to_shp(self, out_filename, driver='ESRI Shapefile', epsg=4326):
         """
@@ -295,14 +338,15 @@ class ICESat(object):
         :param el_limit: minimum elevation to accept
         :type el_limit: float
         """
-        mykeep = self.elev > el_limit
+        mykeep = np.logical_and(np.isfinite(self.elev), self.elev > el_limit)
         self.x = self.x[mykeep]
         self.y = self.y[mykeep]
         self.xy = list(zip(self.x, self.y))
+        self.size = self.x.size
 
         for c in self.column_names:
-            this_attr = getattr(self, c.split('d_', 1)[-1])
-            setattr(self, c.split('d_', 1)[-1], this_attr[mykeep])
+            this_attr = getattr(self, re.split('^d_', c, maxsplit=1)[-1])
+            setattr(self, re.split('^d_', c, maxsplit=1)[-1], this_attr[mykeep])
 
     def mask(self, mask, mask_value=True, drop=False):
         """
@@ -324,16 +368,16 @@ class ICESat(object):
             self.y = np.ma.masked_where(mask, self.y)
 
             for c in self.column_names:
-                this_attr = getattr(self, c.split('d_', 1)[-1])
+                this_attr = getattr(self, re.split('^d_', c, maxsplit=1)[-1])
                 masked_attr = np.ma.masked_where(mask, this_attr)
-                setattr(self, c.split('d_', 1)[-1], masked_attr)
+                setattr(self, re.split('^d_', c, maxsplit=1)[-1], masked_attr)
         else:
             self.x = self.x[mask]
             self.y = self.y[mask]
             for c in self.column_names:
-                this_attr = getattr(self, c.split('d_', 1)[-1])
+                this_attr = getattr(self, re.split('^d_', c, maxsplit=1)[-1])
                 masked_attr = this_attr[mask]
-                setattr(self, c.split('d_', 1)[-1], masked_attr)
+                setattr(self, re.split('^d_', c, maxsplit=1)[-1], masked_attr)
 
         self.xy = list(zip(self.x, self.y))
 
@@ -360,11 +404,13 @@ class ICESat(object):
 
         self.x = self.x[mykeep]
         self.y = self.y[mykeep]
+        self.size = self.x.size
+
         self.xy = list(zip(self.x, self.y))
         # make sure to re-size all of the attributes, not just the ones above.
         for c in self.column_names:
-            this_attr = getattr(self, c.split('d_', 1)[-1])
-            setattr(self, c.split('d_', 1)[-1], this_attr[mykeep])
+            this_attr = getattr(self, re.split('^d_', c, maxsplit=1)[-1])
+            setattr(self, re.split('^d_', c, maxsplit=1)[-1], this_attr[mykeep])
 
     def get_bounds(self, geo=False):
         """
