@@ -190,6 +190,24 @@ class ICESat(object):
             self.elev = h5f['Data_40HZ']['Elevation_Surfaces']['d_elev'][()]
             self.deltaEllip = h5f['Data_40HZ']['Geophysical']['d_deltaEllip'][()]
 
+        elif 'gt1l' in h5f.keys():  # this is ATL06 data from NSIDC
+            data_names = ['lat', 'lon', 'elev', 'UTCTime', 'deltaEllip']
+            cols = data_names
+            self.lat = np.concatenate([h5f[k]['land_ice_segments']['latitude'][()]
+                                       for k in h5f.keys() if 'gt' in k])
+            self.lon = np.concatenate([h5f[k]['land_ice_segments']['longitude'][()]
+                                       for k in h5f.keys() if 'gt' in k])
+            self.elev = np.concatenate([h5f[k]['land_ice_segments']['h_li'][()]
+                                        for k in h5f.keys() if 'gt' in k])
+            delta_times = np.concatenate([h5f[k]['land_ice_segments']['delta_time'][()]
+                                          for k in h5f.keys() if 'gt' in k])
+            self.UTCTime = np.datetime64('2018-01-01') + np.array([np.timedelta64(dt, 's')
+                                                                   for dt in delta_times.astype(int)])
+            self.deltaEllip = np.concatenate([h5f[k]['land_ice_segments']['dem']['geoid_h'][()]
+                                              for k in h5f.keys() if 'gt' in k])
+            if self.lon.max() > 180:
+                self.lon[self.lon > 180] = self.lon[self.lon > 180] - 360
+
         else:  # everything else, probably gonna break.
             data_names = list(h5f.keys())
             cols = data_names
