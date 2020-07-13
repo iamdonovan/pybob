@@ -518,7 +518,9 @@ def dem_coregistration(primaryDEM, secondaryDEM, glaciermask=None, landmask=None
 
     # if we're dealing with ICESat/pt data, change how we load primaryDEM data
     if pts:
-        primaryDEM = ICESat(primaryDEM)
+        if not isinstance(ICESat, primaryDEM):
+            primaryDEM = ICESat(primaryDEM)
+
         primaryDEM.project('epsg:{}'.format(secondaryDEM.epsg))
         mybounds = [secondaryDEM.xmin, secondaryDEM.xmax, secondaryDEM.ymin, secondaryDEM.ymax]
         primaryDEM.clip(mybounds)
