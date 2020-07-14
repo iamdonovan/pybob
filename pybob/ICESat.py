@@ -131,7 +131,7 @@ class ICESat(object):
     """Create an ICESat dataset from an HDF5 file containing ICESat data."""
 
     def __init__(self, in_filename, in_dir=None, el_name='d_elev',
-                 cols=['lat', 'lon', 'd_elev', 'd_UTCTime'],
+                 cols=['lat', 'lon', 'd_elev', 'd_UTCTime', 'd_deltaEllip'],
                  ellipse_hts=True):
         """
         :param in_filename: Filename (optionally with path) of HDF5 file to be read in.
@@ -158,13 +158,24 @@ class ICESat(object):
         self.filename = in_filename
         self.in_dir_path = in_dir
         self.in_dir_abs_path = os.path.abspath(in_dir)
+        self.icesat_type = None
 
         h5f = h5py.File(os.path.join(self.in_dir_path, self.filename), 'r')
-        if 'ICESatData' in h5f.keys():  # this came from Anne's script
+        if 'ShortName' in h5f.attrs.keys():
+            if 'GLAH' in str(h5f.attrs['ShortName']):
+                setattr(self, 'icesat_type', 'GLAS')
+        elif 'short_name' in h5f.attrs.keys():
+            setattr(self, 'icesat_type', 'ATL06')
+        elif 'ICESatData' in h5f.keys():
+            setattr(self, 'icesat_type', 'UiO')
+        else:
+            setattr(self, 'icesat_type', 'homebrew')
+
+        if self.icesat_type == 'UiO':  # this came from Anne's script
             h5data = h5f['ICESatData']  # if data come from Anne's ICESat scripts, should be the only data group
             data_names = h5data.attrs.keys()
             # make sure that our default attributes are included.
-            for c in ['lat', 'lon', 'd_elev', 'd_UTCTime']:
+            for c in ['lat', 'lon', 'd_elev', 'd_UTCTime', 'd_deltaEllip']:
                 if c not in cols:
                     cols.append(c)
 
@@ -176,9 +187,11 @@ class ICESat(object):
                 if c == 'lon':
                     # return longitudes ranging from -180 to 180 (rather than 0 to 360)
                     self.lon[self.lon > 180] = self.lon[self.lon > 180] - 360
-            self.h5data = h5data
+            delta_times = self.UTCTime
+            self.UTCTime = np.datetime64('2000-01-01') + np.array([np.timedelta64(dt, 's')
+                                                                   for dt in delta_times.astype(int)])
 
-        elif 'Data_1HZ' in h5f.keys() or 'Data_40HZ' in h5f.keys():  # this is the original GLAS data
+        elif self.icesat_type == 'GLAS':  # this is the original GLAS data
             data_names = ['d_lat', 'd_lon', 'd_UTCTime', 'd_elev', 'd_deltaEllip']
             cols = data_names
             self.lat = h5f['Data_40HZ']['Geolocation']['d_lat'][()]
@@ -186,11 +199,13 @@ class ICESat(object):
             if self.lon.max() > 180:
                 self.lon[self.lon > 180] = self.lon[self.lon > 180] - 360
             # self.i_track = h5f['Data_1HZ']['Geolocation']['i_track'][()]
-            self.UTCTime = h5f['Data_40HZ']['Time']['d_UTCTime_40'][()]
+            delta_times = h5f['Data_40HZ']['Time']['d_UTCTime_40'][()]
+            self.UTCTime = np.datetime64('2000-01-01') + np.array([np.timedelta64(dt, 's')
+                                                                   for dt in delta_times.astype(int)])
             self.elev = h5f['Data_40HZ']['Elevation_Surfaces']['d_elev'][()]
             self.deltaEllip = h5f['Data_40HZ']['Geophysical']['d_deltaEllip'][()]
 
-        elif 'gt1l' in h5f.keys():  # this is ATL06 data from NSIDC
+        elif self.icesat_type == 'ATL06':  # this is ATL06 data from NSIDC
             data_names = ['lat', 'lon', 'elev', 'UTCTime', 'deltaEllip']
             cols = data_names
             self.lat = np.concatenate([h5f[k]['land_ice_segments']['latitude'][()]
@@ -225,6 +240,8 @@ class ICESat(object):
         self.column_names = cols
         self.ellipse_hts = False
         self.proj = pyproj.Proj(init='epsg:4326')
+
+        self.remove_nodata()
         self.x = self.lon
         self.y = self.lat
         self.xy = list(zip(self.x, self.y))
@@ -233,12 +250,22 @@ class ICESat(object):
         if ellipse_hts:
             self.to_ellipse()
 
+    def from_h5(self):
+        pass
+
+    def from_csv(self):
+        pass
+
     def remove_nodata(self):
-        good_data = np.logical_and(np.isfinite(self.lat), np.isfinite(self.lon))
+        good_data = np.logical_and.reduce((np.isfinite(self.lat),
+                                           np.isfinite(self.lon),
+                                           np.isfinite(self.elev),
+                                           np.abs(self.lon) < np.finfo('d').max,
+                                           np.abs(self.lat) < np.finfo('d').max,
+                                           np.abs(self.elev) < np.finfo('d').max))
         for c in self.column_names:
             this_attr = getattr(self, re.split('^d_', c, maxsplit=1)[-1])
             setattr(self, re.split('^d_', c, maxsplit=1)[-1], this_attr[good_data])
-
 
     def to_ellipse(self):
         """
@@ -523,3 +550,38 @@ class ICESat(object):
             fig.show()  # don't forget this one!
 
         return fig
+
+    def concatenate(self, in_icesat, extent=None):
+        if isinstance(in_icesat, ICESat):
+            to_concat = in_icesat
+        elif isinstance(in_icesat, str):
+            to_concat = ICESat(in_icesat)
+        else:
+            raise TypeError('in_icesat must be an ICESat object, or a filename.')
+
+        if any([self.icesat_type == 'homebrew', to_concat.icesat_type == 'homebrew']):
+            raise TypeError('I do not know how to concatenate a homebrew ICESat file.')
+
+        attrs = ['lat', 'lon', 'UTCTime', 'elev', 'deltaEllip']
+        for a in attrs:
+            this_attr = getattr(self, a)
+            conc_attr = getattr(to_concat, a)
+            setattr(self, a, np.concatenate([this_attr, conc_attr]))
+
+        rem_attrs = [c for c in self.column_names if re.split('^d_', c, maxsplit=1)[-1] not in attrs]
+        for c in rem_attrs:
+            this_attr = getattr(self, re.split('^d_', c, maxsplit=1)[-1])
+            conc_attr = getattr(to_concat, re.split('^d_', c, maxsplit=1)[-1])
+            setattr(self, re.split('^d_', c, maxsplit=1)[-1], np.concatenate(this_attr, conc_attr))
+
+        if self.proj == to_concat.proj:
+            self.x = np.concatenate([self.x, to_concat.x])
+            self.y = np.concatenate([self.y, to_concat.y])
+            self.xy = np.array(list(zip(self.x, self.y)))
+        else:
+            self.project(self.proj)
+
+        self.size = self.x.size
+
+        if extent is not None:
+            self.clip(extent)
