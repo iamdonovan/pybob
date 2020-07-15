@@ -518,7 +518,7 @@ def dem_coregistration(primaryDEM, secondaryDEM, glaciermask=None, landmask=None
 
     # if we're dealing with ICESat/pt data, change how we load primaryDEM data
     if pts:
-        if not isinstance(ICESat, primaryDEM):
+        if not isinstance(primaryDEM, ICESat):
             primaryDEM = ICESat(primaryDEM)
 
         primaryDEM.project('epsg:{}'.format(secondaryDEM.epsg))
