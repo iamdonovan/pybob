@@ -236,6 +236,11 @@ class ICESat(object):
                 if d == 'lon' and self.lon.max() > 180:
                     self.lon[self.lon > 180] = self.lon[self.lon > 180] - 360
 
+            if 'elev' not in data_names:
+                data_names.append('elev')
+            if 'elev' not in cols:
+                cols.append('elev')
+
         self.data_names = data_names
         self.column_names = cols
         self.ellipse_hts = False
