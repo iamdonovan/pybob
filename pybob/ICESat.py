@@ -187,9 +187,9 @@ class ICESat(object):
                 if c == 'lon':
                     # return longitudes ranging from -180 to 180 (rather than 0 to 360)
                     self.lon[self.lon > 180] = self.lon[self.lon > 180] - 360
-            delta_times = self.UTCTime
-            self.UTCTime = np.datetime64('2000-01-01') + np.array([np.timedelta64(dt, 's')
-                                                                   for dt in delta_times.astype(int)])
+            delta_times = self.UTCTime  # this is the time in matlab time
+            self.UTCTime = np.datetime64('2000-01-01') + np.array([np.timedelta64(int(24*60*60*(dt-730486.5)), 's')
+                                                                   for dt in delta_times])
 
         elif self.icesat_type == 'GLAS':  # this is the original GLAS data
             data_names = ['d_lat', 'd_lon', 'd_UTCTime', 'd_elev', 'd_deltaEllip']
@@ -200,8 +200,8 @@ class ICESat(object):
                 self.lon[self.lon > 180] = self.lon[self.lon > 180] - 360
             # self.i_track = h5f['Data_1HZ']['Geolocation']['i_track'][()]
             delta_times = h5f['Data_40HZ']['Time']['d_UTCTime_40'][()]
-            self.UTCTime = np.datetime64('2000-01-01') + np.array([np.timedelta64(dt, 's')
-                                                                   for dt in delta_times.astype(int)])
+            self.UTCTime = np.datetime64('2000-01-01T12:00:00') + np.array([np.timedelta64(dt, 's')
+                                                                            for dt in delta_times.astype(int)])
             self.elev = h5f['Data_40HZ']['Elevation_Surfaces']['d_elev'][()]
             self.deltaEllip = h5f['Data_40HZ']['Geophysical']['d_deltaEllip'][()]
 
@@ -389,6 +389,31 @@ class ICESat(object):
         :type el_limit: float
         """
         mykeep = np.logical_and(np.isfinite(self.elev), self.elev > el_limit)
+        self.x = self.x[mykeep]
+        self.y = self.y[mykeep]
+        self.xy = list(zip(self.x, self.y))
+        self.size = self.x.size
+
+        for c in self.column_names:
+            this_attr = getattr(self, re.split('^d_', c, maxsplit=1)[-1])
+            setattr(self, re.split('^d_', c, maxsplit=1)[-1], this_attr[mykeep])
+
+    def time_slice(self, minDate='2003-02-20', maxDate='2009-10-11'):
+        """
+        Take a time slice of the data, between minDate and maxDate (inclusive).
+
+        :param minDate: Minimum date, in YYYY-MM-DD format.
+        :param maxDate: Maximum date, in YYYY-MM-DD format.
+        :type minDate: str
+        :type maxDate: str
+        """
+
+        if self.icesat_type == 'homebrew':
+            raise TypeError('I do not know how to timeslice a homebrew ICESat file.')
+
+        mykeep = np.logical_and(self.UTCTime >= np.datetime64(minDate),
+                                self.UTCTime <= np.datetime64(maxDate))
+
         self.x = self.x[mykeep]
         self.y = self.y[mykeep]
         self.xy = list(zip(self.x, self.y))
