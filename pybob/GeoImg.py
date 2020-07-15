@@ -433,7 +433,8 @@ class GeoImg(object):
         out.FlushCache()
 
         if self.NDV is not None:
-            self.img[nanmask] = np.nan
+            if self.isfloat:
+                self.img[nanmask] = np.nan
 
         del setgeo, setproj, write
 
