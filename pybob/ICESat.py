@@ -402,17 +402,24 @@ class ICESat(object):
         """
         Take a time slice of the data, between minDate and maxDate (inclusive).
 
-        :param minDate: Minimum date, in YYYY-MM-DD format.
-        :param maxDate: Maximum date, in YYYY-MM-DD format.
+        :param minDate: Minimum date in YYYY-MM-DD format, or np.datetime64.
+        :param maxDate: Maximum date in YYYY-MM-DD format, or np.datetime64.
         :type minDate: str
         :type maxDate: str
         """
+        assert type(minDate) in [str, np.datetime64], "minDate must be a str or numpy.datetime64 object"
+        assert type(maxDate) in [str, np.datetime64], "minDate must be a str or numpy.datetime64 object"
 
         if self.icesat_type == 'homebrew':
             raise TypeError('I do not know how to timeslice a homebrew ICESat file.')
 
-        mykeep = np.logical_and(self.UTCTime >= np.datetime64(minDate),
-                                self.UTCTime <= np.datetime64(maxDate))
+        if isinstance(minDate, str):
+            minDate = np.datetime64(minDate)
+        if isinstance(maxDate, str):
+            maxDate = np.datetime64(maxDate)
+
+        mykeep = np.logical_and(self.UTCTime >= minDate,
+                                self.UTCTime <= maxDate)
 
         self.x = self.x[mykeep]
         self.y = self.y[mykeep]
