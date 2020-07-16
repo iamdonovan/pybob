@@ -51,14 +51,16 @@ def get_file_info(in_filestring):
         in_dir = '.'
     return in_filename, in_dir
 
+
 def int_pts(myins):
     pt, ij, X, Y, z, mode = myins            
     try:
         zint = griddata((X.flatten(), Y.flatten()), z.flatten(), pt, method=mode)
+        if zint.shape == (1,):
+            zint = zint[0]
     except:
-        zint = np.array(np.nan)
+        zint = np.nan
     return zint
-#    return griddata((myins[2].flatten(), myins[3].flatten()), myins[4].flatten(), myins[0], method=myins[5])
 
 
 class GeoImg(object):
@@ -982,7 +984,11 @@ class GeoImg(object):
         xx, yy = self.xy(ctype='center', grid=False)
         for pt in pts:
             ij = self.xy2ij(pt)
-            ij = (int(ij[0]+0.5), int(ij[1]+0.5))
+            try:
+                ij = (np.int16(ij[0]+0.5), np.int16(ij[1]+0.5))
+            except ValueError as e:
+                print(ij)
+                raise e
             if self.outside_image(ij, index=True):
                 rpts.append(np.nan)
                 continue
@@ -994,8 +1000,11 @@ class GeoImg(object):
                 X, Y = np.meshgrid(x, y)
                 try:
                     zint = griddata((X.flatten(), Y.flatten()), z.flatten(), pt, method=mode)
+                    if zint.shape == (1,):
+                        zint = zint[0]
                 except:
-                    zint = np.array(np.nan)
+                    zint = np.nan
+
                 rpts.append(zint)
         return np.array(rpts)
 
@@ -1028,11 +1037,22 @@ class GeoImg(object):
         def getgrids(a):
             myimg, pt, nsize, mode = a
             ij = myimg.xy2ij(pt)
-            ij = (int(ij[0]+0.5), int(ij[1]+0.5))
-            x = xx[ij[1]-nsize:ij[1]+nsize+1]
-            y = yy[ij[0]-nsize:ij[0]+nsize+1]
-            X, Y = np.meshgrid(x, y)
-            z = myimg.img[ij[0]-nsize:ij[0]+nsize+1, ij[1]-nsize:ij[1]+nsize+1]
+            ij = (np.int16(ij[0]+0.5), np.int16(ij[1]+0.5))
+
+            xlow = np.int16(max(0, ij[1]-nsize))
+            xhigh = np.int16(min(xx.size, ij[1]+nsize+1))
+
+            ylow = np.int16(max(0, ij[0]-nsize))
+            yhigh = np.int16(min(yy.size, ij[0]+nsize+1))
+
+            try:
+                x = xx[xlow:xhigh]
+                y = yy[ylow:yhigh]
+
+                X, Y = np.meshgrid(x, y)
+                z = myimg.img[ylow:yhigh, xlow:xhigh]
+            except MaskError as e:
+                return pt, ij, np.nan * np.ones(nsize), np.nan * np.ones(nsize), np.nan * np.ones(nsize), mode
             return pt, ij, X, Y, z, mode
 
         myins = [getgrids((self, pt, nsize, mode)) for pt in pts]
@@ -1040,7 +1060,7 @@ class GeoImg(object):
         # myout = np.asarray([int_pts(myin,nsize,mode) for myin in myins])
         pool = Pool(6)
         # return np.asarray([int_pts(pt,self,nsize,mode) for pt in pts])
-        return np.asarray(pool.map(int_pts,myins))
+        return np.asarray(pool.map(int_pts, myins))
 
     def outside_image(self, ij, index=True):
         """
