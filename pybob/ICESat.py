@@ -246,11 +246,13 @@ class ICESat(object):
         self.ellipse_hts = False
         self.proj = pyproj.Proj(init='epsg:4326')
 
-        self.remove_nodata()
         self.x = self.lon
         self.y = self.lat
-        self.xy = list(zip(self.x, self.y))
+        self.xy = np.array(list(zip(self.x, self.y)))
+
+        self.remove_nodata()
         self.size = self.x.size
+        self.masked = False
 
         if ellipse_hts:
             self.to_ellipse()
@@ -268,6 +270,12 @@ class ICESat(object):
                                            np.abs(self.lon) < np.finfo('d').max,
                                            np.abs(self.lat) < np.finfo('d').max,
                                            np.abs(self.elev) < np.finfo('d').max))
+        self.x = self.x[good_data]
+        self.y = self.y[good_data]
+        self.size = self.x.size
+
+        self.xy = self.xy[good_data]
+
         for c in self.column_names:
             this_attr = getattr(self, re.split('^d_', c, maxsplit=1)[-1])
             setattr(self, re.split('^d_', c, maxsplit=1)[-1], this_attr[good_data])
@@ -391,7 +399,7 @@ class ICESat(object):
         mykeep = np.logical_and(np.isfinite(self.elev), self.elev > el_limit)
         self.x = self.x[mykeep]
         self.y = self.y[mykeep]
-        self.xy = list(zip(self.x, self.y))
+        self.xy = self.xy[mykeep]
         self.size = self.x.size
 
         for c in self.column_names:
@@ -416,7 +424,8 @@ class ICESat(object):
 
         self.x = self.x[mykeep]
         self.y = self.y[mykeep]
-        self.xy = list(zip(self.x, self.y))
+        self.xy = self.xy[mykeep]
+
         self.size = self.x.size
 
         for c in self.column_names:
@@ -441,29 +450,39 @@ class ICESat(object):
         if not drop:
             self.x = np.ma.masked_where(mask, self.x)
             self.y = np.ma.masked_where(mask, self.y)
+            self.xy = np.ma.masked_where(np.hstack([mask.reshape(-1, 1), mask.reshape(-1, 1)]), self.xy)
 
             for c in self.column_names:
                 this_attr = getattr(self, re.split('^d_', c, maxsplit=1)[-1])
                 masked_attr = np.ma.masked_where(mask, this_attr)
                 setattr(self, re.split('^d_', c, maxsplit=1)[-1], masked_attr)
+            self.masked = True
         else:
             self.x = self.x[mask]
             self.y = self.y[mask]
+            self.xy = self.xy[mask]
+
             for c in self.column_names:
                 this_attr = getattr(self, re.split('^d_', c, maxsplit=1)[-1])
                 masked_attr = this_attr[mask]
                 setattr(self, re.split('^d_', c, maxsplit=1)[-1], masked_attr)
 
-        self.xy = list(zip(self.x, self.y))
-
     def unmask(self):
         """
         Remove a mask if it has been applied.
-        **TODO: Not implemented yet!**
-
-        :return:
         """
-        pass
+        if self.masked:
+            self.x = self.x.data
+            self.y = self.y.data
+            self.xy = self.xy.data
+
+            for c in self.column_names:
+                this_attr = getattr(self, re.split('^d_', c, maxsplit=1)[-1])
+                setattr(self, re.split('^d_', c, maxsplit=1)[-1], masked_attr.data)
+
+            self.masked = False
+        else:
+            pass
 
     def clip(self, bounds):
         """
@@ -481,7 +500,7 @@ class ICESat(object):
         self.y = self.y[mykeep]
         self.size = self.x.size
 
-        self.xy = list(zip(self.x, self.y))
+        self.xy = self.xy[mykeep]
         # make sure to re-size all of the attributes, not just the ones above.
         for c in self.column_names:
             this_attr = getattr(self, re.split('^d_', c, maxsplit=1)[-1])
@@ -523,7 +542,12 @@ class ICESat(object):
             dest_proj = pyproj.Proj(init=dest_proj)
         wgs84 = pyproj.Proj(init='epsg:4326')
         self.x, self.y = pyproj.transform(wgs84, dest_proj, self.lon, self.lat)
-        self.xy = list(zip(self.x, self.y))
+        if not self.masked:
+            self.xy = np.array(list(zip(self.x, self.y)))
+        else:
+            self.xy = np.ma.masked_where(np.hstack([self.x.mask.reshape(-1, 1),
+                                                    self.y.mask.reshape(-1, 1)]),
+                                         np.array(list(zip(self.x, self.y))))
         self.proj = dest_proj
 
     def display(self, fig=None, extent=None, sfact=1, showfig=True, geo=False, **kwargs):
@@ -607,7 +631,7 @@ class ICESat(object):
         if self.proj == to_concat.proj:
             self.x = np.concatenate([self.x, to_concat.x])
             self.y = np.concatenate([self.y, to_concat.y])
-            self.xy = np.array(list(zip(self.x, self.y)))
+            self.xy = np.concatenate([self.xy, to_concat.xy])
         else:
             self.project(self.proj)
 
