@@ -14,6 +14,7 @@ import scipy.ndimage.filters as filters
 from skimage.feature import peak_local_max
 from skimage.transform import match_histograms
 from skimage.feature import greycomatrix, greycoprops
+from skimage.morphology import binary_dilation, disk
 from pybob.bob_tools import parse_lsat_scene, round_down
 from pybob.GeoImg import GeoImg
 
@@ -506,25 +507,33 @@ def gridded_matching(prim, second, mask, spacing, tmpl_size=25, search_size=None
 
         # for pt in search_pts:
         # if mask[pt[1], pt[0]] == 0:
-        if mask[_i, _j] == 0:
-
-            continue
+        # if mask[_i, _j] == 0:
+        #     continue
         try:
+            submask, _, _ = make_template(mask, pt, tmpl_size)
+            if np.count_nonzero(submask) / submask.size < 0.05:
+                continue
             # testchip, _, _ = imtools.make_template(rough_tfm, (pt[1], pt[0]), 40)
             # dst_chip, _, _ = imtools.make_template(prim.img, (pt[1], pt[0]), 200)
-            testchip, _, _ = make_template(prim, (_i, _j), tmpl_size)
+            testchip, _, _ = make_template(prim, pt, tmpl_size)
             if search_size is None:
                 dst_chip = second
             else:
-                dst_chip, rows, cols = make_template(second, (_i, _j), search_size)
-
+                dst_chip, rows, cols = make_template(second, pt, search_size)
+            testchip[np.isnan(testchip)] = 0
             dst_chip[np.isnan(dst_chip)] = 0
             if highpass:
-                test = np.ma.masked_values(highpass_filter(testchip), 0)
-                dest = np.ma.masked_values(highpass_filter(dst_chip), 0)
+                test = highpass_filter(testchip)
+                dest = highpass_filter(dst_chip)
             else:
                 test = np.ma.masked_values(testchip, 0)
                 dest = np.ma.masked_values(dst_chip, 0)
+
+            testmask = binary_dilation(testchip == 0, selem=disk(8))
+            destmask = binary_dilation(dst_chip == 0, selem=disk(8))
+
+            test[testmask] = np.random.rand(test.shape[0], test.shape[1])[testmask]
+            dest[destmask] = np.random.rand(dest.shape[0], dest.shape[1])[destmask]
 
             corr_res, this_i, this_j = find_match(dest.astype(np.float32), test.astype(np.float32))
             peak_corr = cv2.minMaxLoc(corr_res)[1]
