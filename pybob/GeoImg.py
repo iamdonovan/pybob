@@ -67,10 +67,11 @@ class GeoImg(object):
     """
     Create a GeoImg object from a GDAL-supported raster dataset.
     """
-    def __init__(self, in_filename, in_dir=None, datestr=None, datefmt='%m/%d/%y', dtype=None, attrs=None):
+    def __init__(self, in_filename, in_dir=None, datestr=None,
+                 datefmt='%m/%d/%y', dtype=None, attrs=None, update=False):
         """
-        :param in_filename:  Filename or object to read in. If in_filename is a string, the GeoImg is created by reading the file
-            corresponding to that filename. If in_filename is a gdal object, the
+        :param in_filename:  Filename or object to read in. If in_filename is a string, the GeoImg is created by
+            reading the file corresponding to that filename. If in_filename is a gdal object, the
             GeoImg is created by operating on the corresponding object.
         :param in_dir: (optional) directory where in_filename is located. If not given, the directory
             will be determined from the input filename.
@@ -78,11 +79,13 @@ class GeoImg(object):
         :param datefmt: Format of datestr that datetime.datetime should use to parse datestr.
             Default is %m/%d/%y.
         :param dtype: numpy datatype to read input data as. Default is np.float32. See numpy docs for more details.
+        :param update: Open GeoImg in using gdal.GA_Update (will overwrite information on disk)
 
         :type in_filename: str, gdal.Dataset
         :type in_dir: str
         :type datestr: str
         :type dtype: numpy datatype
+        :type update: bool
         """
         def check_geotransform(gd):
             # Replace geotransform if origin not located at upper right... 
@@ -91,7 +94,12 @@ class GeoImg(object):
                 gt[3] = gt[3] + gd.RasterXSize * gt[4] + gd.RasterYSize * gt[5]
                 gt[5] = -gt[5]                                                
             return tuple(gt)
-       
+
+        if update:
+            gdal_mode = gdal.GA_Update
+        else:
+            gdal_mode = gdal.GA_ReadOnly
+
         if type(in_filename) is gdal.Dataset:
             self.filename = None
             self.in_dir_path = None
@@ -103,7 +111,7 @@ class GeoImg(object):
             self.filename = in_filename
             self.in_dir_path = in_dir
             self.in_dir_abs_path = os.path.abspath(in_dir)
-            self.gd = gdal.Open(os.path.join(self.in_dir_path, self.filename))
+            self.gd = gdal.Open(os.path.join(self.in_dir_path, self.filename), gdal_mode)
             if self.gd is None:
                 raise RuntimeError('Unable to open file {}'.format(os.path.join(self.in_dir_path, self.filename)))
         else:
