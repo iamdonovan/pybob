@@ -14,6 +14,7 @@ import scipy.ndimage.filters as filters
 from skimage.feature import peak_local_max
 from skimage.transform import match_histograms
 from skimage.feature import greycomatrix, greycoprops
+from skimage.filters import rank
 from skimage.morphology import binary_dilation, disk
 from pybob.bob_tools import parse_lsat_scene, round_down
 from pybob.GeoImg import GeoImg
@@ -443,6 +444,34 @@ def highpass_filter(img):
     tmplow = vv / ww
     tmphi = img - tmplow
     return tmphi
+
+
+def crippen_filter(img, dtype=np.uint8, add_val=128, scan_axis=0):
+    """
+    Run the de-striping filter proposed by Crippen (Photogramm Eng Remote Sens 55, 1989) on an image.
+
+    :param img: image to de-stripe.
+    :param dtype: original datatype of image
+    :param add_val: constant value to add to keep image within the original bit-depth.
+    :param scan_axis: array axis along which the image is scanned. For Landsat (in the original image geometry),
+     this is along the 0 (row) axis. For scanned historical photos, this is most likely the 1 (column) axis.
+
+    :returns: filt_img: the filtered image.
+    """
+    assert scan_axis in [0, 1], "scan_axis corresponds to image axis of scan direction [0, 1]"
+    if scan_axis == 0:
+        k1 = np.ones((1, 101))
+        k2 = np.ones((33, 1))
+        k3 = np.ones((1, 31))
+    else:
+        k1 = np.ones((101, 1))
+        k2 = np.ones((1, 33))
+        k3 = np.ones((31, 1))
+
+    F1 = rank.mean(img.astype(dtype), selem=k1)
+    F2 = F1 - rank.mean(F1.astype(dtype), selem=k2) + add_val
+    F3 = rank.mean(F2.astype(np.uint8), selem=k3)
+    return img - F3 + add_val
 
 
 def find_match(img, template, method=cv2.TM_CCORR_NORMED):
