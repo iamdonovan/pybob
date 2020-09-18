@@ -468,10 +468,15 @@ def crippen_filter(img, dtype=np.uint8, add_val=128, scan_axis=0):
         k2 = np.ones((1, 33))
         k3 = np.ones((31, 1))
 
-    F1 = rank.mean(img.astype(dtype), selem=k1)
-    F2 = F1 - rank.mean(F1.astype(dtype), selem=k2) + add_val
-    F3 = rank.mean(F2.astype(np.uint8), selem=k3)
-    return img - F3 + add_val
+    F1 = rank.mean(img, selem=k1)
+    F2 = F1 - rank.mean(F1, selem=k2) + add_val
+    F3 = rank.mean(F2, selem=k3)
+
+    outimg = img.astype(np.float32) - F3 + add_val
+    outimg[outimg > np.iinfo(dtype).max] = np.iinfo(dtype).max
+    outimg[outimg < np.iinfo(dtype).min] = np.iinfo(dtype).min
+
+    return outimg.astype(dtype)
 
 
 def find_match(img, template, method=cv2.TM_CCORR_NORMED):
