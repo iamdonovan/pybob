@@ -271,8 +271,8 @@ for i, im in enumerate(imlist):
     new_match = np.array(new_match).reshape(-1, 2)
     orig_match = init_model.inverse((new_match[:, ::-1]))  # run the back-transformation
     # to find the points in the original image geometry.
-    gcps['im_col'] = orig_match[:, 1]
-    gcps['im_row'] = orig_match[:, 0]
+    gcps['im_col'] = orig_match[:, 0]
+    gcps['im_row'] = orig_match[:, 1]
     gcps['corr'] = corrs
 
     # the next block takes the first 4 fiducial marks and writes them to an xml file for MicMac to read.
