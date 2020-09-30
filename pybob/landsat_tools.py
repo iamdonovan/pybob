@@ -109,25 +109,25 @@ def get_earth_radius(latitude):
 def calculate_rpc_transform(gcps, img, dem, metadata=None, band=None):
     if metadata is not None:
         mean_i, mean_j = metadata['BAND{:02d}_MEAN_L1T_LINE_SAMP'.format(band)]
+        mean_z = metadata['BAND{:02d}_MEAN_HEIGHT'.format(band)]
     else:
         # mean_i = gcps.match_i.mean()
         # mean_j = gcps.match_j.mean()
         mean_i, mean_j = img.shape
+        mean_z = gcps.elevation.mean()
     J, I = np.meshgrid(np.arange(0, img.shape[1]), np.arange(0, img.shape[0]))
-
-    mean_z = gcps.elevation.mean()
 
     # i_scale = max(np.abs(gcps.match_i.max() - mean_i), np.abs(gcps.match_i.min() - mean_i))
     # j_scale = max(np.abs(gcps.match_j.max() - mean_j), np.abs(gcps.match_j.min() - mean_j))
     i_scale = mean_i
     j_scale = mean_j
 
-    z_scale = dem.max() - dem.min()
+    z_scale = max(np.abs(gcps.elevation.max() - mean_z), np.abs(gcps.elevation.min() - mean_z))
 
     normJ = (J - mean_j) / j_scale
     normI = (I - mean_i) / i_scale
-    # normZ = (dem - mean_z) / z_scale
-    normZ = 0
+    normZ = (dem - mean_z) / z_scale
+    # normZ = 1
 
     s_coeffs = rpc_coeffs_from_gcps(gcps,
                                     ((gcps.match_j.values - mean_j) / j_scale).reshape(-1, 1),
@@ -143,7 +143,7 @@ def calculate_rpc_transform(gcps, img, dem, metadata=None, band=None):
 
     lines = apply_calculated_rpc(l_coeffs, normJ, normI, normZ) * i_scale + mean_i
 
-    return samps, lines
+    return lines, samps
 
 
 def apply_calculated_rpc(p, X, Y, Z):
@@ -773,7 +773,7 @@ def lowres_transform(prim, second, fn_dem, landmask=None, quality_mask=None):
     # lowres_gcps['src_j'] *= second_lowres.dx / prim_fullres.dx
     # lowres_gcps['src_i'] *= second_lowres.dx / prim_fullres.dx
 
-    # init_samps, init_lines = calculate_rpc_transform(lowres_gcps, second_fullres.img, dem)
+    # init_lines, init_samps = calculate_rpc_transform(lowres_gcps, second_fullres.img, dem)
 
     # tfm_img = warp(second_fullres.img, np.array([init_lines, init_samps]), order=1, preserve_range=True)
     # outimg = second_fullres.copy(new_raster=tfm_img.astype(second_fullres.dtype))
@@ -817,7 +817,7 @@ def interp_coords(pt, coords_j, coords_i):
 #################################
 # transform tools
 #################################
-def get_gcps(prim, second, mask, spacing, t_size=100, s_size=250, highpass=True, dem=None):
+def get_gcps(prim, second, mask, spacing, t_size=50, s_size=100, highpass=True, dem=None):
     if isinstance(prim, GeoImg):
         prim_img = prim.img
     else:
@@ -842,7 +842,7 @@ def get_gcps(prim, second, mask, spacing, t_size=100, s_size=250, highpass=True,
         gcps['geometry'] = [Point(pt) for pt in xy]
         gcps.crs = prim.proj4
     else:
-        gcps['geometry'] = np.nan
+        gcps['geometry'] = np.zeros(peak_corr.flatten().shape)
         gcps.crs = None
 
     gcps['pk_corr'] = peak_corr.flatten()
@@ -858,8 +858,8 @@ def get_gcps(prim, second, mask, spacing, t_size=100, s_size=250, highpass=True,
     gcps.loc[gcps.z_corr == -1, 'z_corr'] = np.nan
     gcps.dropna(inplace=True)
 
-    gcps = gcps[np.logical_and(gcps.z_corr > gcps.z_corr.quantile(0.25),
-                               gcps.pk_corr > gcps.pk_corr.quantile(0.25))]
+    # gcps = gcps[np.logical_and(gcps.z_corr > gcps.z_corr.quantile(0.25),
+    #                            gcps.pk_corr > gcps.pk_corr.quantile(0.25))]
 
     if dem is not None:
         for i, row in gcps.to_crs(crs=dem.proj4).iterrows():
@@ -919,7 +919,90 @@ def get_rough_geotransformation(prim, second, landmask=None, dem=None):
     return Minit, inliers, lowres_gcps
 
 
-def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_size=250, fn_glacmask=None,
+def old_register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, fn_glacmask=None,
+                         fn_landmask=None, no_lowres=False, all_bands=False, back_tfm=False):
+    second_name = os.path.basename(fn_second).split('_B')[0]
+    second_dir = os.path.dirname(os.path.abspath(fn_second))
+    second_band = int(os.path.basename(fn_second).split('_B')[1].split('.')[0].strip('B'))
+    second_fullres = GeoImg(fn_second)
+    orig_dtype = second_fullres.dtype
+    dem = GeoImg(fn_dem)
+
+    if back_tfm:
+        second_fullres, qmask, init_tfm = lowres_back_transform(fn_prim, fn_second, fn_landmask, fn_qmask)
+    elif not no_lowres:
+        second_fullres, qmask = lowres_transform(fn_prim, fn_second, fn_dem, fn_landmask, fn_qmask)
+        init_tfm = None
+    else:
+        print('skipping low-res transformation')
+        second_fullres = GeoImg(fn_second)
+        init_tfm = None
+
+        if fn_qmask is not None:
+            qmask_geo = GeoImg(fn_qmask)
+            qmask_geo = qmask_geo.reproject(second_fullres, method=gdal.GRA_NearestNeighbour)
+            qmask = qmask_geo.img
+        else:
+            qmask = None
+
+    prim_fullres = GeoImg(fn_prim)
+    prim_fullres = prim_fullres.reproject(second_fullres)
+    prim_fullres.img[np.isnan(prim_fullres.img)] = 0
+
+    mask = get_mask(prim_fullres, fn_landmask, fn_glacmask, qmask)
+    mask[np.logical_and(prim_fullres.img == 0, np.isnan(prim_fullres.img))] = 0  # TODO: fix to work w/ masked images
+
+    gcps = get_gcps(prim_fullres, second_fullres, mask, spacing=spacing, dem=dem)
+
+    Mfin, inliers_fin = ransac((gcps[['match_j', 'match_i']].values, gcps[['src_j', 'src_i']].values),
+                               AffineTransform, min_samples=10, residual_threshold=40, max_trials=5000)
+    print('{} points used to find final transformation'.format(np.count_nonzero(inliers_fin)))
+    gcps['residuals'] = Mfin.residuals(gcps[['match_j', 'match_i']].values, gcps[['src_j', 'src_i']].values)
+
+    inliers = gcps.residuals < 6 * nmad(gcps.residuals)
+
+    dem = dem.reproject(prim_fullres)
+
+    # if init_tfm is not None:
+    #     for i, row in gcps.iterrows():
+    #         interp_j, interp_i = interp_coords((row.match_i, row.match_j), init_tfm[0], init_tfm[1])
+    #         gcps.loc[i, 'match_j'] = interp_j
+    #         gcps.loc[i, 'match_i'] = interp_i
+
+    lines, samps = calculate_rpc_transform(gcps.loc[inliers], second_fullres.img, dem)
+
+    print('warping image to new geometry')
+    second_fullres = GeoImg(fn_second)
+    img_tfm = warp(second_fullres.img, np.array([lines, samps]), order=1, preserve_range=True)
+
+    mkdir_p('warped')
+    outimg = prim_fullres.copy(new_raster=img_tfm)
+    outimg.write(os.path.join('warped', os.path.basename(fn_second)), dtype=orig_dtype)
+
+    if all_bands:
+        cwdir = os.getcwd()
+        os.chdir(second_dir)
+
+        flist = glob('*' + os.path.splitext(fn_second)[-1])
+        flist.remove(os.path.basename(fn_second))
+
+        for im in flist:
+            print(im)
+            this_img = GeoImg(im)
+            if 'BQA' not in im:
+                tfm_img = warp(this_img.img, np.array([lines, samps]), output_shape=second_fullres.img.shape,
+                               preserve_range=True, order=1)
+            else:
+                tfm_img = warp(this_img.img, np.array([lines, samps]), output_shape=second_fullres.img.shape,
+                               preserve_range=True, order=0)
+
+            outimg = prim_fullres.copy(new_raster=tfm_img)
+            outimg.write(os.path.join('warped', os.path.basename(im)), dtype=this_img.dtype)
+
+        os.chdir(cwdir)
+
+
+def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_size=200, fn_glacmask=None,
                      fn_landmask=None, all_bands=False, fn_second_meta=None, fn_prim_meta=None):
 
     second_name = os.path.basename(fn_second).split('_B')[0]
@@ -934,7 +1017,7 @@ def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_s
     second_fullres = GeoImg(fn_second)
     prim_fullres = GeoImg(fn_prim)
 
-    mask = get_mask(prim_fullres, fn_landmask, fn_glacmask, fn_qmask)
+    mask = get_mask(prim_fullres, fn_landmask, fn_glacmask, None)
 
     orig_dtype = second_fullres.dtype
     dem = GeoImg(fn_dem)
@@ -956,7 +1039,14 @@ def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_s
                                                   second_band)
 
     second_back = warp(second_fullres.img, np.array([second_line, second_samp]),
-                       order=3, preserve_range=True)
+                       order=5, preserve_range=True)
+    if fn_qmask is not None:
+        qmask_geo = GeoImg(fn_qmask)
+        qmask = 255 * np.ones(qmask_geo.img.shape, dtype=np.uint8)
+        qmask[tm_qa_mask(qmask_geo.img)] = 0
+        qmask_back = warp(qmask, np.array([second_line, second_samp]), order=0, preserve_range=True).astype(orig_dtype)
+        second_back[qmask_back == 0] = 0
+
     prim_back = warp(prim_fullres.img, np.array([prim_line, prim_samp]), order=1, preserve_range=True)
 
     dem_back = warp(dem.img, np.array([prim_line, prim_samp]), order=1, preserve_range=True)
@@ -965,22 +1055,43 @@ def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_s
     mask_back = warp(mask, np.array([prim_line, prim_samp]), order=0, preserve_range=True).astype(np.uint8)
     mask_back[prim_back == 0] = 0
 
+    prim_back_pad = np.zeros(np.array(prim_back.shape) + 2 * spacing)
+    prim_back_pad[spacing:-spacing, spacing:-spacing] = prim_back
+
+    second_back_pad = np.zeros(np.array(second_back.shape) + 2 * spacing)
+    second_back_pad[spacing:-spacing, spacing:-spacing] = second_back
+
+    mask_back_pad = np.zeros(np.array(mask_back.shape) + 2 * spacing)
+    mask_back_pad[spacing:-spacing, spacing:-spacing] = mask_back
+
     print('Searching for GCPs in back-transformed images.')
-    gcps = get_gcps(prim_back, second_back, mask_back.astype(np.uint8), spacing=spacing, s_size=s_size)
+    gcps = get_gcps(prim_back_pad, second_back_pad, mask_back_pad.astype(np.uint8), spacing=spacing, s_size=s_size)
+    gcps['match_j'] -= spacing
+    gcps['match_i'] -= spacing
+
+    gcps['src_j'] -= spacing
+    gcps['src_i'] -= spacing
+
     gcps['elevation'] = dem_back[gcps.src_i, gcps.src_j]
     gcps.dropna(inplace=True)
 
     Mfin, inliers_fin = ransac((gcps[['match_j', 'match_i']].values, gcps[['src_j', 'src_i']].values),
                                AffineTransform, min_samples=10, residual_threshold=40, max_trials=5000)
     gcps['residuals'] = Mfin.residuals(gcps[['match_j', 'match_i']].values, gcps[['src_j', 'src_i']].values)
-    inliers = gcps['residuals'] < 6 * nmad(gcps['residuals'])
+    inliers = np.logical_and.reduce((gcps.pk_corr > gcps.pk_corr.quantile(0.25),
+                                     gcps.residuals < min(10 * nmad(gcps.residuals), 25),
+                                     gcps.z_corr > gcps.z_corr.quantile(0.25)))
     print('{} matching GCPs found.'.format(np.count_nonzero(inliers)))
 
     print('Calculating new RPC transformation.')
-    samps, lines = calculate_rpc_transform(gcps.loc[inliers], prim_back, dem_back)
+    lines, samps = calculate_rpc_transform(gcps.loc[inliers], prim_back, dem_back)
 
     print('Warping image to new geometry.')
-    img_tfm = warp(second_back, np.array([lines, samps]), order=3, preserve_range=True).astype(orig_dtype)
+    if fn_qmask is not None:
+        second_back = warp(second_fullres.img, np.array([second_line, second_samp]), order=1,
+                           preserve_range=True).astype(orig_dtype)
+
+    img_tfm = warp(second_back, np.array([lines, samps]), order=5, preserve_range=True).astype(orig_dtype)
 
     mkdir_p('warped')
     outimg = prim_fullres.copy(new_raster=img_tfm)
@@ -1002,8 +1113,8 @@ def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_s
                 back_line, back_samp = get_back_transform(this_img,
                                                           second_meta['RPC_BAND{:02d}'.format(this_band)],
                                                           this_band)
-                back_img = warp(this_img.img, np.array([back_line, back_samp]), preserve_range=True, order=3)
-                tfm_img = warp(back_img, np.array([lines, samps]), preserve_range=True, order=3)
+                back_img = warp(this_img.img, np.array([back_line, back_samp]), preserve_range=True, order=5)
+                tfm_img = warp(back_img, np.array([lines, samps]), preserve_range=True, order=5)
             else:
                 back_img = warp(this_img.img, np.array([second_line, second_samp]), preserve_range=True, order=0)
                 tfm_img = warp(back_img, np.array([lines, samps]), preserve_range=True, order=0)
