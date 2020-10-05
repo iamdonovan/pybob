@@ -13,13 +13,13 @@ def _argparser():
     parser.add_argument('-q', '--quality_mask', action='store', type=str, default=None,
                         help='BQA band for the L1GS image (recommended)')
     parser.add_argument('-s', '--spacing', action='store', type=int, default=400,
-                        help='digital elevation model')
+                        help='grid spacing to search for GCPs')
     parser.add_argument('-glacmask', action='store', type=str, default=None,
                         help='path to shapefile of glacier outlines')
     parser.add_argument('-landmask', action='store', type=str, default=None,
                         help='path to shapefile of land outlines')
-    parser.add_argument('-no_lowres', action='store_true', default=False,
-                        help="Don't do an initial low-res transformation")
+    # parser.add_argument('-no_lowres', action='store_true', default=False,
+    #                     help="Don't do an initial low-res transformation")
     parser.add_argument('-a', '--all_bands', action='store_true', default=False,
                         help="Register all bands based on computed transformation.")
     parser.add_argument('-b', '--back_tfm', action='store_true', default=False,
@@ -39,9 +39,9 @@ def main():
                      spacing=args.spacing,
                      fn_glacmask=args.glacmask,
                      fn_landmask=args.landmask,
-                     no_lowres=args.no_lowres,
+                     # no_lowres=args.no_lowres,
                      all_bands=args.all_bands,
-                     back_tfm=args.back_tfm)
+                     back_transform=args.back_tfm)
 
 
 if __name__ == "__main__":
