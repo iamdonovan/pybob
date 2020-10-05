@@ -106,14 +106,18 @@ def get_earth_radius(latitude):
 #################################
 # rpc tools
 #################################
-def calculate_rpc_transform(gcps, img, dem, metadata=None, band=None):
+def calculate_rpc_transform(gcps, img, dem, metadata=None, band=None, order=3):
+    assert 1 <= order <= 3, "RFM order must be between 1 and 3"
     if metadata is not None:
         mean_i, mean_j = metadata['BAND{:02d}_MEAN_L1T_LINE_SAMP'.format(band)]
         mean_z = metadata['BAND{:02d}_MEAN_HEIGHT'.format(band)]
     else:
         # mean_i = gcps.match_i.mean()
         # mean_j = gcps.match_j.mean()
-        mean_i, mean_j = img.shape
+        i, j = np.where(img > 0)
+        mean_i = i.mean()
+        mean_j = j.mean()
+        # mean_i, mean_j = np.array(img.shape) / 2
         mean_z = gcps.elevation.mean()
     J, I = np.meshgrid(np.arange(0, img.shape[1]), np.arange(0, img.shape[0]))
 
@@ -122,52 +126,73 @@ def calculate_rpc_transform(gcps, img, dem, metadata=None, band=None):
     i_scale = mean_i
     j_scale = mean_j
 
-    z_scale = max(np.abs(gcps.elevation.max() - mean_z), np.abs(gcps.elevation.min() - mean_z))
+    # z_scale = max(np.abs(gcps.elevation.max() - mean_z), np.abs(gcps.elevation.min() - mean_z))
+    z_scale = dem[img > 0].max() - dem[img > 0].min()
 
     normJ = (J - mean_j) / j_scale
     normI = (I - mean_i) / i_scale
-    normZ = (dem - mean_z) / z_scale
-    # normZ = 1
+    if order == 1:
+        normZ = 0
+    else:
+        normZ = (dem - mean_z) / z_scale
+    # normZ = 0
 
     s_coeffs = rpc_coeffs_from_gcps(gcps,
                                     ((gcps.match_j.values - mean_j) / j_scale).reshape(-1, 1),
-                                    (mean_i, i_scale), (mean_j, j_scale), (mean_z, z_scale))
+                                    (mean_i, i_scale), (mean_j, j_scale), (mean_z, z_scale), order=order)
 
     l_coeffs = rpc_coeffs_from_gcps(gcps,
                                     ((gcps.match_i.values - mean_i) / i_scale).reshape(-1, 1),
-                                    (mean_i, i_scale), (mean_j, j_scale), (mean_z, z_scale))
+                                    (mean_i, i_scale), (mean_j, j_scale), (mean_z, z_scale), order=order)
 
-    # print(l_coeffs.size)
+    samps = apply_calculated_rpc(s_coeffs, normJ, normI, normZ, order=order) * j_scale + mean_j
 
-    samps = apply_calculated_rpc(s_coeffs, normJ, normI, normZ) * j_scale + mean_j
-
-    lines = apply_calculated_rpc(l_coeffs, normJ, normI, normZ) * i_scale + mean_i
+    lines = apply_calculated_rpc(l_coeffs, normJ, normI, normZ, order=order) * i_scale + mean_i
 
     return lines, samps
 
 
-def apply_calculated_rpc(p, X, Y, Z):
-    a = p[0:20]
-    b = p[20:]
+def apply_calculated_rpc(p, X, Y, Z, order=3):
 
-    nom = a[0] + a[1] * X + a[2] * Y + a[3] * Z + \
-        a[4] * X ** 2 + a[5] * X * Y + a[6] * X * Z + \
-        a[7] * Y ** 2 + a[8] * Y * Z + a[9] * Z ** 2 + \
-        a[10] * X ** 3 + a[11] * X ** 2 * Y + a[12] * X ** 2 * Z + \
-        a[13] * X * Y ** 2 + a[14] * X * Y * Z + a[15] * X * Z ** 2 + \
-        a[16] * Y ** 3 + a[17] * Y ** 2 * Z + a[18] * Y * Z ** 2 + a[19] * Z ** 3
+    if order == 1:
+        a = p[:4]
+        b = p[4:]
 
-    den = 1 + b[0] * X + b[1] * Y + b[2] * Z + \
-        b[3] * X ** 2 + b[4] * X * Y + b[5] * X * Z + \
-        b[6] * Y ** 2 + b[7] * Y * Z + b[8] * Z ** 2 + \
-        b[9] * X ** 3 + b[10] * X ** 2 * Y + b[11] * X ** 2 * Z + \
-        b[12] * X * Y ** 2 + b[13] * X * Y * Z + b[14] * X * Z ** 2 + \
-        b[15] * Y ** 3 + b[16] * Y ** 2 * Z + b[17] * Y * Z ** 2 + b[18] * Z ** 3
+        nom = a[0] + a[1] * X + a[2] * Y + a[3] * Z
+        den = 1 + b[0] * X + b[1] * Y + b[2] * Z
+    elif order == 2:
+        a = p[:10]
+        b = p[10:]
+
+        nom = a[0] + a[1] * X + a[2] * Y + a[3] * Z + \
+            a[4] * X ** 2 + a[5] * X * Y + a[6] * X * Z + \
+            a[7] * Y ** 2 + a[8] * Y * Z + a[9] * Z ** 2
+        den = 1 + b[0] * X + b[1] * Y + b[2] * Z + \
+            b[3] * X ** 2 + b[4] * X * Y + b[5] * X * Z + \
+            b[6] * Y ** 2 + b[7] * Y * Z + b[8] * Z ** 2
+    elif order == 3:
+        a = p[:20]
+        b = p[20:]
+
+        nom = a[0] + a[1] * X + a[2] * Y + a[3] * Z + \
+            a[4] * X ** 2 + a[5] * X * Y + a[6] * X * Z + \
+            a[7] * Y ** 2 + a[8] * Y * Z + a[9] * Z ** 2 + \
+            a[10] * X ** 3 + a[11] * X ** 2 * Y + a[12] * X ** 2 * Z + \
+            a[13] * X * Y ** 2 + a[14] * X * Y * Z + a[15] * X * Z ** 2 + \
+            a[16] * Y ** 3 + a[17] * Y ** 2 * Z + a[18] * Y * Z ** 2 + a[19] * Z ** 3
+
+        den = 1 + b[0] * X + b[1] * Y + b[2] * Z + \
+            b[3] * X ** 2 + b[4] * X * Y + b[5] * X * Z + \
+            b[6] * Y ** 2 + b[7] * Y * Z + b[8] * Z ** 2 + \
+            b[9] * X ** 3 + b[10] * X ** 2 * Y + b[11] * X ** 2 * Z + \
+            b[12] * X * Y ** 2 + b[13] * X * Y * Z + b[14] * X * Z ** 2 + \
+            b[15] * Y ** 3 + b[16] * Y ** 2 * Z + b[17] * Y * Z ** 2 + b[18] * Z ** 3
 
     return nom / den
 
 
-def rpc_coeffs_from_gcps(gcps, Y, i, j, z):
+def rpc_coeffs_from_gcps(gcps, Y, i, j, z, order=3):
+    assert 1 <= order <= 3, "RFM order must be between 1 and 3"
     i_off, i_scale = i
     j_off, j_scale = j
     z_off, z_scale = z
@@ -178,43 +203,53 @@ def rpc_coeffs_from_gcps(gcps, Y, i, j, z):
     # M_num = np.concatenate([np.ones(Y.shape), samp, line, height, samp * line], axis=1)
     # M_den = np.concatenate([samp, line, height, samp * line], axis=1)
 
-    M = build_matrix(samp, line, height, Y)
+    M = build_matrix(samp, line, height, Y, order=order)
     # print(M.shape, Y.reshape(-1).shape)
 
     # coeffs = np.linalg.inv(M.T.dot(M)).dot(M.T.dot(Y))
     # coeffs = np.linalg.solve(M.T.dot(M) + , M.T.dot(Y))  # this is not ideal.
-    aReg = 0.00001
-    p0 = np.zeros(39)
+    aReg = 1E-5
+    p0 = np.zeros(M.shape[1])
     p0[0] = 1
     # coeffs = lsq_linear(M.T.dot(M) + aReg * np.identity(M.shape[1]), M.T.dot(Y).reshape(-1))
     res = lsmr(M, Y, damp=aReg, x0=p0)
     # res = lsq_linear(M, Y.reshape(-1))
     # reg = Ridge(alpha=0.9, fit_intercept=False)  # works better in that it gives a smooth/not discontinuous result
     # reg.fit(M, Y)
-    # res = least_squares(lsq_costfun, p0, loss='soft_l1', tr_solver='lsmr', args=(samp, line, height, Y))
+    res = least_squares(lsq_costfun, p0, loss='soft_l1', tr_solver='lsmr', args=(samp, line, height, Y, order))
     # coeffs, resid = nnls(M, Y.reshape(-1))
 
-    return res[0]
+    return res['x']
 
 
-def build_matrix(samp, line, height, Y):
-    M_num = np.concatenate([np.ones(Y.shape), samp, line, height,
-                            samp ** 2, samp * line, samp * height, line ** 2, line * height, height ** 2,
-                            samp ** 3, samp ** 2 * line, samp ** 2 * height, samp * line ** 2,
-                            samp * line * height, samp * height ** 2, line ** 3, line ** 2 * height,
-                            line * height ** 2, height ** 3], axis=1)
-    M_den = np.concatenate([samp, line, height,
-                            samp ** 2, samp * line, samp * height, line ** 2, line * height, height ** 2,
-                            samp ** 3, samp ** 2 * line, samp ** 2 * height, samp * line ** 2,
-                            samp * line * height, samp * height ** 2, line ** 3, line ** 2 * height,
-                            line * height ** 2, height ** 3], axis=1)
+def build_matrix(samp, line, height, Y, order=3):
+    if order == 1:
+        M_num = np.concatenate([np.ones(Y.shape), samp, line, height], axis=1)
+        M_den = np.concatenate([samp, line, height], axis=1)
+    if order == 2:
+        M_num = np.concatenate([np.ones(Y.shape), samp, line, height,
+                                samp ** 2, samp * line, samp * height, line ** 2, line * height, height ** 2], axis=1)
 
+        M_den = np.concatenate([samp, line, height,
+                                samp ** 2, samp * line, samp * height, line ** 2, line * height, height ** 2], axis=1)
+    elif order == 3:
+        M_num = np.concatenate([np.ones(Y.shape), samp, line, height,
+                                samp ** 2, samp * line, samp * height, line ** 2, line * height, height ** 2,
+                                samp ** 3, samp ** 2 * line, samp ** 2 * height, samp * line ** 2,
+                                samp * line * height, samp * height ** 2,
+                                line ** 3, line ** 2 * height, line * height ** 2, height ** 3], axis=1)
+
+        M_den = np.concatenate([samp, line, height,
+                                samp ** 2, samp * line, samp * height, line ** 2, line * height, height ** 2,
+                                samp ** 3, samp ** 2 * line, samp ** 2 * height, samp * line ** 2,
+                                samp * line * height, samp * height ** 2,
+                                line ** 3, line ** 2 * height, line * height ** 2, height ** 3], axis=1)
     M = np.concatenate([M_num, -Y * M_den], axis=1)
     return M
 
 
-def lsq_costfun(p, X, Y, Z, t):
-    return (apply_calculated_rpc(p, X, Y, Z) - t).reshape(-1)
+def lsq_costfun(p, X, Y, Z, t, order):
+    return (apply_calculated_rpc(p, X, Y, Z, order) - t).reshape(-1)
 
 
 def apply_angle_rpc(numerator, denominator, l1t_line, l1t_samp, l1r_line, l1r_samp, height=0):
@@ -798,7 +833,24 @@ def lowres_transform(prim, second, fn_dem, landmask=None, quality_mask=None):
     return outimg, qmask  # , (init_samps, init_lines)
 
 
-def interp_coords(pt, coords_j, coords_i):
+def interp_coords(gcps, coords_j, coords_i):
+    for i, row in gcps.iterrows():
+        this_line = int(row.match_i)
+        this_samp = int(row.match_j)
+
+        samp_nhood = coords_j[this_line-2:this_line+3, this_samp-2:this_samp+3]
+        line_nhood = coords_i[this_line-2:this_line+3, this_samp-2:this_samp+3]
+
+        samp_inds, line_inds = np.meshgrid(np.arange(this_samp-2, this_samp+3),
+                                           np.arange(this_line-2, this_line+3))
+        orig_line = griddata((samp_inds.reshape(-1,), line_inds.reshape(-1,)), line_nhood.reshape(-1,),
+                             (row.match_j, row.match_i), method='linear')
+        orig_samp = griddata((samp_inds.reshape(-1,), line_inds.reshape(-1,)), samp_nhood.reshape(-1,),
+                             (row.match_j, row.match_i), method='linear')
+
+        gcps.loc[i, 'match_j'] = orig_samp.flatten()[0]
+        gcps.loc[i, 'match_i'] = orig_line.flatten()[0]
+
     # jj = np.arange(int(pt[1])-5, int(pt[1])+6)
     # ii = np.arange(int(pt[0])-5, int(pt[0])+6)
 
@@ -808,10 +860,10 @@ def interp_coords(pt, coords_j, coords_i):
     #                     coords_j[int(pt[0])-5:int(pt[0])+6, int(pt[1])-5:int(pt[1])+6].reshape(-1), pt)
     # interp_i = griddata((I.reshape(-1), J.reshape(-1)),
     #                     coords_i[int(pt[0])-5:int(pt[0])+6, int(pt[1])-5:int(pt[1])+6].reshape(-1), pt)
-    rows, cols = np.where(np.logical_and(np.abs(coords_j - pt[1]) < 1,
-                                         np.abs(coords_i - pt[1]) < 1))
+    # rows, cols = np.where(np.logical_and(np.abs(coords_j - pt[1]) < 1,
+    #                                      np.abs(coords_i - pt[1]) < 1))
     # return interp_j.flatten()[0], interp_i.flatten()[0]
-    return np.mean(cols), np.mean(rows)
+    return gcps
 
 
 #################################
@@ -1003,7 +1055,7 @@ def old_register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400,
 
 
 def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_size=200, fn_glacmask=None,
-                     fn_landmask=None, all_bands=False, fn_second_meta=None, fn_prim_meta=None):
+                     fn_landmask=None, all_bands=False, fn_second_meta=None, fn_prim_meta=None, back_transform=False):
 
     second_name = os.path.basename(fn_second).split('_B')[0]
     second_dir = os.path.dirname(os.path.abspath(fn_second))
@@ -1021,6 +1073,7 @@ def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_s
 
     orig_dtype = second_fullres.dtype
     dem = GeoImg(fn_dem)
+    dem = dem.reproject(prim_fullres)
 
     if fn_second_meta is None:
         second_meta = parse_ang_file(os.path.join(second_dir, second_name + '_ANG.txt'))
@@ -1032,48 +1085,77 @@ def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_s
     else:
         prim_meta = parse_ang_file(fn_prim_meta)
 
-    print('Back-transforming images.')
-    prim_line, prim_samp = get_back_transform(prim_fullres, prim_meta['RPC_BAND{:02d}'.format(prim_band)], prim_band)
-    second_line, second_samp = get_back_transform(second_fullres,
-                                                  second_meta['RPC_BAND{:02d}'.format(second_band)],
-                                                  second_band)
+    if back_transform:
+        print('Back-transforming images.')
+        prim_line, prim_samp = get_back_transform(prim_fullres, prim_meta['RPC_BAND{:02d}'.format(prim_band)], prim_band)
+        l1r_line, l1r_samp = get_l1r_grids(prim_meta['RPC_BAND{:02d}'.format(prim_band)], prim_band)
 
-    second_back = warp(second_fullres.img, np.array([second_line, second_samp]),
-                       order=5, preserve_range=True)
-    if fn_qmask is not None:
-        qmask_geo = GeoImg(fn_qmask)
-        qmask = 255 * np.ones(qmask_geo.img.shape, dtype=np.uint8)
-        qmask[tm_qa_mask(qmask_geo.img)] = 0
-        qmask_back = warp(qmask, np.array([second_line, second_samp]), order=0, preserve_range=True).astype(orig_dtype)
-        second_back[qmask_back == 0] = 0
+        second_line, second_samp = get_back_transform(second_fullres,
+                                                      second_meta['RPC_BAND{:02d}'.format(second_band)],
+                                                      second_band)
 
-    prim_back = warp(prim_fullres.img, np.array([prim_line, prim_samp]), order=1, preserve_range=True)
+        second_back = warp(second_fullres.img, np.array([second_line, second_samp]),
+                           order=5, preserve_range=True)
+        if fn_qmask is not None:
+            qmask_geo = GeoImg(fn_qmask)
+            qmask = 255 * np.ones(qmask_geo.img.shape, dtype=np.uint8)
+            qmask[tm_qa_mask(qmask_geo.img)] = 0
+            qmask_back = warp(qmask, np.array([second_line, second_samp]), order=0, preserve_range=True).astype(orig_dtype)
+            second_back[qmask_back == 0] = 0
 
-    dem_back = warp(dem.img, np.array([prim_line, prim_samp]), order=1, preserve_range=True)
-    dem_back[np.isnan(dem_back)] = np.nanmin(dem_back)
+        prim_back = warp(prim_fullres.img, np.array([prim_line, prim_samp]), order=1, preserve_range=True)
 
-    mask_back = warp(mask, np.array([prim_line, prim_samp]), order=0, preserve_range=True).astype(np.uint8)
-    mask_back[prim_back == 0] = 0
+        dem_back = warp(dem.img, np.array([prim_line, prim_samp]), order=1, preserve_range=True)
+        dem_back[np.isnan(dem_back)] = np.nanmin(dem_back)
 
-    prim_back_pad = np.zeros(np.array(prim_back.shape) + 2 * spacing)
-    prim_back_pad[spacing:-spacing, spacing:-spacing] = prim_back
+        mask_back = warp(mask, np.array([prim_line, prim_samp]), order=0, preserve_range=True).astype(np.uint8)
+        mask_back[prim_back == 0] = 0
 
-    second_back_pad = np.zeros(np.array(second_back.shape) + 2 * spacing)
-    second_back_pad[spacing:-spacing, spacing:-spacing] = second_back
+        prim_back_pad = np.zeros(np.array(prim_back.shape) + 2 * spacing)
+        prim_back_pad[spacing:-spacing, spacing:-spacing] = prim_back
 
-    mask_back_pad = np.zeros(np.array(mask_back.shape) + 2 * spacing)
-    mask_back_pad[spacing:-spacing, spacing:-spacing] = mask_back
+        second_back_pad = np.zeros(np.array(second_back.shape) + 2 * spacing)
+        second_back_pad[spacing:-spacing, spacing:-spacing] = second_back
 
-    print('Searching for GCPs in back-transformed images.')
-    gcps = get_gcps(prim_back_pad, second_back_pad, mask_back_pad.astype(np.uint8), spacing=spacing, s_size=s_size)
-    gcps['match_j'] -= spacing
-    gcps['match_i'] -= spacing
+        mask_back_pad = np.zeros(np.array(mask_back.shape) + 2 * spacing)
+        mask_back_pad[spacing:-spacing, spacing:-spacing] = mask_back
 
-    gcps['src_j'] -= spacing
-    gcps['src_i'] -= spacing
+        print('Searching for GCPs in back-transformed images.')
+        gcps = get_gcps(prim_back_pad, second_back_pad, mask_back_pad.astype(np.uint8), spacing=spacing, s_size=s_size)
+        gcps['match_j'] -= spacing
+        gcps['match_i'] -= spacing
 
-    gcps['elevation'] = dem_back[gcps.src_i, gcps.src_j]
-    gcps.dropna(inplace=True)
+        gcps['src_j'] -= spacing
+        gcps['src_i'] -= spacing
+
+        gcps['elevation'] = dem_back[gcps.src_i, gcps.src_j]
+        gcps.dropna(inplace=True)
+
+        gcps = interp_coords(gcps, second_samp, second_line)
+
+        orig_line = prim_line[gcps.src_i, gcps.src_j]
+        orig_samp = prim_samp[gcps.src_i, gcps.src_j]
+
+        gcps.src_i = orig_line
+        gcps.src_j = orig_samp
+
+        img = prim_back
+        dem_img = dem_back
+
+    else:
+        if fn_qmask is not None:
+            qmask_geo = GeoImg(fn_qmask)
+            qmask = 255 * np.ones(qmask_geo.img.shape, dtype=np.uint8)
+            qmask[tm_qa_mask(qmask_geo.img)] = 0
+            second_fullres.img[qmask == 0] = 0
+
+        gcps = get_gcps(prim_fullres, second_fullres, mask, spacing=spacing, s_size=s_size, dem=dem)
+
+        if fn_qmask is not None:
+            second_fullres = GeoImg(fn_second)
+
+        img = prim_fullres.img
+        dem_img = dem.img
 
     Mfin, inliers_fin = ransac((gcps[['match_j', 'match_i']].values, gcps[['src_j', 'src_i']].values),
                                AffineTransform, min_samples=10, residual_threshold=40, max_trials=5000)
@@ -1084,17 +1166,26 @@ def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_s
     print('{} matching GCPs found.'.format(np.count_nonzero(inliers)))
 
     print('Calculating new RPC transformation.')
-    lines, samps = calculate_rpc_transform(gcps.loc[inliers], prim_back, dem_back)
+    lines, samps = calculate_rpc_transform(gcps.loc[inliers], img, dem_img)
+
+    ydiff = gcps.loc[inliers, 'match_i'].values - lines[gcps.loc[inliers, 'src_i'].astype(int),
+                                                        gcps.loc[inliers, 'src_j'].astype(int)]
+
+    xdiff = gcps.loc[inliers, 'match_j'].values - samps[gcps.loc[inliers, 'src_i'].astype(int),
+                                                        gcps.loc[inliers, 'src_j'].astype(int)]
+
+    gcps.loc[inliers, 'fin_res'] = np.sqrt(xdiff ** 2 + ydiff ** 2)
 
     print('Warping image to new geometry.')
-    if fn_qmask is not None:
-        second_back = warp(second_fullres.img, np.array([second_line, second_samp]), order=1,
-                           preserve_range=True).astype(orig_dtype)
 
-    img_tfm = warp(second_back, np.array([lines, samps]), order=5, preserve_range=True).astype(orig_dtype)
+    if back_transform:
+        img_tfm = warp(second_back, np.array([lines, samps]), order=5, preserve_range=True).astype(orig_dtype)
+        l1t = warp(img_tfm, np.array([l1r_line, l1r_samp]), order=5, preserve_range=True)
+    else:
+        l1t = warp(second_fullres.img, np.array([lines, samps]), order=5, preserve_range=True).astype(orig_dtype)
 
     mkdir_p('warped')
-    outimg = prim_fullres.copy(new_raster=img_tfm)
+    outimg = prim_fullres.copy(new_raster=l1t)
     outimg.write(os.path.join('warped', os.path.basename(fn_second)), dtype=orig_dtype)
 
     if all_bands:
@@ -1108,16 +1199,17 @@ def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_s
             print(im)
             this_img = GeoImg(im)
 
-            if 'BQA' not in im:
-                this_band = int(os.path.basename(im).split('_B')[1].split('.')[0].strip('B'))
-                back_line, back_samp = get_back_transform(this_img,
-                                                          second_meta['RPC_BAND{:02d}'.format(this_band)],
-                                                          this_band)
-                back_img = warp(this_img.img, np.array([back_line, back_samp]), preserve_range=True, order=5)
-                tfm_img = warp(back_img, np.array([lines, samps]), preserve_range=True, order=5)
-            else:
-                back_img = warp(this_img.img, np.array([second_line, second_samp]), preserve_range=True, order=0)
-                tfm_img = warp(back_img, np.array([lines, samps]), preserve_range=True, order=0)
+            if back_transform:
+                if 'BQA' not in im:
+                    this_band = int(os.path.basename(im).split('_B')[1].split('.')[0].strip('B'))
+                    back_line, back_samp = get_back_transform(this_img,
+                                                              second_meta['RPC_BAND{:02d}'.format(this_band)],
+                                                              this_band)
+                    back_img = warp(this_img.img, np.array([back_line, back_samp]), preserve_range=True, order=5)
+                    tfm_img = warp(back_img, np.array([lines, samps]), preserve_range=True, order=5)
+                else:
+                    back_img = warp(this_img.img, np.array([second_line, second_samp]), preserve_range=True, order=0)
+                    tfm_img = warp(back_img, np.array([lines, samps]), preserve_range=True, order=0)
 
             outimg = prim_fullres.copy(new_raster=tfm_img)
             outimg.write(os.path.join('warped', os.path.basename(im)), dtype=this_img.dtype)
