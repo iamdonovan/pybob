@@ -395,7 +395,7 @@ def make_template(img, pt, half_size):
     return template, row_inds, col_inds
 
 
-def sliding_window_filter(img_shape, pts_df, winsize, stepsize=None, mindist=2000):
+def sliding_window_filter(img_shape, pts_df, winsize, stepsize=None, mindist=2000, how='z_corr', sort_asc=True):
     if stepsize is None:
         stepsize = winsize / 2
 
@@ -414,7 +414,7 @@ def sliding_window_filter(img_shape, pts_df, winsize, stepsize=None, mindist=200
                                                       pts_df.match_i < max_y])].copy()
             if samp_.shape[0] == 0:
                 continue
-            samp_.sort_values('z_corr', ascending=True, inplace=True)
+            samp_.sort_values(how, ascending=sort_asc, inplace=True)
             if len(out_inds) == 0:
                 best_ind = samp_.index[0]
                 best_pt = Point(samp_.loc[best_ind, ['match_j', 'match_i']].values)
@@ -524,75 +524,78 @@ def get_subpixel(res, how='min'):
     return sp_delx, sp_dely
 
 
+def do_match(prim, second, mask, pt, tmpl_size, search_size, highpass):
+    _i, _j = pt
+    submask, _, _ = make_template(mask, pt, tmpl_size)
+    if np.count_nonzero(submask) / submask.size < 0.05:
+        return (-1, -1), -1, -1
+    # testchip, _, _ = imtools.make_template(rough_tfm, (pt[1], pt[0]), 40)
+    # dst_chip, _, _ = imtools.make_template(prim.img, (pt[1], pt[0]), 200)
+    testchip, _, _ = make_template(prim, pt, tmpl_size)
+    if search_size is None:
+        dst_chip = second
+    else:
+        dst_chip, rows, cols = make_template(second, pt, search_size)
+    testchip[np.isnan(testchip)] = 0
+    dst_chip[np.isnan(dst_chip)] = 0
+    if highpass:
+        test = highpass_filter(testchip)
+        dest = highpass_filter(dst_chip)
+    else:
+        test = testchip
+        dest = dst_chip
+
+    testmask = binary_dilation(testchip == 0, selem=disk(8))
+    destmask = binary_dilation(dst_chip == 0, selem=disk(8))
+
+    test[testmask] = np.random.rand(test.shape[0], test.shape[1])[testmask]
+    dest[destmask] = np.random.rand(dest.shape[0], dest.shape[1])[destmask]
+
+    corr_res, this_i, this_j = find_match(dest.astype(np.float32), test.astype(np.float32))
+    peak_corr = cv2.minMaxLoc(corr_res)[1]
+
+    pks = peak_local_max(corr_res, min_distance=5, num_peaks=2)
+    this_z_corrs = []
+    for pk in pks:
+        max_ = corr_res[pk[0], pk[1]]
+        this_z_corrs.append((max_ - corr_res.mean()) / corr_res.std())
+    dz_corr = max(this_z_corrs) / min(this_z_corrs)
+    z_corr = max(this_z_corrs)
+
+    # if the correlation peak is very high, or very unique, add it as a match
+    # out_i, out_j = this_i - 200 + pt[1], this_j - 200 + pt[0]
+    if search_size is not None:
+        out_i, out_j = this_i - min(rows) + _i, this_j - min(cols) + _j
+    else:
+        out_i, out_j = this_i, this_j
+
+    return (out_j, out_i), z_corr, peak_corr
+
+
 def gridded_matching(prim, second, mask, spacing, tmpl_size=25, search_size=None, highpass=False):
     # for each of these pairs (src, dst), find the precise subpixel match (or not...)
 
-    jj = np.arange(0, prim.shape[1], spacing)
-    ii = np.arange(0, prim.shape[0], spacing)
-    J, I = np.meshgrid(jj, ii)
+    # if search_size is None:
+    jj = np.arange(tmpl_size, spacing * np.ceil((prim.shape[1]-tmpl_size) / spacing) + 1, spacing).astype(int)
+    ii = np.arange(tmpl_size, spacing * np.ceil((prim.shape[0]-tmpl_size) / spacing) + 1, spacing).astype(int)
+    # else:
+    #     jj = np.arange(search_size, search_size * np.ceil((prim.shape[1]-search_size)/search_size)+1, spacing)
+    #     ii = np.arange(search_size, search_size * np.ceil((prim.shape[0]-search_size)/search_size)+1, spacing)
+    J, I = np.meshgrid(jj.astype(int), ii.astype(int))
 
-    search_pts = np.concatenate([I.reshape(-1,1), J.reshape(-1,1)], axis=1)
+    search_pts = np.concatenate([I.reshape(-1, 1), J.reshape(-1, 1)], axis=1)
     match_pts = -1 * np.ones(search_pts.shape)
     z_corrs = -1 * np.ones((search_pts.shape[0], 1))
     peak_corrs = -1 * np.ones((search_pts.shape[0], 1))
 
     for ind, pt in enumerate(search_pts):
-        _i, _j = pt
-
-        # for pt in search_pts:
-        # if mask[pt[1], pt[0]] == 0:
-        # if mask[_i, _j] == 0:
-        #     continue
         try:
-            submask, _, _ = make_template(mask, pt, tmpl_size)
-            if np.count_nonzero(submask) / submask.size < 0.05:
-                continue
-            # testchip, _, _ = imtools.make_template(rough_tfm, (pt[1], pt[0]), 40)
-            # dst_chip, _, _ = imtools.make_template(prim.img, (pt[1], pt[0]), 200)
-            testchip, _, _ = make_template(prim, pt, tmpl_size)
-            if search_size is None:
-                dst_chip = second
-            else:
-                dst_chip, rows, cols = make_template(second, pt, search_size)
-            testchip[np.isnan(testchip)] = 0
-            dst_chip[np.isnan(dst_chip)] = 0
-            if highpass:
-                test = highpass_filter(testchip)
-                dest = highpass_filter(dst_chip)
-            else:
-                test = np.ma.masked_values(testchip, 0)
-                dest = np.ma.masked_values(dst_chip, 0)
-
-            testmask = binary_dilation(testchip == 0, selem=disk(8))
-            destmask = binary_dilation(dst_chip == 0, selem=disk(8))
-
-            test[testmask] = np.random.rand(test.shape[0], test.shape[1])[testmask]
-            dest[destmask] = np.random.rand(dest.shape[0], dest.shape[1])[destmask]
-
-            corr_res, this_i, this_j = find_match(dest.astype(np.float32), test.astype(np.float32))
-            peak_corr = cv2.minMaxLoc(corr_res)[1]
-
-            pks = peak_local_max(corr_res, min_distance=5, num_peaks=2)
-            this_z_corrs = []
-            for pk in pks:
-                max_ = corr_res[pk[0], pk[1]]
-                this_z_corrs.append((max_ - corr_res.mean()) / corr_res.std())
-            dz_corr = max(this_z_corrs) / min(this_z_corrs)
-            z_corr = max(this_z_corrs)
-
-            # if the correlation peak is very high, or very unique, add it as a match
-            # out_i, out_j = this_i - 200 + pt[1], this_j - 200 + pt[0]
-            if search_size is not None:
-                out_i, out_j = this_i - min(rows) + _i, this_j - min(cols) + _j
-            else:
-                out_i, out_j = this_i, this_j
-
+            (out_j, out_i), z_corr, peak_corr = do_match(prim, second, mask, pt,
+                                                         tmpl_size, search_size, highpass)
             z_corrs[ind] = z_corr
             peak_corrs[ind] = peak_corr
             match_pts[ind] = np.array([out_j, out_i])
-
         except:
-
             continue
 
     return search_pts, np.array(match_pts), np.array(peak_corrs), np.array(z_corrs)
