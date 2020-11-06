@@ -2,11 +2,23 @@
 import argparse
 import os
 import fiona
+import pyproj
+from functools import partial
 from numpy import argmax, array
 from fiona import crs
+from shapely.ops import transform
 from shapely.geometry import mapping, LineString
 from shapely.geometry.polygon import Polygon, orient
 from pybob.GeoImg import GeoImg
+
+
+def reproject_geometry(src_data, src_crs, dst_crs):
+    # unfortunately this requires pyproj>1.95, temporary fix to avoid shambling dependencies in mmaster_environment
+    src_proj = pyproj.Proj(src_crs)
+    dst_proj = pyproj.Proj(dst_crs)
+
+    project = partial(pyproj.transform, src_proj, dst_proj)
+    return transform(project, src_data)
 
 
 def orient_footprint(fprint):
@@ -37,6 +49,7 @@ def lhand_chop(footprint, chop):
     new_coords = [coords[0], (new_ur.x, new_ur.y), (new_lr.x, new_lr.y), coords[3]]
     return Polygon(new_coords)
 
+
 def _argparser():
     parser = argparse.ArgumentParser(description="Create footprint of valid image area for one (or more) images.")
     parser.add_argument('image', action='store', type=str, nargs='+', help="Image(s) to read in")
@@ -46,6 +59,7 @@ def _argparser():
     parser.add_argument('--chop', action='store', type=float, nargs='?', const=1000.0,
                         help="Amount of image to crop in m [default 1000]")
     return parser
+
 
 def main():
     parser = _argparser()
@@ -74,7 +88,11 @@ def main():
             footprint = lhand_chop(simple_print, args.chop)
 
         footprint = footprint.buffer(args.buffer)
-        outshape.write({'properties': {'filename': img, 'path': dirpath}, 'geometry': mapping(footprint)})
+        if img.epsg != img1.epsg:
+            outprint = reproject_geometry(footprint, img.proj4, img1.proj4)
+        else:
+            outprint = footprint
+        outshape.write({'properties': {'filename': img, 'path': dirpath}, 'geometry': mapping(outprint)})
     outshape.close()
 
 
