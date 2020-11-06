@@ -88,8 +88,8 @@ def main():
             footprint = lhand_chop(simple_print, args.chop)
 
         footprint = footprint.buffer(args.buffer)
-        if img.epsg != img1.epsg:
-            outprint = reproject_geometry(footprint, img.proj4, img1.proj4)
+        if geo.epsg != img1.epsg:
+            outprint = reproject_geometry(footprint, geo.proj4, img1.proj4)
         else:
             outprint = footprint
         outshape.write({'properties': {'filename': img, 'path': dirpath}, 'geometry': mapping(outprint)})
