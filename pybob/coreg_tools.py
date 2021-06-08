@@ -70,11 +70,11 @@ def false_hillshade(dH, title, pp=None, clim=(-20, 20)):
     plt.title(title, fontsize=14)
 
     numwid = max([len('{:.1f} m'.format(np.mean(dH_vec))),
-                  len('{:.1f} m'.format(np.median(dH_vec))), len('{:.1f} m'.format(np.std(dH_vec)))])
+                  len('{:.1f} m'.format(np.ma.median(dH_vec))), len('{:.1f} m'.format(np.std(dH_vec)))])
     plt.annotate('MEAN:'.ljust(8) + ('{:.1f} m'.format(np.mean(dH_vec))).rjust(numwid), xy=(0.65, 0.95),
 
                  xycoords='axes fraction', fontsize=12, fontweight='bold', color='red', family='monospace')
-    plt.annotate('MEDIAN:'.ljust(8) + ('{:.1f} m'.format(np.median(dH_vec))).rjust(numwid),
+    plt.annotate('MEDIAN:'.ljust(8) + ('{:.1f} m'.format(np.ma.median(dH_vec))).rjust(numwid),
                  xy=(0.65, 0.90), xycoords='axes fraction', fontsize=12, fontweight='bold',
                  color='red', family='monospace')
     plt.annotate('STD:'.ljust(8) + ('{:.1f} m'.format(np.std(dH_vec))).rjust(numwid), xy=(0.65, 0.85),
