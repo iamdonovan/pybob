@@ -2,12 +2,11 @@ import os
 import shutil
 import yaml
 import numpy as np
-import osr
-import gdal
+from osgeo import gdal, osr
 import pandas as pd
 import geopandas as gpd
 from glob import glob
-from sklearn.linear_model import Ridge
+from sklearn.linear_model import Ridge, LinearRegression
 from scipy.interpolate import griddata
 from scipy.optimize import lsq_linear, least_squares, nnls
 from scipy.sparse.linalg import lsmr
@@ -211,15 +210,15 @@ def rpc_coeffs_from_gcps(gcps, Y, i, j, z, order=3):
     aReg = 1E-5
     p0 = np.zeros(M.shape[1])
     p0[0] = 1
-    # coeffs = lsq_linear(M.T.dot(M) + aReg * np.identity(M.shape[1]), M.T.dot(Y).reshape(-1))
-    res = lsmr(M, Y, damp=aReg, x0=p0)
-    # res = lsq_linear(M, Y.reshape(-1))
+    res = np.linalg.inv((M.T.dot(M) + aReg * np.identity(M.shape[1]))).dot(M.T.dot(Y))
+    # res = lsmr(M, Y, damp=aReg, x0=p0)  # res[0]
+    # res = lsq_linear(M.T.dot(M) + aReg * np.identity(M.shape[1]), M.T.dot(Y).reshape(-1))  # res['x']
     # reg = Ridge(alpha=0.9, fit_intercept=False)  # works better in that it gives a smooth/not discontinuous result
     # reg.fit(M, Y)
-    res = least_squares(lsq_costfun, p0, loss='soft_l1', tr_solver='lsmr', args=(samp, line, height, Y, order))
+    # res = least_squares(lsq_costfun, p0, loss='soft_l1', tr_solver='lsmr', args=(samp, line, height, Y, order))
     # coeffs, resid = nnls(M, Y.reshape(-1))
 
-    return res['x']
+    return res
 
 
 def build_matrix(samp, line, height, Y, order=3):
@@ -306,7 +305,7 @@ def reverse_l1r_rpc(numerator, denominator, lines, samps, l1r, height=0):
                 - numerator[3] * height
 
     samps_den = numerator[2] + numerator[4] * lines \
-                - l1r * denominator[1] \
+                - l1r  * denominator[1] \
                 - l1r * denominator[3] * samps
 
     return (lines_num / lines_den), (samps_num / samps_den)
@@ -520,6 +519,19 @@ def get_track_distance(img, imgname):
     return track_dist.astype(np.float32), perp.astype(np.float32)
 
 
+def get_perp(l1r_samp):
+    line, samp = np.where(np.abs(l1r_samp) < 0.1)
+    lr = LinearRegression()
+    lr.fit(samp.reshape(-1, 1), line.reshape(-1, 1))
+
+    slope = lr.coef_.flatten()[0]
+
+    a = np.array([1, slope]) / np.linalg.norm(np.array([1, slope]))
+    perp = np.array([-a[1], a[0]])
+
+    return perp
+
+
 def find_img_corners(img, nodata=0):
     if np.isnan(nodata):
         img_closing = binary_closing(np.isfinite(img), selem=disk(3))
@@ -541,7 +553,7 @@ def find_img_corners(img, nodata=0):
     return [(left_x - 1, left_y), (top_x, top_y - 1), (right_x + 1, right_y), (bot_x, bot_y + 1)]
 
 
-def get_pixel_displacements(img, dem, metadata=None, sat_altitude=None):
+def get_pixel_displacements(img, dem, band=None, metadata=None, sat_altitude=None):
     r_earth = get_earth_radius(get_center_latlon(img))
 
     # assert any([metadata is not None, sat_altitude is not None]), \
@@ -555,9 +567,13 @@ def get_pixel_displacements(img, dem, metadata=None, sat_altitude=None):
         sat_alt = dist.mean() - r_earth
     elif sat_altitude is not None:
         sat_alt = sat_altitude
-    # l1r_line, l1r_samp = get_l1r_grids(metadata['RPC_BAND{:02d}'.format(band)], band, dem=dem.img)
-    # l1r_samp = l1r_samp - metadata['RPC_BAND{:02d}'.format(band)]['BAND{:02d}_MEAN_L1R_LINE_SAMP'.format(band)][1]
-    l1r_samp, perp = get_track_distance(img.img, img.filename)
+
+    if band is not None:
+        _, l1r_samp = get_l1r_grids(metadata['RPC_BAND{:02d}'.format(band)], band, dem=dem.img)
+        l1r_samp = l1r_samp - metadata['RPC_BAND{:02d}'.format(band)]['BAND{:02d}_MEAN_L1R_LINE_SAMP'.format(band)][1]
+        perp = get_perp(l1r_samp)
+    else:
+        l1r_samp, perp = get_track_distance(img.img, img.filename)
 
     theta = l1r_samp / r_earth
 
@@ -578,10 +594,10 @@ def get_pixel_displacements(img, dem, metadata=None, sat_altitude=None):
     return delta_x.astype(np.float32), perp.astype(np.float32)
 
 
-def get_l1t_displacement_map(img, dem, metadata=None, sat_altitude=None):
+def get_l1t_displacement_map(img, dem, metadata=None, sat_altitude=None, band=None):
     # this_meta = metadata['RPC_BAND{:02d}'.format(band)]
 
-    pixel_shifts, perp = get_pixel_displacements(img, dem, metadata=metadata, sat_altitude=sat_altitude)
+    pixel_shifts, perp = get_pixel_displacements(img, dem, band, metadata=metadata, sat_altitude=sat_altitude)
 
     l1t_x_shift = perp[0] * pixel_shifts
     l1t_y_shift = perp[1] * pixel_shifts
@@ -656,7 +672,7 @@ def remove_orthorectification(imgname, fn_dem, sat_altitude=None, dtype=np.uint8
 
     dem.img[np.isnan(dem.img)] = np.nanmin(dem.img)
 
-    x_shift, y_shift = get_l1t_displacement_map(img, dem, metadata=metadata, sat_altitude=sat_altitude)
+    x_shift, y_shift = get_l1t_displacement_map(img, dem, metadata=metadata, sat_altitude=sat_altitude, band=band)
     l1t_line, l1t_samp = get_l1t_grids(img.img)
 
     new_line = l1t_line + y_shift
@@ -1054,8 +1070,9 @@ def old_register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400,
         os.chdir(cwdir)
 
 
-def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_size=200, fn_glacmask=None,
-                     fn_landmask=None, all_bands=False, fn_second_meta=None, fn_prim_meta=None, back_transform=False):
+def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, t_size=50, s_size=200, fn_glacmask=None,
+                     fn_landmask=None, all_bands=False, fn_second_meta=None, fn_prim_meta=None, back_transform=False,
+                     rpc_order=3):
 
     second_name = os.path.basename(fn_second).split('_B')[0]
     second_dir = os.path.dirname(os.path.abspath(fn_second))
@@ -1070,10 +1087,12 @@ def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_s
     prim_fullres = GeoImg(fn_prim)
 
     mask = get_mask(prim_fullres, fn_landmask, fn_glacmask, None)
+    mask[prim_fullres.img == 0] = 0
 
     orig_dtype = second_fullres.dtype
     dem = GeoImg(fn_dem)
     dem = dem.reproject(prim_fullres)
+    dem.img[np.isnan(dem.img)] = np.nanmin(dem.img)
 
     if fn_second_meta is None:
         second_meta = parse_ang_file(os.path.join(second_dir, second_name + '_ANG.txt'))
@@ -1106,7 +1125,6 @@ def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_s
         prim_back = warp(prim_fullres.img, np.array([prim_line, prim_samp]), order=1, preserve_range=True)
 
         dem_back = warp(dem.img, np.array([prim_line, prim_samp]), order=1, preserve_range=True)
-        dem_back[np.isnan(dem_back)] = np.nanmin(dem_back)
 
         mask_back = warp(mask, np.array([prim_line, prim_samp]), order=0, preserve_range=True).astype(np.uint8)
         mask_back[prim_back == 0] = 0
@@ -1121,7 +1139,8 @@ def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_s
         mask_back_pad[spacing:-spacing, spacing:-spacing] = mask_back
 
         print('Searching for GCPs in back-transformed images.')
-        gcps = get_gcps(prim_back_pad, second_back_pad, mask_back_pad.astype(np.uint8), spacing=spacing, s_size=s_size)
+        gcps = get_gcps(prim_back_pad, second_back_pad, mask_back_pad.astype(np.uint8),
+                        spacing=spacing, t_size=t_size, s_size=s_size)
         gcps['match_j'] -= spacing
         gcps['match_i'] -= spacing
 
@@ -1145,11 +1164,11 @@ def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_s
     else:
         if fn_qmask is not None:
             qmask_geo = GeoImg(fn_qmask)
-            qmask = 255 * np.ones(qmask_geo.img.shape, dtype=np.uint8)
-            qmask[tm_qa_mask(qmask_geo.img)] = 0
-            second_fullres.img[qmask == 0] = 0
+            if qmask_geo.img.shape != second_fullres.img.shape:
+                qmask_geo = qmask_geo.reproject(second_fullres, method=gdal.GRA_NearestNeighbour)
+            second_fullres.img[tm_qa_mask(qmask_geo.img)] = 0
 
-        gcps = get_gcps(prim_fullres, second_fullres, mask, spacing=spacing, s_size=s_size, dem=dem)
+        gcps = get_gcps(prim_fullres, second_fullres, mask, spacing=spacing, t_size=t_size, s_size=s_size, dem=dem)
 
         if fn_qmask is not None:
             second_fullres = GeoImg(fn_second)
@@ -1158,15 +1177,18 @@ def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_s
         dem_img = dem.img
 
     Mfin, inliers_fin = ransac((gcps[['match_j', 'match_i']].values, gcps[['src_j', 'src_i']].values),
-                               AffineTransform, min_samples=10, residual_threshold=40, max_trials=5000)
+                               AffineTransform, min_samples=10, residual_threshold=25, max_trials=5000)
     gcps['residuals'] = Mfin.residuals(gcps[['match_j', 'match_i']].values, gcps[['src_j', 'src_i']].values)
+
+    res_thresh = min(gcps.loc[inliers_fin].residuals.median() + 3 * nmad(gcps.loc[inliers_fin].residuals), 25)
+
     inliers = np.logical_and.reduce((gcps.pk_corr > gcps.pk_corr.quantile(0.25),
-                                     gcps.residuals < min(10 * nmad(gcps.residuals), 25),
+                                     gcps.residuals < res_thresh,
                                      gcps.z_corr > gcps.z_corr.quantile(0.25)))
-    print('{} matching GCPs found.'.format(np.count_nonzero(inliers)))
+    print('{} GCPs accepted.'.format(np.count_nonzero(inliers)))
 
     print('Calculating new RPC transformation.')
-    lines, samps = calculate_rpc_transform(gcps.loc[inliers], img, dem_img)
+    lines, samps = calculate_rpc_transform(gcps.loc[inliers], img, dem_img, order=rpc_order)
 
     ydiff = gcps.loc[inliers, 'match_i'].values - lines[gcps.loc[inliers, 'src_i'].astype(int),
                                                         gcps.loc[inliers, 'src_j'].astype(int)]
@@ -1183,7 +1205,8 @@ def register_landsat(fn_prim, fn_second, fn_dem, fn_qmask=None, spacing=400, s_s
         l1t = warp(img_tfm, np.array([l1r_line, l1r_samp]), order=5, preserve_range=True)
     else:
         l1t = warp(second_fullres.img, np.array([lines, samps]), order=5, preserve_range=True).astype(orig_dtype)
-
+        # l1t = warp(second_fullres.img, Mfin.inverse, order=5, preserve_range=True,
+        #            output_shape=prim_fullres.img.shape).astype(orig_dtype)
     mkdir_p('warped')
     outimg = prim_fullres.copy(new_raster=l1t)
     outimg.write(os.path.join('warped', os.path.basename(fn_second)), dtype=orig_dtype)
