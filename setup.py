@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='pybob',
-      version='0.25',
+      version='0.25.1',
       description='Collection of geospatial and other tools I find useful.',
       url='http://github.com/iamdonovan/pybob',
       author='Bob McNabb',
@@ -11,7 +11,7 @@ setup(name='pybob',
       install_requires=[
                         'numpy', 'scipy', 'matplotlib', 'fiona', 'pyvips',
                         'shapely', 'opencv-python', 'pandas', 'geopandas',
-                        'scikit-image', 'gdal', 'h5py', 'pyproj','llc', 'numba', 'descartes',
+                        'scikit-image>=0.18', 'gdal', 'h5py', 'pyproj', 'llc', 'numba', 'descartes',
                         'sphinx-argparse'],
       scripts=['bin/dem_coregistration.py', 'bin/generate_panchromatic.py',
                'bin/find_aster_dem_pairs.py', 'bin/image_footprint.py',
