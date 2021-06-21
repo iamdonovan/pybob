@@ -12,7 +12,7 @@ from scipy.interpolate import RectBivariateSpline as RBS
 import scipy.ndimage as ndimage
 import scipy.ndimage.filters as filters
 from skimage.feature import peak_local_max
-from skimage.transform import match_histograms
+from skimage.exposure import match_histograms
 from skimage.feature import greycomatrix, greycoprops
 from skimage.filters import rank
 from skimage.morphology import binary_dilation, disk
@@ -536,6 +536,10 @@ def do_match(prim, second, mask, pt, tmpl_size, search_size, highpass):
         dst_chip = second
     else:
         dst_chip, rows, cols = make_template(second, pt, search_size)
+
+    if np.count_nonzero(dst_chip) / dst_chip.size < 0.1:
+        return (-1, -1), -1, -1
+
     testchip[np.isnan(testchip)] = 0
     dst_chip[np.isnan(dst_chip)] = 0
     if highpass:
