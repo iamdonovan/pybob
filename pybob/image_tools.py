@@ -7,7 +7,7 @@ import cv2
 from osgeo import gdal, ogr, osr
 import multiprocessing as mp
 from shapely.geometry import Point
-from llc import jit_filter_function
+from numba import jit
 from scipy.interpolate import RectBivariateSpline as RBS
 import scipy.ndimage as ndimage
 import scipy.ndimage.filters as filters
@@ -65,7 +65,7 @@ def nanmedian_filter(img, **kwargs):
     :returns filtered: Filtered array of same shape as input.
     """
     # set up the wrapper function to call generic filter
-    @jit_filter_function
+    @jit(nopython=True)
     def nanmed(a):
         return np.nanmedian(a)
     
