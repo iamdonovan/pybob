@@ -25,7 +25,8 @@ class Mock(MagicMock):
 autodoc_mock_imports = ['numpy', 'scipy', 'matplotlib', 'fiona', 'cv2', 'pyvips', 'lxml', 'matplotlib.pyplot',
                         'shapely', 'opencv-python', 'pandas', 'geopandas', 'fiona.crs', 'scipy.interpolate',
                         'shapely.geometry.polygon', 'shapely.geometry', 'shapely.ops',  'shapely.strtree',
-                        'skimage', 'gdal', 'h5py', 'pyproj', 'osgeo', 'llc', 'descartes', 'lxml.etree']
+                        'skimage', 'gdal', 'h5py', 'pyproj', 'osgeo', 'numba', 'descartes', 'lxml.etree', 'osgeo',
+                        'scipy.sparse', 'numpy.dtype', 'sklearn.linear_model']
 
 sys.modules.update((mod_name, Mock()) for mod_name in autodoc_mock_imports)
 sys.path.insert(0, os.path.abspath('..'))
