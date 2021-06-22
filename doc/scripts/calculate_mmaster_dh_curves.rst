@@ -1,7 +1,7 @@
-calculate_mmaster_dh_curves.py
+calculate_mmaster_dh_curves
 =================================
 
 .. argparse::
-   :filename: ../bin/calculate_mmaster_dh_curves.py
+   :filename: ../pybob/tools/calculate_mmaster_dh_curves.py
    :func: _argparser
-   :prog: calculate_mmaster_dh_curves.py
+   :prog: calculate_mmaster_dh_curves

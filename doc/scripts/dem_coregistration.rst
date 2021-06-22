@@ -1,7 +1,7 @@
-dem_coregistration.py
+dem_coregistration
 =================================
 
 .. argparse::
-   :filename: ../bin/dem_coregistration.py
+   :filename: ../pybob/tools/dem_coregistration.py
    :func: _argparser
-   :prog: dem_coregistration.py
+   :prog: dem_coregistration

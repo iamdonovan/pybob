@@ -1,7 +1,7 @@
-image_footprint_from_met.py
+image_footprint_from_met
 =================================
 
 .. argparse::
-   :filename: ../bin/image_footprint_from_met.py
+   :filename: ../pybob/tools/image_footprint_from_met.py
    :func: _argparser
-   :prog: image_footprint_from_met.py
+   :prog: image_footprint_from_met

@@ -1,7 +1,7 @@
-find_aster_dem_pairs.py
+find_aster_dem_pairs
 =================================
 
 .. argparse::
-   :filename: ../bin/find_aster_dem_pairs.py
+   :filename: ../pybob/tools/find_aster_dem_pairs.py
    :func: _argparser
-   :prog: find_aster_dem_pairs.py
+   :prog: find_aster_dem_pairs

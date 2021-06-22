@@ -1,7 +1,7 @@
-dem_coregistration_grid.py
+dem_coregistration_grid
 =================================
 
 .. argparse::
-   :filename: ../bin/dem_coregistration_grid.py
+   :filename: ../pybob/tools/dem_coregistration_grid.py
    :func: _argparser
-   :prog: dem_coregistration_grid.py
+   :prog: dem_coregistration_grid

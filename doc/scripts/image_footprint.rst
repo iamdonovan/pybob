@@ -1,7 +1,7 @@
-image_footprint.py
+image_footprint
 =================================
 
 .. argparse::
-   :filename: ../bin/image_footprint.py
+   :filename: ../pybob/tools/image_footprint.py
    :func: _argparser
-   :prog: image_footprint.py
+   :prog: image_footprint

@@ -1,7 +1,7 @@
-generate_panchromatic.py
+generate_panchromatic
 =================================
 
 .. argparse::
-   :filename: ../bin/generate_panchromatic.py
+   :filename: ../pybob/tools/generate_panchromatic.py
    :func: _argparser
-   :prog: generate_panchromatic.py
+   :prog: generate_panchromatic

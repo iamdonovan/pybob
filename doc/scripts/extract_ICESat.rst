@@ -1,7 +1,7 @@
-extract_ICESat.py
+extract_ICESat
 =================================
 
 .. argparse::
-   :filename: ../bin/extract_ICESat.py
+   :filename: ../pybob/tools/extract_ICESat.py
    :func: _argparser
-   :prog: extract_ICESat.py
+   :prog: extract_ICESat

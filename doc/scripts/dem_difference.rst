@@ -1,7 +1,7 @@
-dem_difference.py
+dem_difference
 =================================
 
 .. argparse::
-   :filename: ../bin/dem_difference.py
+   :filename: ../pybob/tools/dem_difference.py
    :func: _argparser
-   :prog: dem_difference.py
+   :prog: dem_difference
