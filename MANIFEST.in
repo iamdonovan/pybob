@@ -1,0 +1,7 @@
+
+include LICENSE
+include README.md
+
+graft pybob
+
+global-exclude *.py[cod] __pycache__ *.so
