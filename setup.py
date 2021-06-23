@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 readme = Path(__file__).parent / 'README.md'
 
 setup(name='pybob',
-      version='0.26',
+      version='0.26.1',
       description='Collection of geospatial and other tools I find useful.',
       long_description=readme.read_text(),
       long_description_content_type='text/markdown',
@@ -15,6 +15,7 @@ setup(name='pybob',
       maintainer='iamdonovan',
       license='MIT',
       license_file='LICENSE',
+      include_package_data=True,
       classifiers=[
           'Intended Audience :: Science/Research',
           'License :: OSI Approved :: MIT License',
