@@ -28,7 +28,7 @@ setup(name='pybob',
       packages=['pybob'],
       python_requires='>=3.7',
       install_requires=[
-                        'numpy', 'scipy', 'matplotlib', 'fiona', 'pyvips',
+                        'numpy', 'scipy', 'matplotlib', 'fiona',
                         'shapely', 'opencv-python', 'pandas', 'geopandas',
                         'scikit-image>=0.18', 'gdal', 'h5py', 'pyproj', 'numba', 'descartes',
                         'sphinx-argparse'],
