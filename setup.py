@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 readme = Path(__file__).parent / 'README.md'
 
 setup(name='pybob',
-      version='0.26.1',
+      version='0.26.2',
       description='Collection of geospatial and other tools I find useful.',
       long_description=readme.read_text(),
       long_description_content_type='text/markdown',
