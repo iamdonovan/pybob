@@ -993,7 +993,7 @@ class GeoImg(object):
         for pt in pts:
             ij = self.xy2ij(pt)
             try:
-                ij = (np.int16(ij[0]+0.5), np.int16(ij[1]+0.5))
+                ij = (int(ij[0]+0.5), int(ij[1]+0.5))
             except ValueError as e:
                 print(ij)
                 raise e
@@ -1045,13 +1045,13 @@ class GeoImg(object):
         def getgrids(a):
             myimg, pt, nsize, mode = a
             ij = myimg.xy2ij(pt)
-            ij = (np.int16(ij[0]+0.5), np.int16(ij[1]+0.5))
+            ij = (int(ij[0]+0.5), int(ij[1]+0.5))
 
-            xlow = np.int16(max(0, ij[1]-nsize))
-            xhigh = np.int16(min(xx.size, ij[1]+nsize+1))
+            xlow = int(max(0, ij[1]-nsize))
+            xhigh = int(min(xx.size, ij[1]+nsize+1))
 
-            ylow = np.int16(max(0, ij[0]-nsize))
-            yhigh = np.int16(min(yy.size, ij[0]+nsize+1))
+            ylow = int(max(0, ij[0]-nsize))
+            yhigh = int(min(yy.size, ij[0]+nsize+1))
 
             try:
                 x = xx[xlow:xhigh]
@@ -1059,7 +1059,7 @@ class GeoImg(object):
 
                 X, Y = np.meshgrid(x, y)
                 z = myimg.img[ylow:yhigh, xlow:xhigh]
-            except MaskError as e:
+            except np.ma.MaskError:
                 return pt, ij, np.nan * np.ones(nsize), np.nan * np.ones(nsize), np.nan * np.ones(nsize), mode
             return pt, ij, X, Y, z, mode
 
