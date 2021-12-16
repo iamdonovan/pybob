@@ -25,7 +25,7 @@ setup(name='pybob',
           'Programming Language :: Python :: 3.8',
           'Programming Language :: Python :: 3.9',
       ],
-      packages=['pybob'],
+      packages=find_packages(),
       python_requires='>=3.7',
       install_requires=[
                         'numpy', 'scipy', 'matplotlib', 'fiona',
