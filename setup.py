@@ -32,7 +32,7 @@ setup(name='pybob',
                         'shapely', 'opencv-python', 'pandas', 'geopandas',
                         'scikit-image>=0.18', 'gdal', 'h5py', 'pyproj', 'numba', 'descartes',
                         'sphinx-argparse'],
-      entrypoints={
+      entry_points={
           'console_scripts': [
               'calculate_mmaster_dh_curves = pybob.tools.calculate_mmaster_dh_curves:main',
               'convert_elevations = pybob.tools.convert_elevations:main',
