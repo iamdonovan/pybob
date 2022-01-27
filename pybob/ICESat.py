@@ -278,6 +278,8 @@ class ICESat(object):
 
         try:
             setattr(self, 'elev', in_df[el_name].values)
+            if el_name in cols:
+                cols.remove(el_name)
         except KeyError as e:
             raise KeyError('Unable to set elevation attribute using {}'.format(el_name))
 
@@ -597,8 +599,8 @@ class ICESat(object):
         >>> icesat_data.project('epsg:3338')
         """
         if isinstance(dest_proj, str):
-            dest_proj = pyproj.Proj(init=dest_proj)
-        wgs84 = pyproj.Proj(init='epsg:4326')
+            dest_proj = pyproj.Proj(dest_proj)
+        wgs84 = pyproj.Proj('epsg:4326')
         self.x, self.y = pyproj.transform(wgs84, dest_proj, self.lon, self.lat)
         if not self.masked:
             self.xy = np.array(list(zip(self.x, self.y)))
