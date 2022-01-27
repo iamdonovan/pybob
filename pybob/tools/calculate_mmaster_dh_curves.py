@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import datetime as dt
 from glob import glob
-from gdal import GRA_NearestNeighbour
+from osgeo.gdal import GRA_NearestNeighbour
 from pybob.GeoImg import GeoImg
 from pybob.bob_tools import bin_data
 import pybob.image_tools as it
