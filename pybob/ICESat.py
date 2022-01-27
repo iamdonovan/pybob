@@ -160,7 +160,20 @@ class ICESat(object):
         self.in_dir_abs_path = os.path.abspath(in_dir)
         self.icesat_type = None
 
-        h5f = h5py.File(os.path.join(self.in_dir_path, self.filename), 'r')
+        extname = os.path.splitext(self.filename)[-1]
+        if extname in ['.csv', '.txt']:
+            self.__load_csv__(os.path.join(self.in_dir_abs_path, self.filename), el_name=el_name,
+                              cols=cols, ellipse_hts=ellipse_hts)
+        elif extname in ['.h5']:
+            self.__load_hdf__(os.path.join(self.in_dir_abs_path, self.filename))
+        else:
+            raise ValueError('extension {} not recognized as a valid extension'.format(extname))
+
+    def __load_hdf__(self, fn_pts, in_dir=None, el_name='d_elev',
+                     cols=['lat', 'lon', 'd_elev', 'd_UTCTime', 'd_deltaEllip'],
+                     ellipse_hts=True):
+        h5f = h5py.File(fn_pts, 'r')
+
         if 'ShortName' in h5f.attrs.keys():
             if 'GLAH' in str(h5f.attrs['ShortName']):
                 setattr(self, 'icesat_type', 'GLAS')
@@ -257,10 +270,48 @@ class ICESat(object):
         if ellipse_hts:
             self.to_ellipse()
 
-    def from_h5(self):
-        pass
+    def __load_csv__(self, fn_pts, el_name='d_elev', cols=['lat', 'lon'],
+                     ellipse_hts=True):
 
-    def from_csv(self):
+        in_df = pd.read_csv(fn_pts)
+        setattr(self, 'icesat_type', 'homebrew')
+
+        try:
+            setattr(self, 'elev', in_df[el_name].values)
+        except KeyError as e:
+            raise KeyError('Unable to set elevation attribute using {}'.format(el_name))
+
+        valid_cols = []
+        for d in cols:
+            try:
+                setattr(self, d, in_df[d].values)
+                if d == 'lon' and self.lon.max() > 180:
+                    self.lon[self.lon > 180] = self.lon[self.lon > 180] - 360
+                valid_cols.append(d)
+            except KeyError as e:
+                pass
+
+        if 'elev' not in valid_cols:
+            valid_cols.append('elev')
+
+        self.data_names = valid_cols
+
+        self.column_names = valid_cols
+        self.ellipse_hts = False
+        self.proj = pyproj.Proj('epsg:4326')
+
+        self.x = self.lon
+        self.y = self.lat
+        self.xy = np.array(list(zip(self.x, self.y)))
+
+        self.remove_nodata()
+        self.size = self.x.size
+        self.masked = False
+
+        if ellipse_hts:
+            self.to_ellipse()
+
+    def __load_shp__(self):
         pass
 
     def remove_nodata(self):
