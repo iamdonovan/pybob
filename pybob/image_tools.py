@@ -9,7 +9,7 @@ import multiprocessing as mp
 from llc import jit_filter_function
 import scipy.ndimage as ndimage
 import scipy.ndimage.filters as filters
-from skimage.transform import match_histograms
+from skimage.exposure import match_histograms
 from skimage.feature import greycomatrix, greycoprops
 from pybob.bob_tools import parse_lsat_scene, round_down
 from pybob.GeoImg import GeoImg
