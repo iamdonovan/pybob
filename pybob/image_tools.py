@@ -13,7 +13,7 @@ import scipy.ndimage as ndimage
 import scipy.ndimage.filters as filters
 from skimage.feature import peak_local_max
 from skimage.exposure import match_histograms
-from skimage.feature import greycomatrix, greycoprops
+from skimage.feature import graycomatrix, graycoprops
 from skimage.filters import rank
 from skimage.morphology import binary_dilation, disk
 from pybob.bob_tools import parse_lsat_scene, round_down
@@ -281,14 +281,14 @@ def calc_glcm_params(img):
             if (i > (img.shape[0] - 4)) or (j > (img.shape[1] - 4)):
                 continue
             glcm_window = tmpimg[i-3:i+4, j-3:j+4]
-            glcm = greycomatrix(glcm_window, [1], [0], symmetric=True, normed=True)
+            glcm = graycomatrix(glcm_window, [1], [0], symmetric=True, normed=True)
 
-            glcmcontr[i, j] = greycoprops(glcm, 'contrast')
-            glcmdissim[i, j] = greycoprops(glcm, 'dissimilarity')
-            glcmhomog[i, j] = greycoprops(glcm, 'homogeneity')
-            glcmenergy[i, j] = greycoprops(glcm, 'energy')
-            glcmcorrel[i, j] = greycoprops(glcm, 'correlation')
-            glcmASM[i, j] = greycoprops(glcm, 'ASM')
+            glcmcontr[i, j] = graycoprops(glcm, 'contrast')
+            glcmdissim[i, j] = graycoprops(glcm, 'dissimilarity')
+            glcmhomog[i, j] = graycoprops(glcm, 'homogeneity')
+            glcmenergy[i, j] = graycoprops(glcm, 'energy')
+            glcmcorrel[i, j] = graycoprops(glcm, 'correlation')
+            glcmASM[i, j] = graycoprops(glcm, 'ASM')
             glcm = None
             glcm_window = None
 
